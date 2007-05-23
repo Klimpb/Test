@@ -1,0 +1,7 @@
+## Interface: 20100
+## Title: Arena Enemy Info Data
+## Notes: Contains the enemy information database for AEI
+## RequiredDeps: ArenaEnemyInfo
+## LoadOnDemand: 1
+
+..\ArenaEnemyInfo\Data.lua
