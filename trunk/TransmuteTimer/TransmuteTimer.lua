@@ -28,6 +28,7 @@ local L = {
 	
 	["Alchemy"] = "Alchemy",
 	["Tailoring"] = "Tailoring",
+	["You do not have any transmute timers saved!"] = "You do not have any transmute timers saved!",
 };
 
 --[[
@@ -95,9 +96,12 @@ local function OnEvent()
 			
 			if( msg == "check" ) then
 				local crtTime = time();
+				local totalTransmutes = 0;
 				
 				for realm, timers in pairs( TransmuteTimers ) do
 					for i=#( timers ), 1, -1 do
+						totalTransmutes = totalTransmutes + 1;
+						
 						local type = L["Alchemy"];
 						if( timers[ i ].type == "tailor" ) then
 							type = L["Tailoring"];
@@ -109,6 +113,10 @@ local function OnEvent()
 							DEFAULT_CHAT_FRAME:AddMessage( string.format( L["%s: %s - %s, %s: %s"], type, timers[ i ].name, realm, timers[ i ].faction, SecondsToTime( timers[ i ].ready - crtTime ) ) );
 						end
 					end
+				end
+				
+				if( totalTransmutes == 0 ) then
+					Print( L["You do not have any transmute timers saved!"] );
 				end
 			
 			elseif( msg == "alchemy" ) then
