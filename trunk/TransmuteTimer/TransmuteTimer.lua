@@ -188,8 +188,8 @@ local function OnEvent()
 		
 	elseif( event == "TRADE_SKILL_UPDATE" or event == "TRADE_SKILL_UPDATE" ) then
 		local tradeSkill;
-		if( GetTradeSkillLine() == L["Tailoring"] and TT_Config.tailoring ) then
-			tradeSkill = "tailoring";
+		if( GetTradeSkillLine() == L["Tailoring"] and TT_Config.tailor ) then
+			tradeSkill = "tailor";
 		elseif( GetTradeSkillLine() == L["Alchemy"] and TT_Config.alchemy ) then
 			tradeSkill = "alchemy";
 		else
