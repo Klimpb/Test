@@ -9,8 +9,8 @@ local LeftRaid;
 function Reformat:Initialize()
 	hooksecurefunc( "WorldStateScoreFrame_Update", self.WorldStateScoreFrame_Update );
 
-	JoinedRaid = string.format( ERR_RAID_MEMBER_REMOVED_S, "(.+)" );
-	LeftRaid = string.format( ERR_RAID_YOU_LEFT, "(.+)" );
+	JoinedRaid = string.format( ERR_RAID_MEMBER_ADDED_S, "(.+)" );
+	LeftRaid = string.format( ERR_RAID_MEMBER_REMOVED_S, "(.+)" );
 end
 
 function Reformat:EnableModule()
