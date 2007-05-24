@@ -300,8 +300,22 @@ function GemCount:ScanGem( itemLink )
 		local name1, amount1 = self:ParseStat( stat1 );
 		local name2, amount2 = self:ParseStat( stat2 );
 		
-		self:AddGemColor( color1, L["STATS"][ color1 ][ name1 ], amount1 );
-		self:AddGemColor( color2, L["STATS"][ color2 ][ name2 ], amount2 );
+		--[[
+		It's annoying, but the gem color and stats don't always match up
+		hit is yelow, AGI is red.
+
+		Glinting Noble Topaz 
+		+4 Hit Rating and +4 Agility
+		"Matches a Red or Yellow Socket." 
+		]]
+		
+		if( L["STATS"][ color1 ][ name1 ] ) then
+			self:AddGemColor( color1, L["STATS"][ color1 ][ name1 ], amount1 );
+			self:AddGemColor( color2, L["STATS"][ color2 ][ name2 ], amount2 );
+		else
+			self:AddGemColor( color1, L["STATS"][ color1 ][ name2 ], amount2 );
+			self:AddGemColor( color2, L["STATS"][ color2 ][ name1 ], amount1 );
+		end
 		
 	-- Regular gem
 	elseif( string.find( text, L["Matches a (.+) Socket"] ) ) then
