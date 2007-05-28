@@ -1,0 +1,12 @@
+## Interface: 20100
+## Title: Honest
+## Notes: Honor estimation, and PvP data mod
+## SavedVariables: HonestDB
+
+Dongle.lua
+
+localization.enUS.lua
+localization.deDE.lua
+localization.frFR.lua
+
+Honest.lua
