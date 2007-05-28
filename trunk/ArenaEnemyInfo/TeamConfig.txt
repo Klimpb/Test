@@ -1,7 +1,0 @@
-battlegroup=nightfall
-armory=http://armory.worldofwarcraft.com/
-account=SHADOWOUTLAW
-teams=true
-server=Icecrown
-path=S:\World of Warcraft
-addons=AddOns
