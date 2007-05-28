@@ -39,10 +39,14 @@ function AEI:OnEvent( event )
 		end
 	elseif( event == "UPDATE_MOUSEOVER_UNIT" and ( IsActiveBattlefieldArena() ) ) then
 		if( UnitIsPlayer( "mouseover" ) and UnitIsEnemy( "mouseover", "player" ) and UnitIsPVP( "mouseover" ) ) then
+			if( not IsAddOnLoaded( "AEI_Data" ) ) then
+				LoadAddOn( "AEI_Data" );
+			end
+			
 			local name, server = UnitName( "mouseover" );
 			server = ( server or GetRealmName() );
 
-			if( not AEI_Data[ name .. "-" .. server ] ) then
+			if( not AEI_Data or not AEI_Data[ name .. "-" .. server ] ) then
 				for _, noSpec in pairs( AEI_NoData ) do
 					if( noSpec == name .. "-" .. server ) then
 						return;
@@ -71,7 +75,7 @@ function AEI:OnEvent( event )
 
 			table.insert( enemies, { name = name, server = server, race = race, classToken = classToken, guild = guild } );
 
-			if( AEI_Data[ name .. "-" .. server ] ) then
+			if( AEI_Data and AEI_Data[ name .. "-" .. server ] ) then
 				spec = " /" .. AEI:GetSpec( name, server );
 			end
 
@@ -90,10 +94,13 @@ end
 
 -- Get the formatted spec as " [##/##/##]" if found
 function AEI:GetSpec( name, server )
+	if( not IsAddOnLoaded( "AEI_Data" ) ) then
+		LoadAddOn( "AEI_Data" );
+	end
+
 	name = name .. "-" .. server;
 	
-	
-	if( AEI_Data[ name ] ) then
+	if( AEI_Data and AEI_Data[ name ] ) then
 		local point1, point2, point3 = string.split( ":", AEI_Data[ name ] );
 		return " [" .. point1 .. "/" .. point2 .. "/" .. point3 .. "]";
 	end
@@ -103,9 +110,13 @@ end
 
 -- Gets the actual spec numbers if you want to use your own formatting
 function AEI:GetTalents( name, server )
+	if( not IsAddOnLoaded( "AEI_Data" ) ) then
+		LoadAddOn( "AEI_Data" );
+	end
+
 	name = name .. "-" .. server;
 	
-	if( AEI_Data[ name ] ) then
+	if( AEI_Data and AEI_Data[ name ] ) then
 		return string.split( ":", AEI_Data[ name ] );
 	end
 	
