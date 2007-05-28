@@ -183,7 +183,9 @@ function Honest:CheckDay()
 			diffPerc = todayHonor / yesterdayHonor;
 		end
 		
-		self:Print( string.format( L["Honor has reset! Estimated %d, Actual %d, Difference %d (%d%% off)"], todayHonor, yesterdayHonor, diff, ( 100 - diffPerc * 100 ) ) );
+		if( todayHonor > 0 and yesterdayHonor > 0 ) then
+			self:Print( string.format( L["Honor has reset! Estimated %d, Actual %d, Difference %d (%d%% off)"], todayHonor, yesterdayHonor, diff, ( 100 - diffPerc * 100 ) ) );
+		end
 		
 		HonorGained = 0;
 		StartTime = 0;
@@ -593,7 +595,12 @@ function Honest:PVPFrame_Update()
 			battlefield:SetText( info.location );
 			wins:SetText( info.wins );
 			loses:SetText( info.loses );
-			ratio:SetText( info.ratio );
+			
+			if( info.ratio > 0 ) then
+				ratio:SetText( string.format( "%.1f", info.ratio ) );
+			else
+				ratio:SetText( "--" );
+			end
 			
 			if( info.avg > 0 ) then
 				avg:SetText( string.format( "%.2f", info.avg ) );
