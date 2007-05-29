@@ -28,6 +28,8 @@ SSPVPLocals = {
 	["You are about to leave the active or queued battlefield %s, are you sure?"] = "You are about to leave the active or queued battlefield %s, are you sure?",
 	["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"] = "You are about to leave the active or queued arena %s (%dvs%d), are you sure?",
 	
+	["Sorry, this feature is disabled currently while I work out the new formula stuff."] = "Sorry, this feature is disabled currently while I work out the new formula stuff.",
+	
 	["Battlefield Info"] = "Battlefield Info",
 	
 	["Time before start"] = "Time before start",
@@ -39,6 +41,8 @@ SSPVPLocals = {
 	
 	["Pet"] = "Pet",
 	["(L) %s"] = "(L) %s",
+	
+	["PVP Flag: %s"] = "PVP Flag: %s",
 	
 	-- Starting in searchs
 	["2 minute"] = "2 minute", 
@@ -137,6 +141,7 @@ SSPVPLocals = {
 	["SSPVP commands"] = "SSPVP commands",
 	["on - Enables SSPVP"] = "on - Enables SSPVP",
 	["off - Disables SSPVP"] = "off - Disables SSPVP",
+	["map - Toggles the battlefield minimap regardless of being inside a battleground."] = "map - Toggles the battlefield minimap regardless of being inside a battleground.",
 	["sync <count> - Starts an Alterac Valley sync queue count down."] = "sync <count> - Starts an Alterac Valley sync queue count down.",
 	["ui - Pulls up the configuration page."] = "ui - Pulls up the configuration page.",
 	["cancel - Cancels a running sync count down."] = "cancel - Cancels a running sync count down.",
@@ -468,7 +473,7 @@ SSPVPLocals = {
 	["Battleground join delay"] = "Battleground join delay",
 	["AFK battleground join delay"] = "AFK battleground join delay",
 	["Arena join delay"] = "Arena join delay",
-	["AFK arena join delay"] = "AFK arena join delay",
+
 	["Battlefield auto joining priorities"] = "Battlefield auto joining priorities",
 	["Priority system to use when auto joining battlegrounds, equal priorities will not override eachother, If you have Warsong Gulch as #1 and Arathi Basin as #2 you'll always auto join Warsong Gulch when in Arathi Basin, but not Arathi Basin when inside Warsong Gulch."] = "Priority system to use when auto joining battlegrounds, equal priorities will not override eachother. If you have Warsong Gulch as #1 and Arathi Basin as #2 you'll always auto join Warsong Gulch when in Arathi Basin, but not Arathi Basin when inside Warsong Gulch.",
 

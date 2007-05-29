@@ -8,19 +8,32 @@ function UI:Initialize()
 	SSPVP.cmd:RegisterSlashHandler( L["on - Enables SSPVP"], "on", self.CmdEnable );
 	SSPVP.cmd:RegisterSlashHandler( L["off - Disables SSPVP"], "off", self.CmdDisable );	
 	SSPVP.cmd:RegisterSlashHandler( L["ui - Pulls up the configuration page."], "ui", self.OpenUI );
+	SSPVP.cmd:RegisterSlashHandler( L["map - Toggles the battlefield minimap regardless of being inside a battleground."], "map", self.ToggleMinimap );
 end
 
-function UI.OpenUI()
+function UI:ToggleMinimap()
+	BattlefieldMinimap_LoadUI(); 
+	
+	if( BattlefieldMinimap:IsVisible() ) then
+		MiniMapBattlefieldFrame.status = "";
+		BattlefieldMinimap:Hide();
+	else
+		MiniMapBattlefieldFrame.status = "active";
+		BattlefieldMinimap:Show();
+	end 
+end
+
+function UI:OpenUI()
 	UIParentLoadAddOn( "SSUI" );
 	SSUI:ShowConfig( "sspvp" );
 end
 
-function UI.CmdEnable()
+function UI:CmdEnable()
 	SSPVP:Enable();
 	SSPVP:Print( L["Is now enabled."] );
 end
 
-function UI.CmdDisable()
+function UI:CmdDisable()
 	SSPVP:Disable();
 	SSPVP:Print( L["Is now disabled."] );
 end
@@ -85,7 +98,6 @@ function UI:LoadUI()
 		{ text = L["Enable faction balance overlay"], type = "check", OnChange = self.Reload, arg1 = "SSPVP-Score", var = { "general", "factBalance" }, parent = "SSGeneral" };
 		{ text = L["Auto solo queue when ungrouped"], type = "check", var = { "queue", "autoSolo" }, parent = "SSGeneral" };
 		{ text = L["Auto group queue when leader"], type = "check", var = { "queue", "autoGroup" }, parent = "SSGeneral" };
-		--{ text = L["Show world PvP objectives in overlay"], tooltip = L["This will hide the world PvP objectives frame and show it inside the overlay instead."], type = "check", var = { "general", "directWorld" }, parent = "SSGeneral" };
 		{ text = L["Lock world PvP objectives"], type = "check", OnChange = self.Reload, arg1 = "SSPVP-Mover", var = { "mover", "world" }, parent = "SSGeneral" };
 		{ text = L["Lock battlefield scoreboard"], type = "check", OnChange = self.Reload, arg1 = "SSPVP-Mover", var = { "mover", "score" }, parent = "SSGeneral" };
 		{ text = L["Lock capture bars"], type = "check", OnChange = self.Reload, arg1 = "SSPVP-Mover", var = { "mover", "capture" }, parent = "SSGeneral" };
@@ -97,7 +109,6 @@ function UI:LoadUI()
 		{ text = L["Battleground join delay"], type = "input", forceType = "int", width = 30, var = { "join", "bgDelay" }, parent = "SSJoin" },
 		{ text = L["AFK battleground join delay"], type = "input", forceType = "int", width = 30, var = { "join", "bgAfk" }, parent = "SSJoin" },
 		{ text = L["Arena join delay"], type = "input", forceType = "int", width = 30, var = { "join", "arenaDelay" }, parent = "SSJoin" },
-		{ text = L["AFK arena join delay"], type = "input", forceType = "int", width = 30, var = { "join", "arenaAfk" }, parent = "SSJoin" },
 		{ text = L["Battlefield auto joining priorities"], tooltip = L["Priority system to use when auto joining battlegrounds, equal priorities will not override eachother, If you have Warsong Gulch as #1 and Arathi Basin as #2 you'll always auto join Warsong Gulch when in Arathi Basin, but not Arathi Basin when inside Warsong Gulch."], list = priorityList, type = "priority", var = { "priority" }, parent = "SSJoin" },
  		
  		-- Auto leave
@@ -137,7 +148,6 @@ function UI:LoadUI()
 		
 		-- Arena
 		{ text = L["Enable enemy team report"], OnChange = self.Reload, arg1 = "SSPVP-Arena", tooltip = L["Reports team you are facing when you mouse over them inside an arena, this will also pull up a frame you can click to target them.\nThis will NOT update while you are in combat."], type = "check", var = { "arena", "target" }, parent = "SSCArena" };
-		--{ text = L["Enable modified player/inspect pvp screens"], tooltip = L["Shows the points gained next to the rating on both players and inspect pvp screens, the bracket for the inspected players team will also be shown next to the name."], type = "check", OnChange = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "modify" }, parent = "SSCArena" };
 		{ text = L["Show enemy number next to name on arena frames"], type = "check", OnChange = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "enemyNum" }, parent = "SSCArena" };
 		{ text = L["Lock team report frame"], type = "check", OnChange = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "locked" }, parent = "SSCArena" },
 		{ text = L["Show enemy health next to name on arena frame"], type = "check", OnChange = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "showHealth" }, parent = "SSCArena" },

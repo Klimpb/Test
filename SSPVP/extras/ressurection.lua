@@ -22,12 +22,12 @@ function Ressurection:DisableModule()
 end
 
 function Ressurection:CORPSE_OUT_OF_RANGE()
-	SSPVP:UnregisterTimer( "RetrieveCorpse" );
+	SSPVP:UnregisterTimer( RetrieveCorpse );
 end
 
 function Ressurection:CORPSE_IN_RANGE()
 	if( SSPVP.db.profile.bf.autoAccept and GetCorpseRecoveryDelay() ~= nil and GetCorpseRecoveryDelay() > 0 ) then
-		SSPVP:RegisterTimer( nil, "RetrieveCorpse", GetCorpseRecoveryDelay() + 1 );
+		SSPVP:RegisterTimer( RetrieveCorpse, GetCorpseRecoveryDelay() + 1 );
 	end
 end
 

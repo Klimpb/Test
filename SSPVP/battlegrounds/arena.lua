@@ -627,11 +627,15 @@ function Arena:SetRating( parent, teamSize, teamRating )
 	local points;
 	local ratingText = getglobal( parent .. "DataRating" );
 	local label = getglobal( parent.. "DataRatingLabel" );
-
+	
 	if( teamRating > 1500 ) then
-		points = 2894 / ( 1 + 259 * math.exp( 1 ) ^ ( -0.0025 * teamRating ) );
+		points = 1426.79 / ( 1 + 918.836 * math.pow( 2.71828, -0.00386405 * teamRating ) );
 	else
-		points = 0.206 * teamRating + 99;
+		points = 0.38 * ( teamRating - 194 );
+	end
+
+	if( points < 0 ) then
+		points = 0;
 	end
 
 	-- Apply the percent reduction from brackets
@@ -807,6 +811,11 @@ end
 
 -- Points -> Rating
 function Arena.CalculateRating( points )
+	if( true == true ) then
+		SSPVP:Print( L["Sorry, this feature is disabled currently while I work out the new formula stuff."] );
+		return;
+	end
+	
 	points = tonumber( points );
 	
 	SSPVP:Print( string.format( L["[%d vs %d] %d points = %d rating"], 5, 5, points, floor( -400 * math.log( ( 2894 - points ) / ( 259 * points ) ) + 0.5 ) ) );
@@ -820,11 +829,15 @@ function Arena.CalculatePoints( rating )
 	
 	local points;
 	if( rating > 1500 ) then
-		points = ( 2894 / ( 1 + 259 * math.exp( 1 ) ^ ( -0.0025 * rating ) ) );
+		points = 1426.79 / ( 1 + 918.836 * math.pow( 2.71828, -0.00386405 * rating ) );
 	else
-		points = ( 0.206 * rating + 99 );
+		points = 0.38 * ( rating - 194 );
 	end
 	
+	if( points < 0 ) then
+		points = 0;
+	end
+
 	SSPVP:Print( string.format( L["[%d vs %d] %d rating = %d points"], 5, 5, rating, points ) );
 	SSPVP:Print( string.format( L["[%d vs %d] %d rating = %d points - %d%% = %d points"], 3, 3, rating, points, 80, points * 0.80 ) );
 	SSPVP:Print( string.format( L["[%d vs %d] %d rating = %d points - %d%% = %d points"], 2, 2, rating, points, 70, points * 0.70 ) );

@@ -7,8 +7,6 @@ local JoinedRaid;
 local LeftRaid;
 
 function Reformat:Initialize()
-	hooksecurefunc( "WorldStateScoreFrame_Update", self.WorldStateScoreFrame_Update );
-
 	JoinedRaid = string.format( ERR_RAID_MEMBER_ADDED_S, "(.+)" );
 	LeftRaid = string.format( ERR_RAID_MEMBER_REMOVED_S, "(.+)" );
 end
@@ -19,32 +17,6 @@ end
 
 function Reformat:DisableModule()
 	self:UnregisterAllEvents();
-end
-
-function Reformat:WorldStateScoreFrame_Update()
-	if( not Reformat.moduleEnabled ) then
-		return;
-	end
-	
-	local index, nameButton, name, server;
-	for i=1, MAX_WORLDSTATE_SCORE_BUTTONS do
-		nameButton = getglobal( "WorldStateScoreButton" .. i .. "Name" );
-		
-		if( nameButton ) then
-			index = FauxScrollFrame_GetOffset( WorldStateScoreScrollFrame ) + i;
-			name = GetBattlefieldScore( index );
-		
-			if( name ) then
-				if( string.match( name, "-" ) ) then
-					name, server = string.match( name, "(.+)%-(.+)" );
-				else
-					server = GetRealmName();				
-				end
-
-				nameButton:SetText( name .. " |cffffffff- " .. server .. "|r" );
-			end
-		end
-	end
 end
 
 local Orig_ChatFrame_SystemEventHandler = ChatFrame_SystemEventHandler;

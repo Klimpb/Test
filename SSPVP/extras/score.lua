@@ -317,6 +317,14 @@ function Score:WorldStateScoreFrame_Update()
 				if( SSPVP.db.profile.score.color and RAID_CLASS_COLORS[ classToken ] and name ~= UnitName( "player" ) ) then
 					nameText:SetVertexColor( RAID_CLASS_COLORS[ classToken ].r, RAID_CLASS_COLORS[ classToken ].g, RAID_CLASS_COLORS[ classToken ].b );
 				end
+				
+				if( string.match( name, "-" ) ) then
+					name, server = string.match( name, "(.+)%-(.+)" );
+				else
+					server = GetRealmName();				
+				end
+
+				nameButton:SetText( name .. " |cffffffff- " .. server .. "|r" );
 
 				if( SSPVP.db.profile.score.level ) then
 					if( enemies[ name ] ) then

@@ -132,7 +132,6 @@ function SSPVP:Initialize()
 				bgDelay = 10,
 				bgAfk = 110,
 				arenaDelay = 10,
-				arenaAfk = 110,
 			},
 			priority = {
 				afk = 1,
@@ -163,21 +162,8 @@ function SSPVP:Initialize()
 
 	self.cmd = self:InitializeSlashCommand( L["SSPVP commands"], "SSPVP", "sspvp" );
 	self.cmd:InjectDBCommands( self.db, "delete", "copy", "list", "set" );
-	
-	-- Check if we have an old profile that was lost with the change to Dongle 1.0
-	local char = string.format( "%s of %s", UnitName( "player" ), GetRealmName() );
-	
-	if( SSPVPDB.profiles[ char ] ) then
-		local newChar = string.format( "%s - %s", UnitName( "player" ), GetRealmName() );
 		
-		self.db:SetProfile( char );
-		self.db:CopyProfile( newChar );
-		
-		self.db:SetProfile( newChar );
-		self.db:DeleteProfile( char );
-	end
-	
-	SSOverlay:AddCategory( "start", L["Time before start"], -1 );
+	SSOverlay:AddCategory( "general", L["Time before start"], -1 );
 	SSOverlay:AddCategory( "queue", L["Battlefield queues"], 1 );
 end
 
@@ -205,7 +191,7 @@ function SSPVP:Disable()
 	self:UnregisterAllMessages();
 	self:UnregisterAllTimers();
 	
-	SSOverlay:RemoveCategory( "start" );
+	SSOverlay:RemoveCategory( "general" );
 	SSOverlay:RemoveCategory( "queue" );
 
 	if( activeBF.id > 0 ) then
@@ -228,18 +214,18 @@ function SSPVP:Message( msg, color )
 end
 
 local Orig_ChatFrame_MessageEventHandler = ChatFrame_MessageEventHandler;
-function ChatFrame_MessageEventHandler( event )
+function ChatFrame_MessageEventHandler( event, ... )
 	if( SSPVP.db.profile.general.block and ( event == "CHAT_MSG_RAID" or event == "CHAT_MSG_RAID_LEADER" or event == "CHAT_MSG_PARTY" or event == "CHAT_MSG_BATTLEGROUND" or event == "CHAT_MSG_BATTLEGROUND_LEADER" ) ) then
 		if( string.sub( arg1, 0, 4 ) == "[SS]" ) then
-			return nil;
+			return false;
 		end
 	end
 	
-	return Orig_ChatFrame_MessageEventHandler( event );
+	return Orig_ChatFrame_MessageEventHandler( event, ... );
 end
 
 local Orig_AcceptBattlefieldPort = AcceptBattlefieldPort;
-function AcceptBattlefieldPort( id, flag, confirmed )
+function AcceptBattlefieldPort( id, flag, confirmed, ... )
 	if( not flag and not confirmed and SSPVP.db.profile.leave.confirm ) then
 		local _, map, _, _, _, teamSize = GetBattlefieldStatus( id );
 		if( teamSize > 0 ) then
@@ -256,11 +242,11 @@ function AcceptBattlefieldPort( id, flag, confirmed )
 	end
 	
 	StaticPopup_Hide( "CONFIRM_PORT_LEAVE", id );
-	Orig_AcceptBattlefieldPort( id, flag );
+	Orig_AcceptBattlefieldPort( id, flag, ... );
 end
 
 local Orig_LeaveBattlefield = LeaveBattlefield;
-function LeaveBattlefield( confirmed )
+function LeaveBattlefield( confirmed, ... )
 	if( not confirmed and SSPVP.db.profile.leave.confirm and this:GetName() ~= "WorldStateScoreFrameLeaveButton" ) then
 		-- Find an active battlefield
 		local map, status, teamSize;
@@ -280,21 +266,21 @@ function LeaveBattlefield( confirmed )
 		return;
 	end
 	
-	Orig_LeaveBattlefield();
+	Orig_LeaveBattlefield( ... );
 end
 
 function SSPVP:CHAT_MSG_BG_SYSTEM_NEUTRAL( event, msg )
 	if( string.find( msg, L["2 minute"] ) ) then
-		SSOverlay:UpdateTimer( "start", L["Starting In: %s"], 121 );
+		SSOverlay:UpdateTimer( "general", L["Starting In: %s"], 121 );
 
 	elseif( string.find( msg, L["1 minute"] ) or string.find( msg, L["One minute until"] ) ) then
-		SSOverlay:UpdateTimer( "start", L["Starting In: %s"], 61 );
+		SSOverlay:UpdateTimer( "general", L["Starting In: %s"], 61 );
 
 	elseif( string.find( msg, L["30 seconds"] ) or string.find( msg, L["Thirty seconds until"] ) ) then
-		SSOverlay:UpdateTimer( "start", L["Starting In: %s"], 31 );
+		SSOverlay:UpdateTimer( "general", L["Starting In: %s"], 31 );
 
 	elseif( string.find( msg, L["Fifteen seconds until"] ) ) then
-		SSOverlay:UpdateTimer( "start", L["Starting In: %s"], 15 );
+		SSOverlay:UpdateTimer( "general", L["Starting In: %s"], 15 );
 	end
 end
 
@@ -390,18 +376,14 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				if( SSPVP.db.profile.bf.minimap ) then
 					BattlefieldMinimap_LoadUI();
 
-					SHOW_BATTLEFIELD_MINIMAP = "1";
-
 					BattlefieldMinimap:Show();
 					BattlefieldMinimap_Update();
 
 				elseif( BattlefieldMinimap ) then
-					SHOW_BATTLEFIELD_MINIMAP = "0";
 					BattlefieldMinimap:Hide();
 				end
 
 			elseif( BattlefieldMinimap ) then
-				SHOW_BATTLEFIELD_MINIMAP = "0";
 				BattlefieldMinimap:Hide();
 			end
 
@@ -410,7 +392,6 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			activeBF = { id = -1 };
 
 			if( IsAddOnLoaded( "Blizzard_BattlefieldMinimap" ) ) then
-				SHOW_BATTLEFIELD_MINIMAP = "0";
 				BattlefieldMinimap:Hide();
 			end
 		end
@@ -568,15 +549,13 @@ end
 function SSPVP:QueueReady( id, map )
 	local delayType;
 	if( SSPVP:GetBattlefieldAbbrev( map ) == "arena" ) then
-		delayType = "arena";
+		delayType = "arenaDelay";
 	else
-		delayType = "bg";
-	end
-	
-	if( UnitIsAFK( "player" ) ) then
-		delayType = delayType .. "Afk";
-	else
-		delayType = delayType .. "Delay";
+		if( UnitIsAFK( "player" ) ) then
+			delayType = "bgAfk";
+		else
+			delayType = "bgDelay";
+		end
 	end
 
 	-- Not joining anything else, just register the auto join
