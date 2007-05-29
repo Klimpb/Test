@@ -4,6 +4,9 @@ HonestLocals = {
 	["%s dies, honorable kill"] = "%s dies, honorable kill",
 	["%s (%dvs%d)"] = "%s (%dvs%d)",
 	["Unknown"] = "Unknown",
+	
+	["Arena has reset! You gained %d points, for a total of %d."] = "Arena has reset! You gained %d points, for a total of %d.",
+	["Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d."] = "Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d.",
 	["Honor has reset! Estimated %d, Actual %d, Difference %d (%d%% off)"] = "Honor has reset! Estimated %d, Actual %d, Difference %d (%d%% off)",
 	
 	["Actual Honor Points: %d"] = "Actual Honor Points: %d",

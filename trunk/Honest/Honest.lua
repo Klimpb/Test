@@ -11,6 +11,9 @@ local RegisteredFrames = {};
 function Honest:Enable()
 	self.defaults = {
 		profile = {
+			arena = {
+				lastWeek = 0,
+			},
 			today = {
 				totals = {
 					total = 0,
@@ -170,6 +173,51 @@ function ChatFrame_MessageEventHandler( event )
 end
 
 function Honest:CheckDay()
+	-- Check arena
+	if( GetArenaCurrency() ~= self.db.profile.arena.lastWeek ) then
+		-- Only show the message if we gained points, HOPEFULLY
+		-- this will mean it only shows on reset and not when we spend points
+		if( GetArenaCurrency() >= self.db.profile.arena.lastWeek ) then
+			local pointsTeam, pointsBracket, teamName, teamSize, teamRating;
+			local teamPoints = 0;
+			local highestPoints = 0;
+			
+			for i=1, MAX_ARENA_TEAMS do
+				teamName, teamSize, teamRating = GetArenaTeam( i );
+				
+				if( teamName ) then
+					if( teamRating > 1500 ) then
+						teamPoints = 2894 / ( 1 + 259 * math.exp( 1 ) ^ ( -0.0025 * teamRating ) );
+					else
+						teamPoints = 0.206 * teamRating + 99;
+					end
+
+					if( teamSize == 3 ) then
+						teamPoints = teamPoints * 0.80
+					elseif( teamSize == 2 ) then
+						teamPoints = teamPoints * 0.70	
+					end
+
+					if( teamPoints > highestPoints ) then
+						pointsTeam = teamName;
+						pointsBracket = teamSize;
+						highestPoints = floor( teamPoints );
+					end
+				end
+			end
+			
+			-- Depending on when honor resets, we don't always have access to team info
+			if( not pointsTeam ) then
+				self:Print( string.format( L["Arena has reset! You gained %d points, for a total of %d."], ( GetArenaCurrency() - self.db.profile.arena.lastWeek ), GetArenaCurrency() ) );
+			else
+				self:Print( string.format( L["Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d."], highestPoints, pointsTeam, pointsBracket, pointsBracket, GetArenaCurrency() ) );
+			end
+		end
+		
+		self.db.profile.arena.lastWeek = GetArenaCurrency();
+	end
+	
+	-- Check honor
 	local _, yesterdayHonor = GetPVPYesterdayStats();
 
 	if( yesterdayHonor ~= self.db.profile.yesterday.totals.honor or ( self.db.profile.yesterday.timeOut > 0 and self.db.profile.yesterday.timeOut <= time() ) ) then
