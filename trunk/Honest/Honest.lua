@@ -655,6 +655,7 @@ function Honest:PVPFrame_Update()
 		self.ratioText:Show();
 		self.winText:Show();
 		self.loseText:Show();
+		self.avgText:Show();
 		
 		self.battlefieldText:SetPoint( "TOPLEFT", lastCategory, "TOPLEFT", 0, -30 );	
 	
