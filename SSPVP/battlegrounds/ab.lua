@@ -134,7 +134,7 @@ function AB:ParseMessage( msg, faction )
 	end
 	
 	if( string.find( msg, L["has assaulted the ([^!]+)"] ) ) then
-		local _, _, name = string.find( msg, L["has assaulted the ([^!]+)"] );
+		local name = string.match( msg, L["has assaulted the ([^!]+)"] );
 
 		timers[ name ] = { faction = faction, endTime = GetTime() + 62 }
 		if( GetLocale() == "enUS" ) then
@@ -145,7 +145,7 @@ function AB:ParseMessage( msg, faction )
 		SSOverlay:AddOnClick( "timer", "ab", name .. ": %s", SSPVP, "PrintTimer", name, GetTime() + 62, faction );
 		
 	elseif( string.find( msg, L["(.+) claims the ([^!]+)"] ) ) then
-		local _, _, _, name = string.find( msg, L["(.+) claims the ([^!]+)"] );
+		local _, name = string.match( msg, L["(.+) claims the ([^!]+)"] );
 
 		timers[ name ] = { faction = faction, endTime = GetTime() + 62 }
 		if( GetLocale() == "enUS" ) then
@@ -156,13 +156,13 @@ function AB:ParseMessage( msg, faction )
 		SSOverlay:AddOnClick( "timer", "ab", name .. ": %s", SSPVP, "PrintTimer", name, GetTime() + 62, faction );
 		
 	elseif( string.find( msg, L["has taken the ([^!]+)"] ) ) then
-		local _, _, name = string.find( msg, L["has taken the ([^!]+)"] );
+		local name = string.match( msg, L["has taken the ([^!]+)"] );
 	
 		SSOverlay:RemoveRow( "timer", "ab", name .. ": %s" );
 		timers[ name ] = nil;
 		
 	elseif( string.find( msg, L["has defended the ([^!]+)"] ) ) then
-		local _, _, name = string.find( msg, L["has defended the ([^!]+)"] );
+		local name = string.match( msg, L["has defended the ([^!]+)"] );
 		
 		SSOverlay:RemoveRow( "timer", "ab", name .. ": %s" );
 		timers[ name ] = nil;
@@ -181,7 +181,7 @@ function AB:UpdateOverlay()
 	local _, _, allianceText = GetWorldStateUIInfo( 1 );
 	local _, _, hordeText = GetWorldStateUIInfo( 2 );
 	
-	_, _, bases, points = string.find( allianceText, L["Bases: ([0-9]+)  Resources: ([0-9]+)/2000"] );
+	bases, points = string.match( allianceText, L["Bases: ([0-9]+)  Resources: ([0-9]+)/2000"] );
 	Alliance.bases = tonumber( bases );
 	Alliance.points = tonumber( points );
 	Alliance.left = 2000 - points;
@@ -189,7 +189,7 @@ function AB:UpdateOverlay()
 	Alliance.time = Alliance.left / baseInfo[ Alliance.bases ];
 	Alliance.basesWin = 0;
 	
-	_, _, bases, points = string.find( hordeText, L["Bases: ([0-9]+)  Resources: ([0-9]+)/2000"] );
+	bases, points = string.match( hordeText, L["Bases: ([0-9]+)  Resources: ([0-9]+)/2000"] );
 	Horde.bases = tonumber( bases );
 	Horde.points = tonumber( points );
 	Horde.left = 2000 - points;

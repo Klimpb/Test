@@ -68,10 +68,10 @@ function Ressurection:CHAT_MSG_MONSTER_YELL( event, msg, from )
 	end
 
 	if( string.find( msg, L["(.+) is under attack!"] ) ) then
-		local _, _, name = string.find( msg, L["(.+) is under attack!"] );
+		local name = string.match( msg, L["(.+) is under attack!"] );
 
 	elseif( string.find( msg, L["(.+) was taken by the"] ) ) then
-		local _, _, name = string.find( msg, L["(.+) was taken by the"] );
+		local name = string.match( msg, L["(.+) was taken by the"] );
 	end
 end
 
@@ -79,20 +79,20 @@ function Ressurection:ParseMessage( msg, faction )
 	-- Arathi Basin
 	if( SSPVP:IsPlayerIn( "ab" ) ) then
 		if( string.find( msg, L["has assaulted the ([^!]+)"] ) ) then
-			local _, _, name = string.find( msg, L["has assaulted the ([^!]+)"] );
+			local name = string.match( msg, L["has assaulted the ([^!]+)"] );
 
 		elseif( string.find( msg, L["has taken the ([^!]+)"] ) ) then
-			local _, _, name = string.find( msg, L["has taken the ([^!]+)"] );
+			local name = string.match( msg, L["has taken the ([^!]+)"] );
 
 		end
 	
 	-- Eye of the Storm
 	elseif( SSPVP:IsPlayerIn( "eots" ) ) then
 		if( string.find( msg, L["has lost control of the (.+)!"] ) ) then
-			local _, _, name = string.find( msg, L["has lost control of the (.+)!"] );
+			local name = string.match( msg, L["has lost control of the (.+)!"] );
 			
 		elseif( string.find( msg, L["has taken control of the (.+)!"] ) ) then
-			local _, _, name = string.find( msg, L["has taken control of the (.+)!"] );
+			local name = string.match( msg, L["has taken control of the (.+)!"] );
 		end
 	end
 end

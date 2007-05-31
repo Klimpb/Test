@@ -86,7 +86,7 @@ function Arena:Reload()
 	-- Update scale/colors
 	if( self.frame ) then
 		if( SSPVP.db.profile.arena.showHealth ) then
-			self.frame:SetScript( "OnUpdate", self.ScanPartyTargets );
+			self.frame:SetScript( "OnUpdate", self.HealthOnUpdate );
 		else
 			self.frame:SetScript( "OnUpdate", nil );
 		end
@@ -142,6 +142,28 @@ function Arena:StopMoving()
 	SSPVP.db.profile.positions.arena.x, SSPVP.db.profile.positions.arena.y = ArenaEnemies:GetLeft(), ArenaEnemies:GetTop();
 end
 
+function Arena:UpdateEnemyText( enemy, rowID, text )
+	local extras = "";
+		
+	if( SSPVP.db.profile.arena.enemyNum ) then
+		extras = extras .. "|cffffffff" .. rowID .. "|r ";
+	end
+	
+	if( SSPVP.db.profile.arena.showHealth ) then
+		extras = extras .. "[" .. math.floor( enemy.health / enemy.maxHealth * 100 ) .. "%] ";
+	end
+	
+	if( SSPVP.db.profile.arena.showTalents and AEI ) then
+		local tree1, tree2, tree3 = AEI:GetTalents( enemy.name, enemy.server );
+		
+		if( tree1 and tree2 and tree3 ) then
+			extras = extras .. "[" .. tree1 .. "/" .. tree2 .. "/" .. tree3 .. "] ";
+		end
+	end
+	
+	text:SetText( extras .. enemy.name );
+end
+
 function Arena:UpdateEnemyHealth( id, health, maxHealth )
 	local text, rowID;
 	local enemy = enemies[ id ];
@@ -175,16 +197,7 @@ function Arena:UpdateEnemyHealth( id, health, maxHealth )
 			getglobal( self.frame:GetName() .. "Row" .. rowID ):SetAlpha( SSPVP.db.profile.arena.deadOpacity );
 		end
 		
-		if( SSPVP.db.profile.arena.showHealth ) then
-			local num = "";
-			local healthText = "";
-
-			if( SSPVP.db.profile.arena.enemyNum ) then
-				num = "|cffffffff" .. rowID .. "|r ";
-			end
-
-			text:SetText( num .. "[" .. math.floor( health / maxHealth * 100 ) .. "%] " .. enemy.name );
-		end
+		Arena:UpdateEnemyText( enemy, rowID, text );
 	end
 end
 
@@ -204,9 +217,55 @@ function Arena:UNIT_HEALTH( event, unit )
 	end
 end
 
+-- This deals with scanning name plates for health values
+local function HealthValueChanged( ... )
+	this.SSValueChanged( ... );
+	
+	local _, _, _, _, nameFrame = this:GetParent():GetRegions();
+	local plateName = nameFrame:GetText();
+	
+	if( plateName ) then
+		for id, enemy in pairs( enemies ) do
+			if( not enemy.owner and enemy.name == plateName ) then
+				Arena:UpdateEnemyHealth( id, this:GetValue(), select( 2, this:GetMinMaxValues() ) );
+				break;
+			end
+		end
+	end
+end
+
+local function FindUnhookedFrames( ... )
+	for i=1, select( "#", ... ) do
+		local bar = select( i, ... );
+		if( bar and not bar.SSHooked and not bar:GetName() and bar:IsVisible() and bar.GetFrameType and bar:GetFrameType() == "StatusBar" ) then
+			return bar;
+		end
+	end
+end
+
+local function HookFrames( ... )
+	for i=1, select( "#", ... ) do
+		local bar = FindUnhookedFrames( select( i, ... ):GetChildren() );
+		if( bar ) then
+			local health = bar:GetParent():GetChildren();
+
+			bar.SSHooked = true;
+
+			health.SSValueChanged = health:GetScript( "OnValueChanged" );
+			health:SetScript( "OnValueChanged", HealthValueChanged );
+		end
+	end
+end
+
 local elapsed = 0;
-function Arena:ScanPartyTargets()
+local numChildren = 0;
+function Arena:HealthOnUpdate()
 	elapsed = elapsed + arg1;
+
+	if( WorldFrame:GetNumChildren() ~= numChildren ) then
+		numChildren = WorldFrame:GetNumChildren();
+		HookFrames( WorldFrame:GetChildren() );
+	end
 	
 	if( elapsed > 0.25 ) then
 		elapsed = 0;
@@ -231,7 +290,7 @@ function Arena:CreateTargetFrame()
 	self.frame:SetPoint( "TOPLEFT", UIParent, "BOTTOMLEFT", SSPVP.db.profile.positions.arena.x, SSPVP.db.profile.positions.arena.y );
 	
 	if( SSPVP.db.profile.arena.showHealth ) then
-		self.frame:SetScript( "OnUpdate", self.ScanPartyTargets );
+		self.frame:SetScript( "OnUpdate", self.HealthOnUpdate );
 	end
 	
 	local width = 145;
@@ -241,6 +300,10 @@ function Arena:CreateTargetFrame()
 	end
 	if( SSPVP.db.profile.arena.showHealth ) then
 		width = width + 10;
+	end
+	
+	if( SSPVP.db.profile.arena.showTalents ) then
+		width = width + 25;
 	end
 	
 	self.frame:SetWidth( width );
@@ -382,18 +445,9 @@ function Arena:UpdateTargetFrame()
 		text = getglobal( row:GetName() .. "Text" );
 		texture = getglobal( row:GetName() .. "Icon" );
 		
-		if( SSPVP.db.profile.arena.enemyNum ) then
-			num = "|cffffffff" .. id .. "|r ";
-		end
-				
 		-- Is it a player?
 		if( not enemy.owner ) then
-			if( SSPVP.db.profile.arena.showHealth ) then
-				text:SetText( num .. "[" .. math.floor( enemy.health / enemy.maxHealth * 100 ) .. "%] " .. enemy.name );
-			else
-				text:SetText( num .. enemy.name );
-			end
-			
+			self: UpdateEnemyText( enemy, id, text );
 			text.usedName = enemy.name;
 			text:SetTextColor( RAID_CLASS_COLORS[ enemy.classToken ].r, RAID_CLASS_COLORS[ enemy.classToken ].g, RAID_CLASS_COLORS[ enemy.classToken ].b );
 			
@@ -479,13 +533,13 @@ end
 
 function Arena:CHAT_MSG_COMBAT_HOSTILE_DEATH( event, msg )
 	if( string.find( msg, PartySlain ) ) then
-		local _, _, died = string.find( msg, PartySlain );
+		local died = string.match( msg, PartySlain );
 
 		self:EnemyDied( event, died );		
 		PVPSync:SendMessage( "ENEMYDIED:" .. died );
 
 	elseif( string.find( msg, SelfSlain ) ) then
-		local _, _, died = string.find( msg, SelfSlain );
+		local died = string.match( msg, SelfSlain );
 
 		self:EnemyDied( event, died );
 		PVPSync:SendMessage( "ENEMYDIED:" .. died );
@@ -511,12 +565,9 @@ function Arena:CheckUnit( unit )
 				table.insert( enemies, { name = name, server = server, race = race, health = UnitHealth( unit ) or 100, maxHealth = UnitHealthMax( unit ) or 100, classToken = classToken, guild = guild } );
 				self:UpdateTargetFrame();
 				
-				-- <_< >_> SECRETS
 				local spec = "";
-				if( IsAddOnLoaded( "ArenaEnemyInfo" ) ) then
+				if( AEI ) then
 					spec = AEI:GetSpec( name, server );
-				elseif( IsAddOnLoaded( "ArenaSpec" ) ) then
-					spec = ArenaSpec:GetSpec( name, server );
 				end
 				
 				-- Print out info message
@@ -532,7 +583,7 @@ function Arena:CheckUnit( unit )
 		-- No method of finding out the owner unless we mouse over
 		elseif( unit ~= "target" ) then
 			-- Warlock or Mage pet
-			local _, _, owner = string.find( GameTooltipTextLeft2:GetText(), L["([a-zA-Z]+)%'s Minion"] );
+			local owner = string.match( GameTooltipTextLeft2:GetText(), L["([a-zA-Z]+)%'s Minion"] );
 			if( owner and owner ~= L["Unknown"] ) then
 				local name =  UnitName( unit );
 				if( name ~= L["Unknown"] ) then

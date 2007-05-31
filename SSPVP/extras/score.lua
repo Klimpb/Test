@@ -130,7 +130,7 @@ function Score:CreateFactionInfo( faction )
 		if( name and playerFaction == factionID ) then
 			local server = GetRealmName();
 			if( string.find( name, "%-" ) ) then
-				_, _, _, server = string.find( name, "(.+)%-(.+)" );
+				_, server = string.match( name, "(.+)%-(.+)" );
 			end
 
 			found = nil;

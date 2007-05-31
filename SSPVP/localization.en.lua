@@ -81,8 +81,17 @@ SSPVPLocals = {
 	
 	["Battlefield queues"] = "Battlefield queues",
 	["Time left %s"] = "Time left %s";
-
-	["%s (%dvs%d)"] = "%s (%dvs%d)",
+	
+	["You are now in the queue for %s Arenas (%dvs%d)."] = "You are now in the queue for %s Arenas (%dvs%d).",
+	["You are now in the queue for the battlefield %s."] = "You are now in the queue for the battlefield %s.",
+	["Your group has joined the queue for"] = "Your group has joined the queue for",
+	
+	-- Rated and Skrim
+	["R"] = "R",
+	["S"] = "S",
+	["Rated"] = "Rated",
+	["Skrimish"] = "Skrimish",
+	["%s [%s] (%dvs%d)"] = "%s [%s] (%dvs%d)",
 	["%s |cffffffff(%dvs%d)|r"] = "%s |cffffffff(%dvs%d)|r",
 	
 	["Queue for Alterac Valley in %d seconds."] = "Queue for Alterac Valley in %d seconds.",
