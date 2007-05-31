@@ -389,13 +389,14 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			end
 			
 		elseif( status == "active" and i ~= activeBF.id ) then
+			RequestBattlefieldScoreData();
+			battlefieldInfo[ map .. teamSize ] = status;
+
 			activeBF.id = i;
 			activeBF.map = map;
 			activeBF.teamSize = teamSize;
 			activeBF.isRegistered = registeredMatch;
 			activeBF.abbrev = SSPVP:GetBattlefieldAbbrev( map );
-			
-			RequestBattlefieldScoreData();
 			
 			self:StopSound();
 			self:DisableModules();
@@ -418,6 +419,8 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 
 		elseif( status ~= "active" and i == activeBF.id ) then
 			self:DisableModules();
+			
+			battlefieldInfo[ map .. teamSize ] = status;
 			activeBF = { id = -1 };
 
 			if( IsAddOnLoaded( "Blizzard_BattlefieldMinimap" ) ) then

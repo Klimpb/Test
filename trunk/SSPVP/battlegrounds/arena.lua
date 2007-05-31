@@ -682,7 +682,7 @@ function Arena:SetRating( parent, teamSize, teamRating )
 	if( teamRating > 1500 ) then
 		points = 1426.79 / ( 1 + 918.836 * math.pow( 2.71828, -0.00386405 * teamRating ) );
 	else
-		points = 0.38 * ( teamRating - 194 );
+		points = 0.38 * teamRating - 194;
 	end
 
 	if( points < 0 ) then
@@ -882,7 +882,7 @@ function Arena.CalculatePoints( rating )
 	if( rating > 1500 ) then
 		points = 1426.79 / ( 1 + 918.836 * math.pow( 2.71828, -0.00386405 * rating ) );
 	else
-		points = 0.38 * ( rating - 194 );
+		points = 0.38 * rating - 194;
 	end
 	
 	if( points < 0 ) then
