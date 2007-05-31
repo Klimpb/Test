@@ -113,8 +113,6 @@ function AEI:GetTalents( name, server )
 	if( not IsAddOnLoaded( "AEI_Data" ) ) then
 		LoadAddOn( "AEI_Data" );
 	end
-
-	name = name .. "-" .. server;
 	
 	if( AEI_Data and AEI_Data[ name ] ) then
 		return string.split( ":", AEI_Data[ name ] );
