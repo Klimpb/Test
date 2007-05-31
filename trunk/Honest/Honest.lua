@@ -80,6 +80,14 @@ function Honest:Enable()
 	
 	self:PVPFrame_Update();
 	self:CheckDay();
+	
+	-- For upgrading format to the new one with split arena thing,
+	-- I could make it transfer it to the new one too, but i'm lazy.
+	for location, record in pairs( self.db.profile.today.record ) do
+		if( not record.teamSize and string.match( location, L["%([0-9]+vs[0-9]+%)"] ) ) then
+			self.db.profile.today.record[ location ] = nil;
+		end
+	end
 end
 
 function Honest:HideHonest()
@@ -147,10 +155,10 @@ function Honest:WSSF_Update()
 		end
 	end
 	
-	local location = Honest:GetLocation();
+	local location, unparsedMap, teamSize, isRegistered = Honest:GetLocation();
 
 	if( not Honest.db.profile.today.record[ location ] ) then
-		Honest.db.profile.today.record[ location ] = { win = 0, lose = 0 };
+		Honest.db.profile.today.record[ location ] = { win = 0, lose = 0, rated = isRegistered, teamSize = teamSize, map = unparsedMap };
 	end
 	
 	if( playerTeam == GetBattlefieldWinner() ) then
@@ -187,9 +195,13 @@ function Honest:CheckDay()
 				
 				if( teamName ) then
 					if( teamRating > 1500 ) then
-						teamPoints = 2894 / ( 1 + 259 * math.exp( 1 ) ^ ( -0.0025 * teamRating ) );
+						teamPoints = 1426.79 / ( 1 + 918.836 * math.pow( 2.71828, -0.00386405 * teamRating ) );
 					else
-						teamPoints = 0.206 * teamRating + 99;
+						teamPoints = 0.38 * teamRating - 194;
+					end
+					
+					if( teamPoints < 0 ) then
+						teamPoints = 0;
 					end
 
 					if( teamSize == 3 ) then
@@ -266,10 +278,14 @@ end
 function Honest:GetLocation()
 	local status, map, teamSize;
 	for i=1, MAX_BATTLEFIELD_QUEUES do
-		status, map, _, _, _, teamSize = GetBattlefieldStatus( i );
+		status, map, _, _, _, teamSize, isRated = GetBattlefieldStatus( i );
 		
 		if( status == "active" and teamSize > 0 ) then
-			return string.format( L["%s (%dvs%d)"], map, teamSize, teamSize );
+			if( isRated ) then
+				return string.format( L["%s (%s) (%dvs%d)"], map, L["R"], teamSize, teamSize ), map, teamSize, isRated;			
+			else
+				return string.format( L["%s (%s) (%dvs%d)"], map, L["S"], teamSize, teamSize ), map, teamSize, isRated
+			end
 		end
 	end
 	
@@ -361,13 +377,25 @@ local function SortHonor( a, b )
 	return ( a[2] > b[2] );
 end
 
-local function SortRecords( a, b )
+local function SortBattlefields( a, b )
 	if( not b ) then
 		return false;
 	end
 	
 	if( a.ratio == 0 and b.ratio == 0 ) then
 		return ( a.avg > b.avg );
+	end
+	
+	return ( a.ratio > b.ratio );
+end
+
+local function SortArenas( a, b )
+	if( not b ) then
+		return false;
+	end
+	
+	if( not b.rated ) then
+		return true;
 	end
 	
 	return ( a.ratio > b.ratio );
@@ -415,6 +443,7 @@ function Honest:PVPFrame_Update()
 		self.killText:SetPoint( "TOPLEFT", self.frame, "TOPLEFT", 5, -30 );
 		self.killText:Show();
 
+		-- BATTLEGROUND STATS
 		-- Bonus honor
 		self.bonusText = self.frame:CreateFontString( self.frame:GetName() .. "BonusTotal", "BACKGROUND" );
 		self.bonusText:SetFontObject( GameFontNormalSmall );
@@ -456,12 +485,54 @@ function Honest:PVPFrame_Update()
 		self.loseText:SetText( L["Loses"] );
 		self.loseText:SetPoint( "TOPLEFT", self.winText, "TOPRIGHT", 15, 0 );
 		self.loseText:Show();
+		
+		-- ARENA STATS
+		-- Arena name
+		self.arenaText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaName", "BACKGROUND" );
+		self.arenaText:SetFontObject( GameFontNormalSmall );
+		self.arenaText:SetText( L["Arena"] );
+		self.arenaText:Show();
+
+		-- Bracket
+		self.bracketText = self.frame:CreateFontString( self.frame:GetName() .. "BracketText", "BACKGROUND" );
+		self.bracketText:SetFontObject( GameFontNormalSmall );
+		self.bracketText:SetText( L["Bracket"] );
+		self.bracketText:SetPoint( "TOPLEFT", self.arenaText, "TOPRIGHT", 85, 0 );
+		self.bracketText:Show();
+
+		-- Rated
+		self.ratedText = self.frame:CreateFontString( self.frame:GetName() .. "RatedText", "BACKGROUND" );
+		self.ratedText:SetFontObject( GameFontNormalSmall );
+		self.ratedText:SetText( L["Type"] );
+		self.ratedText:SetPoint( "TOPLEFT", self.bracketText, "TOPRIGHT", 15, 0 );
+		self.ratedText:Show();
+
+		-- Ratio
+		self.arenaRatioText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaRatioText", "BACKGROUND" );
+		self.arenaRatioText:SetFontObject( GameFontNormalSmall );
+		self.arenaRatioText:SetText( L["Ratio"] );
+		self.arenaRatioText:SetPoint( "TOPLEFT", self.ratedText, "TOPRIGHT", 15, 0 );
+		self.arenaRatioText:Show();
+		
+		-- Wins
+		self.arenaWinText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaWinText", "BACKGROUND" );
+		self.arenaWinText:SetFontObject( GameFontNormalSmall );
+		self.arenaWinText:SetText( L["Wins"] );
+		self.arenaWinText:SetPoint( "TOPLEFT", self.arenaRatioText, "TOPRIGHT", 15, 0 );
+		self.arenaWinText:Show();
+
+		-- Loses
+		self.arenaLoseText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaLoseText", "BACKGROUND" );
+		self.arenaLoseText:SetFontObject( GameFontNormalSmall );
+		self.arenaLoseText:SetText( L["Loses"] );
+		self.arenaLoseText:SetPoint( "TOPLEFT", self.arenaWinText, "TOPRIGHT", 15, 0 );
+		self.arenaLoseText:Show();
 	end
 		
-	-- Honest estimation and Blizzards
+	-- HONOR ESTIMATIONS
 	self.estimateText:SetText( string.format( L["Honest Estimated: |cFFFFFFFF%d|r / Blizzard Estimated: |cFFFFFFFF%d|r"], self.db.profile.today.totals.total, select( 2, GetPVPSessionStats() ) ) );
 
-	-- Create the honor kill text
+	-- KILL HONOR
 	if( self.totalKill ) then
 		for i=1, self.totalKill do
 			getglobal( self.frame:GetName() .. "KillText" .. i ):Hide();
@@ -513,7 +584,7 @@ function Honest:PVPFrame_Update()
 		end
 	end
 	
-	-- Now bonus honor
+	-- BONUS HONOR
 	local bonusPercent = 0;
 	if( self.db.profile.today.totals.bonus > 0 and self.db.profile.today.totals.total > 0 ) then
 		bonusPercent = ( self.db.profile.today.totals.bonus / self.db.profile.today.totals.total ) * 100;
@@ -550,23 +621,17 @@ function Honest:PVPFrame_Update()
 		text:Show();
 	end
 	
+	
+	-- BATTLEFIELD RECORDS
 	if( self.totalWins ) then
 		for i=1, self.totalWins do
 			getglobal( self.frame:GetName() .. "Records" .. i  ):Hide();
 		end
 	end
-		
-	-- Add win/lose record
-	if( self.db.profile.today.totals.win > 0 or self.db.profile.today.totals.lose > 0 ) then
-		self.battlefieldText:Show();
-		self.ratioText:Show();
-		self.winText:Show();
-		self.loseText:Show();
-		
-		self.battlefieldText:SetPoint( "TOPLEFT", lastCategory, "TOPLEFT", 0, -30 );	
 
-		local recordList = {};
-		for location, record in pairs( self.db.profile.today.record ) do
+	local recordList = {};
+	for location, record in pairs( self.db.profile.today.record ) do
+		if( not record.teamSize ) then
 			if( record.win > 0 and record.lose > 0 ) then
 				record.ratio = record.win / record.lose;
 			elseif( record.lose == 0 ) then
@@ -574,18 +639,27 @@ function Honest:PVPFrame_Update()
 			elseif( record.win == 0 ) then
 				record.ratio = 0;
 			end
-			
+
 			if( self.db.profile.today.bonus[ location ] or self.db.profile.today.kill[ location ] ) then
 				record.avg = ( self.db.profile.today.bonus[ location ] or 0 + self.db.profile.today.kill[ location ] or 0 ) / ( record.win + record.lose )
 			else
 				record.avg = 0;
 			end
-			
+
 			table.insert( recordList, { location = location, wins = record.win, loses = record.lose, ratio = record.ratio, avg = record.avg } );
 		end
+	end
+	
+	if( #( recordList ) > 0 ) then
+		self.battlefieldText:Show();
+		self.ratioText:Show();
+		self.winText:Show();
+		self.loseText:Show();
 		
+		self.battlefieldText:SetPoint( "TOPLEFT", lastCategory, "TOPLEFT", 0, -30 );	
+	
 		self.totalWins = #( recordList );
-		table.sort( recordList, SortRecords );
+		table.sort( recordList, SortBattlefields );
 		
 		for i, info in pairs( recordList ) do
 			local frame, battlefield, wins, loses, ratio;
@@ -636,7 +710,7 @@ function Honest:PVPFrame_Update()
 				end
 			end
 			
-			lastCategory = frame;
+			lastCategory = battlefield;
 
 			frame:Show();
 
@@ -662,5 +736,127 @@ function Honest:PVPFrame_Update()
 		self.winText:Hide();
 		self.loseText:Hide();
 		self.avgText:Hide();
+	end
+
+	-- ARENA RECORDS
+	if( self.arenaWins ) then
+		for i=1, self.arenaWins do
+			getglobal( self.frame:GetName() .. "ArenaRecords" .. i  ):Hide();
+		end
+	end
+
+	local recordList = {};
+	for location, record in pairs( self.db.profile.today.record ) do
+		if( record.teamSize ) then
+			if( record.win > 0 and record.lose > 0 ) then
+				record.ratio = record.win / record.lose;
+			elseif( record.lose == 0 ) then
+				record.ratio = record.win;
+			elseif( record.win == 0 ) then
+				record.ratio = 0;
+			end		
+			
+			table.insert( recordList, { location = record.map, wins = record.win, loses = record.lose, ratio = record.ratio, rated = record.rated, teamSize = record.teamSize } );
+		end
+	end
+	
+	if( #( recordList ) > 0 ) then
+		self.arenaText:Show();
+		self.arenaRatioText:Show();
+		self.arenaWinText:Show();
+		self.arenaLoseText:Show();
+		self.ratedText:Show();
+		self.bracketText:Show();
+		
+		self.arenaText:SetPoint( "TOPLEFT", lastCategory, "TOPLEFT", 0, -30 );	
+	
+		self.arenaWins = #( recordList );
+		table.sort( recordList, SortArenas );
+		
+		for i, info in pairs( recordList ) do
+			local frame, arenaName, wins, bracket, rated, loses, ratio;
+			local recordName = self.frame:GetName() .. "ArenaRecords" .. i;
+			
+			if( getglobal( recordName ) ) then
+				frame = getglobal( recordName );
+				arenaName = getglobal( frame:GetName() .. "Arena" );
+				wins = getglobal( frame:GetName() .. "Wins" );
+				bracket = getglobal( frame:GetName() .. "Bracket" );
+				rated = getglobal( frame:GetName() .. "Rated" );
+				loses = getglobal( frame:GetName() .. "Loses" );
+				ratio = getglobal( frame:GetName() .. "Ratio" );
+			else
+				frame = CreateFrame( "Frame", recordName, self.frame );
+
+				arenaName = frame:CreateFontString( frame:GetName() .. "Arena", "BACKGROUND" );
+				arenaName:SetFontObject( GameFontNormalSmall );
+				arenaName:SetTextColor( 1, 1, 1, 1 );
+
+				wins = frame:CreateFontString( frame:GetName() .. "Wins", "BACKGROUND" );
+				wins:SetFontObject( GameFontNormalSmall );
+				wins:SetTextColor( 0, 1, 0, 1 );
+
+				loses = frame:CreateFontString( frame:GetName() .. "Loses", "BACKGROUND" );
+				loses:SetFontObject( GameFontNormalSmall );
+				loses:SetTextColor( 1, 0, 0, 1 );
+
+				ratio = frame:CreateFontString( frame:GetName() .. "Ratio", "BACKGROUND" );
+				ratio:SetFontObject( GameFontNormalSmall );
+				ratio:SetTextColor( 1, 1, 1, 1 );
+
+				rated = frame:CreateFontString( frame:GetName() .. "Rated", "BACKGROUND" );
+				rated:SetFontObject( GameFontNormalSmall );
+				rated:SetTextColor( 1, 1, 1, 1 );
+
+				bracket = frame:CreateFontString( frame:GetName() .. "Bracket", "BACKGROUND" );
+				bracket:SetFontObject( GameFontNormalSmall );
+				bracket:SetTextColor( 1, 1, 1, 1 );
+
+				if( i > 1 ) then
+					arenaName:SetPoint( "TOPLEFT", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Arena", "TOPLEFT", 0, -12 ); 			
+					bracket:SetPoint( "CENTER", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Bracket", "CENTER", 0, -12 ); 
+					rated:SetPoint( "CENTER", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Rated", "CENTER", 0, -12 ); 
+					wins:SetPoint( "CENTER", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Wins", "CENTER", 0, -12 ); 			
+					loses:SetPoint( "CENTER", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Loses", "CENTER", 0, -12 ); 			
+					ratio:SetPoint( "CENTER", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Ratio", "CENTER", 0, -12 ); 
+				else
+					arenaName:SetPoint( "TOPLEFT", self.arenaText, "TOPLEFT", 0, -18 ); 			
+					wins:SetPoint( "CENTER", self.arenaWinText, "CENTER", 0, -18 ); 			
+					loses:SetPoint( "CENTER", self.arenaLoseText, "CENTER", 0, -18 ); 			
+					ratio:SetPoint( "CENTER", self.arenaRatioText, "CENTER", 0, -18 ); 			
+					rated:SetPoint( "CENTER", self.ratedText, "CENTER", 0, -18 ); 
+					bracket:SetPoint( "CENTER", self.bracketText, "CENTER", 0, -18 ); 
+				end
+			end
+			
+			lastCategory = arenaName;
+
+			frame:Show();
+			
+			arenaName:SetText( info.location );
+			wins:SetText( info.wins );
+			loses:SetText( info.loses );
+			
+			if( info.ratio > 0 ) then
+				ratio:SetText( string.format( "%.1f", info.ratio ) );
+			else
+				ratio:SetText( "--" );
+			end
+			
+			bracket:SetText( info.teamSize );
+			
+			if( info.rated ) then
+				rated:SetText( L["R"] );
+			else
+				rated:SetText( L["S"] );
+			end
+		end
+	else
+		self.arenaText:Hide();
+		self.arenaRatioText:Hide();
+		self.arenaWinText:Hide();
+		self.arenaLoseText:Hide();
+		self.ratedText:Hide();
+		self.bracketText:Hide();
 	end
 end

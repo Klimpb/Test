@@ -2,8 +2,12 @@ HonestLocals = {
 	["Honest slash commands"] = "Honest slash commands",
 	["%s dies, honorable kill (%s)"] = "%s dies, honorable kill (%s)",
 	["%s dies, honorable kill"] = "%s dies, honorable kill",
+	["%s (%s) (%dvs%d)"] = "%s (%s) (%dvs%d)",
 	["%s (%dvs%d)"] = "%s (%dvs%d)",
 	["Unknown"] = "Unknown",
+	
+	["%([0-9]+vs[0-9]+%)"] = "%([0-9]+vs[0-9]+%)",
+	["(.+) %((.+)%) %(([0-9]+)vs([0-9]+)%)"] = "(.+) %((.+)%) %(([0-9]+)vs([0-9]+)%)",
 	
 	["Arena has reset! You gained %d points, for a total of %d."] = "Arena has reset! You gained %d points, for a total of %d.",
 	["Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d."] = "Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d.",
@@ -35,4 +39,9 @@ HonestLocals = {
 	["Loses"] = "Loses",
 	["Ratio"] = "Ratio",
 	["Avg Honor"] = "Avg Honor",
+	["Arena"] = "Arena",
+	["Type"] = "Type",
+	["R"] = "R",
+	["S"] = "S",
+	["Bracket"] = "Bracket",
 };
