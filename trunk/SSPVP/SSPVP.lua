@@ -310,7 +310,7 @@ function SSPVP:BATTLEFIELDS_SHOW()
 		if( status == "queued" or status == "confirm" ) then
 			queued = queued + 1;
 			
-		elseif( ( status ~= "none" and shownField == map ) or registeredMatch ) then
+		elseif( ( status ~= "none" and shownField == map ) or registeredMatch == 1 ) then
 			return;
 		end
 	end
@@ -379,12 +379,12 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			if( GetBattlefieldTimeWaited( i ) <= 1000 ) then
 				if( teamSize > 0 ) then
 					if( registeredMatch ) then
-						self:Print( string.format( L["You are now in the queue for %s Arenas (%dvs%d)."], L["Rated"], teamSize, teamSize ) );
+						self:Print( string.format( L["You are now in the queue for %s Arena (%dvs%d)."], L["Rated"], teamSize, teamSize ) );
 					else
-						self:Print( string.format( L["You are now in the queue for %s Arenas (%dvs%d)."], L["Skrimish"], teamSize, teamSize ) );
+						self:Print( string.format( L["You are now in the queue for %s Arena (%dvs%d)."], L["Skirmish"], teamSize, teamSize ) );
 					end
 				else
-					self:Print( string.format( L["You are now in the queue for the battlefield %s."], map ) );
+					self:Print( string.format( L["You are now in the queue for %s."], map ) );
 				end
 			end
 			
