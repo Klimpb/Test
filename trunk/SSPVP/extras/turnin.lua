@@ -92,7 +92,7 @@ function TurnIn:QUEST_PROGRESS()
 					itemLink = GetQuestItemLink( "required", i );
 					
 					if( itemLink ) then
-						_, _, _, itemid = string.find( itemLink, "|c(.+)|Hitem:([0-9]+):(.+)|h%[(.+)%]|h|r" );
+						_, itemid = string.match( itemLink, "|c(.+)|Hitem:([0-9]+):(.+)|h%[(.+)%]|h|r" );
 						_, _, required = GetQuestItemInfo( "required", i );
 						
 						itemid = tonumber( itemid );

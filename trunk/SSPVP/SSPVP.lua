@@ -9,10 +9,13 @@
 SSPVP = DongleStub("Dongle-1.0"):New( "SSPVP" );
 
 local L = SSPVPLocals;
+
 local activeBF = { id = -1 };
-local confirmBF = {};
+local battlefieldInfo = {};
 local joiningBF;
 local queuedUpdates = {};
+local confirmedPortLeave = {};
+local confirmedBFLeave;
 
 function SSPVP:Initialize()
 	self.defaults = {
@@ -213,6 +216,15 @@ function SSPVP:Message( msg, color )
 	end
 end
 
+local Orig_UIErrorsFrame_OnEvent = UIErrorsFrame_OnEvent;
+function UIErrorsFrame_OnEvent( event, message, ... )
+	if( string.match( message, L["Your group has joined the queue for"] ) ) then
+		return;
+	end
+
+	return Orig_UIErrorsFrame_OnEvent( event, message, ... );
+end
+
 local Orig_ChatFrame_MessageEventHandler = ChatFrame_MessageEventHandler;
 function ChatFrame_MessageEventHandler( event, ... )
 	if( SSPVP.db.profile.general.block and ( event == "CHAT_MSG_RAID" or event == "CHAT_MSG_RAID_LEADER" or event == "CHAT_MSG_PARTY" or event == "CHAT_MSG_BATTLEGROUND" or event == "CHAT_MSG_BATTLEGROUND_LEADER" ) ) then
@@ -225,8 +237,8 @@ function ChatFrame_MessageEventHandler( event, ... )
 end
 
 local Orig_AcceptBattlefieldPort = AcceptBattlefieldPort;
-function AcceptBattlefieldPort( id, flag, confirmed, ... )
-	if( not flag and not confirmed and SSPVP.db.profile.leave.confirm ) then
+function AcceptBattlefieldPort( id, flag, ... )
+	if( not flag and not confirmedPortLeave[ id ] and SSPVP.db.profile.leave.confirm ) then
 		local _, map, _, _, _, teamSize = GetBattlefieldStatus( id );
 		if( teamSize > 0 ) then
 			StaticPopupDialogs["CONFIRM_PORT_LEAVE"].text = string.format( L["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"], map, teamSize, teamSize );
@@ -241,13 +253,15 @@ function AcceptBattlefieldPort( id, flag, confirmed, ... )
 		return;
 	end
 	
+	confirmedPortLeave[ id ] = nil;
+	
 	StaticPopup_Hide( "CONFIRM_PORT_LEAVE", id );
 	Orig_AcceptBattlefieldPort( id, flag, ... );
 end
 
 local Orig_LeaveBattlefield = LeaveBattlefield;
-function LeaveBattlefield( confirmed, ... )
-	if( not confirmed and SSPVP.db.profile.leave.confirm and this:GetName() ~= "WorldStateScoreFrameLeaveButton" ) then
+function LeaveBattlefield( ... )
+	if( not confirmedBFLeave and SSPVP.db.profile.leave.confirm and this:GetName() ~= "WorldStateScoreFrameLeaveButton" ) then
 		-- Find an active battlefield
 		local map, status, teamSize;
 		for i=1, MAX_BATTLEFIELD_QUEUES do
@@ -262,10 +276,12 @@ function LeaveBattlefield( confirmed, ... )
 		else
 			StaticPopupDialogs["CONFIRM_BATTLEFIELD_LEAVE"].text = string.format( L["You are about to leave the active or queued battlefield %s, are you sure?"], map );
 		end
+		
 		StaticPopup_Show( "CONFIRM_BATTLEFIELD_LEAVE" );
 		return;
 	end
 	
+	confirmedBFLeave = nil;
 	Orig_LeaveBattlefield( ... );
 end
 
@@ -285,16 +301,16 @@ function SSPVP:CHAT_MSG_BG_SYSTEM_NEUTRAL( event, msg )
 end
 
 function SSPVP:BATTLEFIELDS_SHOW()
-	local status, map;
+	local status, map, registeredMatch;
 	local queued = 0;
 	local shownField = GetBattlefieldInfo();
 
 	for i=1, MAX_BATTLEFIELD_QUEUES do
-		status, map = GetBattlefieldStatus( i );
+		status, map, _, _, _, registeredMatch = GetBattlefieldStatus( i );
 		if( status == "queued" or status == "confirm" ) then
 			queued = queued + 1;
 			
-		elseif( status ~= "none" and shownField == map ) then
+		elseif( ( status ~= "none" and shownField == map ) or registeredMatch ) then
 			return;
 		end
 	end
@@ -305,11 +321,8 @@ function SSPVP:BATTLEFIELDS_SHOW()
 	
 	if( self.db.profile.queue.autoSolo and GetNumPartyMembers() == 0 and GetNumRaidMembers() == 0 ) then
 		JoinBattlefield( GetSelectedBattlefield() );
-		HideUIPanel( BattlefieldFrame );
-
 	elseif( self.db.profile.queue.autoGroup and CanJoinBattlefieldAsGroup() and IsPartyLeader() ) then
 		JoinBattlefield( GetSelectedBattlefield(), true );
-		HideUIPanel( BattlefieldFrame );
 	end
 end
 
@@ -352,18 +365,34 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 	local status, map, id, teamSize;
 
 	for i=1, MAX_BATTLEFIELD_QUEUES do
-		status, map, id, _, _, teamSize = GetBattlefieldStatus( i );
+		status, map, id, _, _, teamSize, registeredMatch = GetBattlefieldStatus( i );
 		
-		if( status == "confirm" and not confirmBF[ map ] ) then
-			confirmBF[ map ] = i;
+		if( status == "confirm" and battlefieldInfo[ map .. teamSize ] ~= "confirm" ) then
+			battlefieldInfo[ map .. ":" .. teamSize ] = status;
 
 			self:QueueReady( i, map );
 			self:PlaySound();
+		
+		elseif( status == "queued" and battlefieldInfo[ map .. teamSize ] ~= "queued" ) then
+			battlefieldInfo[ map .. teamSize ] = status;
+
+			if( GetBattlefieldTimeWaited( i ) <= 1000 ) then
+				if( teamSize > 0 ) then
+					if( registeredMatch ) then
+						self:Print( string.format( L["You are now in the queue for %s Arenas (%dvs%d)."], L["Rated"], teamSize, teamSize ) );
+					else
+						self:Print( string.format( L["You are now in the queue for %s Arenas (%dvs%d)."], L["Skrimish"], teamSize, teamSize ) );
+					end
+				else
+					self:Print( string.format( L["You are now in the queue for the battlefield %s."], map ) );
+				end
+			end
 			
 		elseif( status == "active" and i ~= activeBF.id ) then
 			activeBF.id = i;
 			activeBF.map = map;
 			activeBF.teamSize = teamSize;
+			activeBF.isRegistered = registeredMatch;
 			activeBF.abbrev = SSPVP:GetBattlefieldAbbrev( map );
 			
 			RequestBattlefieldScoreData();
@@ -398,7 +427,8 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 		
 		-- No longer a confirmation, so clear out config/joining
 		if( status ~= "confirm" and map ) then
-			confirmBF[ map ] = nil;
+			battlefieldInfo[ map .. teamSize ] = nil;
+			
 			if( id == joiningBF ) then
 				joiningBF = nil;
 			end
@@ -407,7 +437,11 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 		-- Deal with the queue overlay
 		if( status ~= "none" and SSPVP.db.profile.queue.enabled and ( activeBF.id == -1 or SSPVP.db.profile.queue.insideField ) ) then
 			if( teamSize > 0 ) then
-				map = string.format( L["%s (%dvs%d)"], map, teamSize, teamSize );
+				if( registeredMatch ) then
+					map = string.format( L["%s [%s] (%dvs%d)"], map, L["R"], teamSize, teamSize );
+				else
+					map = string.format( L["%s [%s] (%dvs%d)"], map, L["S"], teamSize, teamSize );
+				end
 			end
 			
 			if( status == "confirm" ) then
@@ -443,9 +477,11 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 	end
 end
 
+-- Theres delay issues if we don't check leaving battlefield before this.
 function SSPVP:LeaveBattlefield()
 	if( GetBattlefieldWinner() ) then
-		LeaveBattlefield( true );
+		confirmedBFLeave = true;
+		LeaveBattlefield();
 	end
 end
 
@@ -706,9 +742,6 @@ function SSPVP:OnUpdate()
 				if( timers[ i ].handler ) then
 					timers[ i ].handler[ timers[ i ].func ]( timers[ i ].handler, unpack( timers[ i ] ) );
 				
-				elseif( type( timers[ i ].func ) == "function" ) then
-					timers[ i ].func( unpack( timers[ i ] ) );
-				
 				elseif( type( timers[ i ].func ) == "string" ) then
 					getglobal( timers[ i ].func )( unpack( timers[ i ] ) );
 				end
@@ -730,7 +763,8 @@ StaticPopupDialogs["CONFIRM_PORT_LEAVE"] = {
 	button1 = TEXT( YES ),
 	button2 = TEXT( NO ),
 	OnAccept = function( id )
-		AcceptBattlefieldPort( id, nil, true );
+		confirmedPortLeave[ id ] = true;
+		AcceptBattlefieldPort( id, nil );
 	end,
 	timeout = 0,
 	whileDead = 1,
@@ -743,7 +777,8 @@ StaticPopupDialogs["CONFIRM_BATTLEFIELD_LEAVE"] = {
 	button1 = TEXT( YES ),
 	button2 = TEXT( NO ),
 	OnAccept = function()
-		LeaveBattlefield( true );
+		confirmedBFLeave = true;
+		LeaveBattlefield();
 	end,
 	timeout = 0,
 	whileDead = 1,

@@ -131,19 +131,21 @@ function WSG:ParseMessage( event, msg )
 	end
 	
 	if( string.find( msg, L["was picked up by (.+)!"] ) ) then
-		local _, _, name = string.find( msg, L["was picked up by (.+)!"] );
+		local name = string.match( msg, L["was picked up by (.+)!"] );
 		
 		carrierNames[ faction ] = name;
-		carrierTimes[ faction ] = GetTime();
-		
 		self:UpdateCarrier( faction );
 		
-		if( SSPVP.db.profile.wsg.flagElapsed ) then
-			SSOverlay:UpdateElapsed( "wsg", L["Time Elapsed: %s"], 1, SSOverlay:GetFactionColor( faction ) );
+		if( not carrierTimes[ faction ] ) then
+			carrierTimes[ faction ] = GetTime();
+
+			if( SSPVP.db.profile.wsg.flagElapsed ) then
+				SSOverlay:UpdateElapsed( "wsg", L["Time Elapsed: %s"], 1, SSOverlay:GetFactionColor( faction ) );
+			end
 		end
 
 	elseif( string.find( msg, L["(.+) captured the"] ) ) then
-		if( SSPVP.db.profile.wsg.flagCapTime ) then
+		if( SSPVP.db.profile.wsg.flagCapTime and carrierTimes[ faction ] ) then
 			SSOverlay:UpdateText( "wsg", L["Capture Time: %s"], SSOverlay:GetFactionColor( faction ), SSOverlay:FormatTime( GetTime() - carrierTimes[ faction ], "minsec" ) );
 		end
 
@@ -157,18 +159,19 @@ function WSG:ParseMessage( event, msg )
 		if( SSPVP.db.profile.wsg.respawn ) then
 			SSOverlay:UpdateTimer( "wsg", L["Flag Respawn: %s"], 23, SSOverlay:GetFactionColor( faction ) );
 		end
-		
+
 	elseif( string.find( msg, L["was dropped by (.+)!"] ) ) then
 		carrierNames[ faction ] = nil;
-		carrierTimes[ faction ] = nil;
 		self:UpdateCarrier( faction );
-		
-		-- The faction message is reversed on a drop.
-		if( event == "CHAT_MSG_BG_SYSTEM_ALLIANCE" ) then
-			SSOverlay:RemoveRow( "elapsed", "wsg", L["Time Elapsed: %s"], SSOverlay:GetFactionColor( "Alliance" ) );
-		elseif( event == "CHAT_MSG_BG_SYSTEM_HORDE" ) then
-			SSOverlay:RemoveRow( "elapsed", "wsg", L["Time Elapsed: %s"], SSOverlay:GetFactionColor( "Horde" ) );
+
+	elseif( string.find( msg, L["was returned to its base"] ) ) then
+		SSOverlay:RemoveRow( "elapsed", "wsg", L["Time Elapsed: %s"], SSOverlay:GetFactionColor( faction ) );
+
+		if( SSPVP.db.profile.wsg.flagCapTime and carrierTimes[ faction ] ) then
+			SSOverlay:UpdateText( "wsg", L["Capture Time: %s"], SSOverlay:GetFactionColor( faction ), SSOverlay:FormatTime( GetTime() - carrierTimes[ faction ], "minsec" ) );
 		end
+		
+		carrierTimes[ faction ] = nil;
 	end
 end
 
@@ -179,13 +182,11 @@ end
 
 function WSG:UpdateCarrierAttributes( faction )
 	if( InCombatLockdown() ) then
-		if( not carrierNames[ faction ] ) then
-			if( faction == "Alliance" ) then
-				self.allianceText.colorSet = nil;
-			elseif( faction == "Horde" ) then
-				self.hordeText.colorSet = nil;
-			end
-		end
+		self.allianceText:SetAlpha( 0.75 );
+		self.allianceText.colorSet = nil;
+
+		self.hordeText:SetAlpha( 0.75 );
+		self.hordeText.colorSet = nil;
 		
 		SSPVP:RegisterOOCUpdate( WSG, "UpdateCarriersAttributes" );
 		return;
@@ -202,6 +203,8 @@ function WSG:UpdateCarrierAttributes( faction )
 
 			self.allianceText:ClearAllPoints();
 			self.allianceText:SetPoint( "LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame2DynamicIconButton:GetRight() + 5, AlwaysUpFrame2DynamicIconButton:GetTop() - 14 );
+			
+			self.allianceText:SetAlpha( 1.0 );
 		else
 			self.allianceText.colorSet = nil;
 			self.allianceButton:Hide();
@@ -218,6 +221,8 @@ function WSG:UpdateCarrierAttributes( faction )
 
 			self.hordeText:ClearAllPoints();
 			self.hordeText:SetPoint( "LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame1DynamicIconButton:GetRight() + 5, AlwaysUpFrame1DynamicIconButton:GetTop() - 14 );
+			
+			self.hordeText:SetAlpha( 1.0 );
 		else
 			self.hordeText.colorSet = nil;
 			self.hordeButton:Hide();
@@ -253,26 +258,23 @@ function WSG:UpdateCarrier( faction )
 		text:SetText( carrierNames[ faction ] );
 	end
 	
-	if( not text.colorSet ) then
-		if( SSPVP.db.profile.wsg.color ) then
-			local name, classToken;
-			for i=1, GetNumBattlefieldScores() do
-				name, _, _, _, _, _, _, _, _, classToken = GetBattlefieldScore( i );
+	if( not text.colorSet and SSPVP.db.profile.wsg.color ) then
+		local name, classToken;
+		for i=1, GetNumBattlefieldScores() do
+			name, _, _, _, _, _, _, _, _, classToken = GetBattlefieldScore( i );
 
-				if( string.find( name, "^" .. carrierNames[ faction ] ) ) then
-					break;
-				end
-			end
-
-			if( classToken and RAID_CLASS_COLORS[ classToken ] ) then
+			if( string.find( name, "^" .. carrierNames[ faction ] ) ) then
 				text:SetTextColor( RAID_CLASS_COLORS[ classToken ].r, RAID_CLASS_COLORS[ classToken ].g, RAID_CLASS_COLORS[ classToken ].b );
-				--text.colorSet = true;
+				text.colorSet = true;
+				break;
 			end
-		else
-			text:SetTextColor( GameFontHighlightSmall:GetTextColor() );
 		end
 	end
-end	
+
+	if( not text.colorSet ) then
+		text:SetTextColor( GameFontHighlightSmall:GetTextColor() );
+	end
+end
 
 function WSG:UpdateCarrierBindings()
 	local bindKey = GetBindingKey( "ETARFLAG" );

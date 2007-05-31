@@ -56,7 +56,7 @@ function SSOverlay:CreateOverlay()
 	self.frame:SetClampedToScreen( true );
 	self.frame:RegisterForDrag( "LeftButton" );
 	
-	self.frame:SetFrameStrata( "LOW" );
+	self.frame:SetFrameStrata( "BACKGROUND" );
 	self.frame:SetMovable( true );
 	self.frame:EnableMouse( true );
 	
@@ -134,7 +134,7 @@ function SSOverlay:CreateRow()
 	row:SetWidth( 250 );
 	
 	row:SetScript( "OnMouseUp", SSOverlay.RowOnClick );
-	row:SetFrameStrata( "MEDIUM" );
+	row:SetFrameStrata( "LOW" );
 	
 	text:SetJustifyH( "left" );
 	text:SetFont( GameFontNormalSmall:GetFont() );

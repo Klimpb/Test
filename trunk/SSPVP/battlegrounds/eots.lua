@@ -52,10 +52,12 @@ function EoTS:Reload()
 		carrierName = nil;
 		carrierFaction = nil;
 		
-		EoTS:UpdateCarrierAttributes();
+		if( self.allianceButton and self.hordeButton ) then
+			self:UpdateCarrierAttributes();
+		end
 	end
 
-	EoTS:SetCarrierBorders();
+	self:SetCarrierBorders();
 
 	SSOverlay:RemoveCategory( "eots" );
 	self:UpdateOverlay();
@@ -108,7 +110,10 @@ function EoTS:ParseFlag( msg, faction )
 end
 
 function EoTS:UpdateCarrierAttributes()
-	if( InCombatLockdown() or not self.allianceButton or not self.hordeButton ) then
+	if( InCombatLockdown() ) then
+		self.hordeText:SetAlpha( 0.75 );
+		self.allianceText:SetAlpha( 0.75 );
+				
 		SSPVP:RegisterOOCUpdate( EoTS, "UpdateCarrierAttributes" );
 		return;
 	end
@@ -118,6 +123,7 @@ function EoTS:UpdateCarrierAttributes()
 		self.allianceButton:SetAttribute( "macrotext", "/target " .. carrierName );
 		self.allianceButton:Show();
 
+		self.hordeText:SetAlpha( 1 );
 		self.hordeText.colorSet = nil;
 		self.hordeButton:Hide();
 
@@ -126,6 +132,7 @@ function EoTS:UpdateCarrierAttributes()
 		self.hordeButton:SetAttribute( "macrotext", "/target " .. carrierName );
 		self.hordeButton:Show();
 
+		self.allianceText:SetAlpha( 1 );
 		self.allianceText.colorSet = nil;
 		self.allianceButton:Hide();
 	else
@@ -179,24 +186,21 @@ function EoTS:UpdateCarrier()
 	
 	text:SetText( carrierName );
 	
-	local name, classToken;
-	for i=1, GetNumBattlefieldScores() do
-		name, _, _, _, _, _, _, _, _, classToken = GetBattlefieldScore( i );
-		
-		if( string.find( name, "^" .. carrierName ) ) then
-			break;
-		else
-			classToken = nil;
+	if( not text.colorSet and SSPVP.db.profile.eots.color ) then
+		local name, classToken;
+		for i=1, GetNumBattlefieldScores() do
+			name, _, _, _, _, _, _, _, _, classToken = GetBattlefieldScore( i );
+
+			if( string.find( name, "^" .. carrierName ) ) then
+				text:SetTextColor( RAID_CLASS_COLORS[ classToken ].r, RAID_CLASS_COLORS[ classToken ].g, RAID_CLASS_COLORS[ classToken ].b );	
+				text.colorSet = true;
+				break;
+			end
 		end
 	end
 	
 	if( not text.colorSet ) then
-		if( SSPVP.db.profile.eots.color and classToken and RAID_CLASS_COLORS[ classToken ] ) then
-			text:SetTextColor( RAID_CLASS_COLORS[ classToken ].r, RAID_CLASS_COLORS[ classToken ].g, RAID_CLASS_COLORS[ classToken ].b );	
-			text.colorSet = true;
-		else
-			text:SetTextColor( GameFontNormal:GetTextColor() );
-		end
+		text:SetTextColor( GameFontNormal:GetTextColor() );
 	end
 end	
 
