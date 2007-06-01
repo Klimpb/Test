@@ -1,0 +1,5 @@
+## Interface: 20100
+## Title: Loot Modifier
+## Notes: Modifies the loot window to show better info on the items on a corpse
+
+LootModifier.lua
