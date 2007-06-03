@@ -197,7 +197,7 @@ function Honest:CheckDay()
 					if( teamRating > 1500 ) then
 						teamPoints = 1426.79 / ( 1 + 918.836 * math.pow( 2.71828, -0.00386405 * teamRating ) );
 					else
-						teamPoints = 0.38 * teamRating - 194;
+						teamPoints = ( 0.38 * teamRating ) - 194;
 					end
 					
 					if( teamPoints < 0 ) then
@@ -244,7 +244,7 @@ function Honest:CheckDay()
 		end
 		
 		if( todayHonor > 0 and yesterdayHonor > 0 ) then
-			self:Print( string.format( L["Honor has reset! Estimated %d, Actual %d, Difference %d (%d%% off)"], todayHonor, yesterdayHonor, diff, ( 100 - diffPerc * 100 ) ) );
+			self:Print( string.format( L["Honor has reset! Estimated %d, Actual %d, Difference %d (%.2f%% off)"], todayHonor, yesterdayHonor, diff, ( 100 - diffPerc * 100 ) ) );
 		end
 		
 		HonorGained = 0;
@@ -382,11 +382,11 @@ local function SortBattlefields( a, b )
 		return false;
 	end
 	
-	if( a.ratio == 0 and b.ratio == 0 ) then
+	if( a.perct == 0 and b.perct == 0 ) then
 		return ( a.avg > b.avg );
 	end
 	
-	return ( a.ratio > b.ratio );
+	return ( a.perct > b.perct );
 end
 
 local function SortArenas( a, b )
@@ -394,143 +394,22 @@ local function SortArenas( a, b )
 		return false;
 	end
 	
-	if( not b.rated ) then
-		return true;
-	end
-	
-	return ( a.ratio > b.ratio );
+	return ( a.teamSize > b.teamSize );
 end
 
-function Honest:PVPFrame_Update()
-	PVPHonorTodayHonor:SetText( Honest.db.profile.today.totals.total );
-	
-	if( not PVPFrame:IsShown() ) then
+function Honest:UpdateHonorUI( day )
+	if( not self.frame or not PVPFrame:IsShown() ) then
 		return;
 	end
 	
 	local self = Honest;
-	if( not self.frame ) then
-		self.frame = CreateFrame( "Frame", "HonestDetails", PVPFrame );
-		self.frame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-					edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-					tile = true,
-					tileSize = 9,
-					edgeSize = 9,
-					insets = { left = 2, right = 2, top = 2, bottom = 2 } });	
-
-		self.frame:SetBackdropColor( 0, 0, 0, 0.90 );
-		self.frame:SetBackdropBorderColor( 0.75, 0.75, 0.75, 0.90 );
-		self.frame:SetFrameStrata( "LOW" );
-		
-		self.frame:SetClampedToScreen( true );
-		self.frame:SetPoint( "TOPLEFT", PVPFrame, "TOPRIGHT", -10, -12 );
-		--self.frame:SetPoint( "CENTER", UIParent, "CENTER", 0, 80 );		
-		
-		self.frame:SetHeight( 400 );
-		self.frame:SetWidth( 340 );
-		self.frame:Show();
-
-		-- Estimated text
-		self.estimateText = self.frame:CreateFontString( self.frame:GetName() .. "Estimate", "BACKGROUND" );
-		self.estimateText:SetFontObject( GameFontNormalSmall );
-		self.estimateText:SetPoint( "TOPLEFT", self.frame, "TOPLEFT", 5, -8 );
-		self.estimateText:Show();
-		
-		-- Kill honor
-		self.killText = self.frame:CreateFontString( self.frame:GetName() .. "KillTotal", "BACKGROUND" );
-		self.killText:SetFontObject( GameFontNormalSmall );
-		self.killText:ClearAllPoints();
-		self.killText:SetPoint( "TOPLEFT", self.frame, "TOPLEFT", 5, -30 );
-		self.killText:Show();
-
-		-- BATTLEGROUND STATS
-		-- Bonus honor
-		self.bonusText = self.frame:CreateFontString( self.frame:GetName() .. "BonusTotal", "BACKGROUND" );
-		self.bonusText:SetFontObject( GameFontNormalSmall );
-		self.bonusText:ClearAllPoints();
-		self.bonusText:SetPoint( "TOPRIGHT", self.frame, "TOPRIGHT", -5, -30 );
-		self.bonusText:Show();
-		
-		
-		-- Battlefield name
-		self.battlefieldText = self.frame:CreateFontString( self.frame:GetName() .. "BattlefieldName", "BACKGROUND" );
-		self.battlefieldText:SetFontObject( GameFontNormalSmall );
-		self.battlefieldText:SetText( L["Battlefield"] );
-		self.battlefieldText:Show();
-
-		-- Average
-		self.avgText = self.frame:CreateFontString( self.frame:GetName() .. "AverageText", "BACKGROUND" );
-		self.avgText:SetFontObject( GameFontNormalSmall );
-		self.avgText:SetText( L["Avg Honor"] );
-		self.avgText:SetPoint( "TOPLEFT", self.battlefieldText, "TOPRIGHT", 85, 0 );
-		self.avgText:Show();
-
-		-- Ratio
-		self.ratioText = self.frame:CreateFontString( self.frame:GetName() .. "RatioText", "BACKGROUND" );
-		self.ratioText:SetFontObject( GameFontNormalSmall );
-		self.ratioText:SetText( L["Ratio"] );
-		self.ratioText:SetPoint( "TOPLEFT", self.avgText, "TOPRIGHT", 15, 0 );
-		self.ratioText:Show();
-		
-		-- Wins
-		self.winText = self.frame:CreateFontString( self.frame:GetName() .. "WinText", "BACKGROUND" );
-		self.winText:SetFontObject( GameFontNormalSmall );
-		self.winText:SetText( L["Wins"] );
-		self.winText:SetPoint( "TOPLEFT", self.ratioText, "TOPRIGHT", 15, 0 );
-		self.winText:Show();
-
-		-- Loses
-		self.loseText = self.frame:CreateFontString( self.frame:GetName() .. "LoseText", "BACKGROUND" );
-		self.loseText:SetFontObject( GameFontNormalSmall );
-		self.loseText:SetText( L["Loses"] );
-		self.loseText:SetPoint( "TOPLEFT", self.winText, "TOPRIGHT", 15, 0 );
-		self.loseText:Show();
-		
-		-- ARENA STATS
-		-- Arena name
-		self.arenaText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaName", "BACKGROUND" );
-		self.arenaText:SetFontObject( GameFontNormalSmall );
-		self.arenaText:SetText( L["Arena"] );
-		self.arenaText:Show();
-
-		-- Bracket
-		self.bracketText = self.frame:CreateFontString( self.frame:GetName() .. "BracketText", "BACKGROUND" );
-		self.bracketText:SetFontObject( GameFontNormalSmall );
-		self.bracketText:SetText( L["Bracket"] );
-		self.bracketText:SetPoint( "TOPLEFT", self.arenaText, "TOPRIGHT", 85, 0 );
-		self.bracketText:Show();
-
-		-- Rated
-		self.ratedText = self.frame:CreateFontString( self.frame:GetName() .. "RatedText", "BACKGROUND" );
-		self.ratedText:SetFontObject( GameFontNormalSmall );
-		self.ratedText:SetText( L["Type"] );
-		self.ratedText:SetPoint( "TOPLEFT", self.bracketText, "TOPRIGHT", 15, 0 );
-		self.ratedText:Show();
-
-		-- Ratio
-		self.arenaRatioText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaRatioText", "BACKGROUND" );
-		self.arenaRatioText:SetFontObject( GameFontNormalSmall );
-		self.arenaRatioText:SetText( L["Ratio"] );
-		self.arenaRatioText:SetPoint( "TOPLEFT", self.ratedText, "TOPRIGHT", 15, 0 );
-		self.arenaRatioText:Show();
-		
-		-- Wins
-		self.arenaWinText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaWinText", "BACKGROUND" );
-		self.arenaWinText:SetFontObject( GameFontNormalSmall );
-		self.arenaWinText:SetText( L["Wins"] );
-		self.arenaWinText:SetPoint( "TOPLEFT", self.arenaRatioText, "TOPRIGHT", 15, 0 );
-		self.arenaWinText:Show();
-
-		-- Loses
-		self.arenaLoseText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaLoseText", "BACKGROUND" );
-		self.arenaLoseText:SetFontObject( GameFontNormalSmall );
-		self.arenaLoseText:SetText( L["Loses"] );
-		self.arenaLoseText:SetPoint( "TOPLEFT", self.arenaWinText, "TOPRIGHT", 15, 0 );
-		self.arenaLoseText:Show();
-	end
-		
+	
 	-- HONOR ESTIMATIONS
-	self.estimateText:SetText( string.format( L["Honest Estimated: |cFFFFFFFF%d|r / Blizzard Estimated: |cFFFFFFFF%d|r"], self.db.profile.today.totals.total, select( 2, GetPVPSessionStats() ) ) );
+	if( day == "today" ) then
+		self.estimateText:SetText( string.format( L["Honest Estimated: |cFFFFFFFF%d|r / Blizzard Estimated: |cFFFFFFFF%d|r"], self.db.profile[ day ].totals.total, select( 2, GetPVPSessionStats() ) ) );
+	elseif( day == "yesterday" ) then
+		self.estimateText:SetText( string.format( L["Honest Estimated: |cFFFFFFFF%d|r / Actual Honor: |cFFFFFFFF%d|r"], self.db.profile[ day ].totals.total, select( 2, GetPVPYesterdayStats() ) ) );
+	end
 
 	-- KILL HONOR
 	if( self.totalKill ) then
@@ -541,14 +420,14 @@ function Honest:PVPFrame_Update()
 	
 	local lastCategory = self.killText;
 	local killPercent = 0;
-	if( self.db.profile.today.totals.kill > 0 and self.db.profile.today.totals.total > 0 ) then
-		killPercent = ( self.db.profile.today.totals.kill / self.db.profile.today.totals.total ) * 100;
+	if( self.db.profile[ day ].totals.kill > 0 and self.db.profile[ day ].totals.total > 0 ) then
+		killPercent = ( self.db.profile[ day ].totals.kill / self.db.profile[ day ].totals.total ) * 100;
 	end
 	
-	self.killText:SetText( string.format( L["Kill Honor: |cFFFFFFFF%d|r (|cFFFFFFFF%.2f%%|r)"], self.db.profile.today.totals.kill, killPercent ) );
+	self.killText:SetText( string.format( L["Kill Honor: |cFFFFFFFF%d|r (|cFFFFFFFF%.2f%%|r)"], self.db.profile[ day ].totals.kill, killPercent ) );
 	
 	local killList = {};
-	for location, amount in pairs( self.db.profile.today.kill ) do
+	for location, amount in pairs( self.db.profile[ day ].kill ) do
 		table.insert( killList, { location, amount } );
 	end
 	
@@ -586,14 +465,14 @@ function Honest:PVPFrame_Update()
 	
 	-- BONUS HONOR
 	local bonusPercent = 0;
-	if( self.db.profile.today.totals.bonus > 0 and self.db.profile.today.totals.total > 0 ) then
-		bonusPercent = ( self.db.profile.today.totals.bonus / self.db.profile.today.totals.total ) * 100;
+	if( self.db.profile[ day ].totals.bonus > 0 and self.db.profile[ day ].totals.total > 0 ) then
+		bonusPercent = ( self.db.profile[ day ].totals.bonus / self.db.profile[ day ].totals.total ) * 100;
 	end
 
-	self.bonusText:SetText( string.format( L["Bonus Honor: |cFFFFFFFF%d|r (|cFFFFFFFF%.2f%%|r)"], self.db.profile.today.totals.bonus, bonusPercent ) );
+	self.bonusText:SetText( string.format( L["Bonus Honor: |cFFFFFFFF%d|r (|cFFFFFFFF%.2f%%|r)"], self.db.profile[ day ].totals.bonus, bonusPercent ) );
 	
 	local bonusList = {};
-	for location, amount in pairs( self.db.profile.today.bonus ) do
+	for location, amount in pairs( self.db.profile[ day ].bonus ) do
 		table.insert( bonusList, { location, amount } );
 	end
 	
@@ -630,29 +509,23 @@ function Honest:PVPFrame_Update()
 	end
 
 	local recordList = {};
-	for location, record in pairs( self.db.profile.today.record ) do
+	for location, record in pairs( self.db.profile[ day ].record ) do
 		if( not record.teamSize ) then
-			if( record.win > 0 and record.lose > 0 ) then
-				record.ratio = record.win / record.lose;
-			elseif( record.lose == 0 ) then
-				record.ratio = record.win;
-			elseif( record.win == 0 ) then
-				record.ratio = 0;
-			end
+			record.perct = record.win / ( record.win + record.lose );
 
-			if( self.db.profile.today.bonus[ location ] or self.db.profile.today.kill[ location ] ) then
-				record.avg = ( self.db.profile.today.bonus[ location ] or 0 + self.db.profile.today.kill[ location ] or 0 ) / ( record.win + record.lose )
+			if( self.db.profile[ day ].bonus[ location ] or self.db.profile[ day ].kill[ location ] ) then
+				record.avg = ( self.db.profile[ day ].bonus[ location ] or 0 + self.db.profile[ day ].kill[ location ] or 0 ) / ( record.win + record.lose )
 			else
 				record.avg = 0;
 			end
 
-			table.insert( recordList, { location = location, wins = record.win, loses = record.lose, ratio = record.ratio, avg = record.avg } );
+			table.insert( recordList, { location = location, wins = record.win, loses = record.lose, perct = record.perct, avg = record.avg } );
 		end
 	end
 	
 	if( #( recordList ) > 0 ) then
 		self.battlefieldText:Show();
-		self.ratioText:Show();
+		self.perctText:Show();
 		self.winText:Show();
 		self.loseText:Show();
 		self.avgText:Show();
@@ -663,7 +536,7 @@ function Honest:PVPFrame_Update()
 		table.sort( recordList, SortBattlefields );
 		
 		for i, info in pairs( recordList ) do
-			local frame, battlefield, wins, loses, ratio;
+			local frame, battlefield, wins, loses, perct;
 			local recordName = self.frame:GetName() .. "Records" .. i;
 			
 			if( getglobal( recordName ) ) then
@@ -671,7 +544,7 @@ function Honest:PVPFrame_Update()
 				battlefield = getglobal( frame:GetName() .. "Battlefield" );
 				wins = getglobal( frame:GetName() .. "Wins" );
 				loses = getglobal( frame:GetName() .. "Loses" );
-				ratio = getglobal( frame:GetName() .. "Ratio" );
+				perct = getglobal( frame:GetName() .. "Perct" );
 				avg = getglobal( frame:GetName() .. "Average" );
 			else
 				frame = CreateFrame( "Frame", recordName, self.frame );
@@ -688,9 +561,9 @@ function Honest:PVPFrame_Update()
 				loses:SetFontObject( GameFontNormalSmall );
 				loses:SetTextColor( 1, 0, 0, 1 );
 
-				ratio = frame:CreateFontString( frame:GetName() .. "Ratio", "BACKGROUND" );
-				ratio:SetFontObject( GameFontNormalSmall );
-				ratio:SetTextColor( 1, 1, 1, 1 );
+				perct = frame:CreateFontString( frame:GetName() .. "Perct", "BACKGROUND" );
+				perct:SetFontObject( GameFontNormalSmall );
+				perct:SetTextColor( 1, 1, 1, 1 );
 
 				avg = frame:CreateFontString( frame:GetName() .. "Average", "BACKGROUND" );
 				avg:SetFontObject( GameFontNormalSmall );
@@ -700,13 +573,13 @@ function Honest:PVPFrame_Update()
 					battlefield:SetPoint( "TOPLEFT", self.frame:GetName() .. "Records" .. ( i - 1 ) .. "Battlefield", "TOPLEFT", 0, -12 ); 			
 					wins:SetPoint( "CENTER", self.frame:GetName() .. "Records" .. ( i - 1 ) .. "Wins", "CENTER", 0, -12 ); 			
 					loses:SetPoint( "CENTER", self.frame:GetName() .. "Records" .. ( i - 1 ) .. "Loses", "CENTER", 0, -12 ); 			
-					ratio:SetPoint( "CENTER", self.frame:GetName() .. "Records" .. ( i - 1 ) .. "Ratio", "CENTER", 0, -12 ); 
+					perct:SetPoint( "CENTER", self.frame:GetName() .. "Records" .. ( i - 1 ) .. "Perct", "CENTER", 0, -12 ); 
 					avg:SetPoint( "CENTER", self.frame:GetName() .. "Records" .. ( i - 1 ) .. "Average", "CENTER", 0, -12 ); 
 				else
 					battlefield:SetPoint( "TOPLEFT", self.battlefieldText, "TOPLEFT", 0, -18 ); 			
 					wins:SetPoint( "CENTER", self.winText, "CENTER", 0, -18 ); 			
 					loses:SetPoint( "CENTER", self.loseText, "CENTER", 0, -18 ); 			
-					ratio:SetPoint( "CENTER", self.ratioText, "CENTER", 0, -18 ); 			
+					perct:SetPoint( "CENTER", self.perctText, "CENTER", 0, -18 ); 			
 					avg:SetPoint( "CENTER", self.avgText, "CENTER", 0, -18 ); 
 				end
 			end
@@ -719,10 +592,10 @@ function Honest:PVPFrame_Update()
 			wins:SetText( info.wins );
 			loses:SetText( info.loses );
 			
-			if( info.ratio > 0 ) then
-				ratio:SetText( string.format( "%.1f", info.ratio ) );
+			if( info.perct > 0 ) then
+				perct:SetText( string.format( "%.1f%%", info.perct * 100 ) );
 			else
-				ratio:SetText( "--" );
+				perct:SetText( "--" );
 			end
 			
 			if( info.avg > 0 ) then
@@ -733,7 +606,7 @@ function Honest:PVPFrame_Update()
 		end
 	else
 		self.battlefieldText:Hide();
-		self.ratioText:Hide();
+		self.perctText:Hide();
 		self.winText:Hide();
 		self.loseText:Hide();
 		self.avgText:Hide();
@@ -747,23 +620,17 @@ function Honest:PVPFrame_Update()
 	end
 
 	local recordList = {};
-	for location, record in pairs( self.db.profile.today.record ) do
+	for location, record in pairs( self.db.profile[ day ].record ) do
 		if( record.teamSize ) then
-			if( record.win > 0 and record.lose > 0 ) then
-				record.ratio = record.win / record.lose;
-			elseif( record.lose == 0 ) then
-				record.ratio = record.win;
-			elseif( record.win == 0 ) then
-				record.ratio = 0;
-			end		
+			record.perct = record.win / ( record.win + record.lose );
 			
-			table.insert( recordList, { location = record.map, wins = record.win, loses = record.lose, ratio = record.ratio, rated = record.rated, teamSize = record.teamSize } );
+			table.insert( recordList, { location = record.map, wins = record.win, loses = record.lose, perct = record.perct, rated = record.rated, teamSize = record.teamSize } );
 		end
 	end
 	
 	if( #( recordList ) > 0 ) then
 		self.arenaText:Show();
-		self.arenaRatioText:Show();
+		self.arenaPerctText:Show();
 		self.arenaWinText:Show();
 		self.arenaLoseText:Show();
 		self.ratedText:Show();
@@ -775,7 +642,7 @@ function Honest:PVPFrame_Update()
 		table.sort( recordList, SortArenas );
 		
 		for i, info in pairs( recordList ) do
-			local frame, arenaName, wins, bracket, rated, loses, ratio;
+			local frame, arenaName, wins, bracket, rated, loses, perct;
 			local recordName = self.frame:GetName() .. "ArenaRecords" .. i;
 			
 			if( getglobal( recordName ) ) then
@@ -785,7 +652,7 @@ function Honest:PVPFrame_Update()
 				bracket = getglobal( frame:GetName() .. "Bracket" );
 				rated = getglobal( frame:GetName() .. "Rated" );
 				loses = getglobal( frame:GetName() .. "Loses" );
-				ratio = getglobal( frame:GetName() .. "Ratio" );
+				perct = getglobal( frame:GetName() .. "Perct" );
 			else
 				frame = CreateFrame( "Frame", recordName, self.frame );
 
@@ -801,9 +668,9 @@ function Honest:PVPFrame_Update()
 				loses:SetFontObject( GameFontNormalSmall );
 				loses:SetTextColor( 1, 0, 0, 1 );
 
-				ratio = frame:CreateFontString( frame:GetName() .. "Ratio", "BACKGROUND" );
-				ratio:SetFontObject( GameFontNormalSmall );
-				ratio:SetTextColor( 1, 1, 1, 1 );
+				perct = frame:CreateFontString( frame:GetName() .. "Perct", "BACKGROUND" );
+				perct:SetFontObject( GameFontNormalSmall );
+				perct:SetTextColor( 1, 1, 1, 1 );
 
 				rated = frame:CreateFontString( frame:GetName() .. "Rated", "BACKGROUND" );
 				rated:SetFontObject( GameFontNormalSmall );
@@ -819,12 +686,12 @@ function Honest:PVPFrame_Update()
 					rated:SetPoint( "CENTER", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Rated", "CENTER", 0, -12 ); 
 					wins:SetPoint( "CENTER", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Wins", "CENTER", 0, -12 ); 			
 					loses:SetPoint( "CENTER", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Loses", "CENTER", 0, -12 ); 			
-					ratio:SetPoint( "CENTER", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Ratio", "CENTER", 0, -12 ); 
+					perct:SetPoint( "CENTER", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Perct", "CENTER", 0, -12 ); 
 				else
 					arenaName:SetPoint( "TOPLEFT", self.arenaText, "TOPLEFT", 0, -18 ); 			
 					wins:SetPoint( "CENTER", self.arenaWinText, "CENTER", 0, -18 ); 			
 					loses:SetPoint( "CENTER", self.arenaLoseText, "CENTER", 0, -18 ); 			
-					ratio:SetPoint( "CENTER", self.arenaRatioText, "CENTER", 0, -18 ); 			
+					perct:SetPoint( "CENTER", self.arenaPerctText, "CENTER", 0, -18 ); 			
 					rated:SetPoint( "CENTER", self.ratedText, "CENTER", 0, -18 ); 
 					bracket:SetPoint( "CENTER", self.bracketText, "CENTER", 0, -18 ); 
 				end
@@ -838,10 +705,10 @@ function Honest:PVPFrame_Update()
 			wins:SetText( info.wins );
 			loses:SetText( info.loses );
 			
-			if( info.ratio > 0 ) then
-				ratio:SetText( string.format( "%.1f", info.ratio ) );
+			if( info.perct > 0 ) then
+				perct:SetText( string.format( "%.1f%%", info.perct * 100 ) );
 			else
-				ratio:SetText( "--" );
+				perct:SetText( "--" );
 			end
 			
 			bracket:SetText( info.teamSize );
@@ -854,10 +721,158 @@ function Honest:PVPFrame_Update()
 		end
 	else
 		self.arenaText:Hide();
-		self.arenaRatioText:Hide();
+		self.arenaPerctText:Hide();
 		self.arenaWinText:Hide();
 		self.arenaLoseText:Hide();
 		self.ratedText:Hide();
 		self.bracketText:Hide();
 	end
+end
+
+function Honest:PVPFrame_Update()
+	PVPHonorTodayHonor:SetText( Honest.db.profile.today.totals.total );
+	
+	if( not PVPFrame:IsShown() ) then
+		return;
+	end
+	
+	local self = Honest;
+	if( not self.frame ) then
+		self.frame = CreateFrame( "Frame", "HonestDetails", PVPFrame );
+		self.frame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+					edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+					tile = true,
+					tileSize = 9,
+					edgeSize = 9,
+					insets = { left = 2, right = 2, top = 2, bottom = 2 } });	
+
+		self.frame:SetBackdropColor( 0, 0, 0, 0.90 );
+		self.frame:SetBackdropBorderColor( 0.75, 0.75, 0.75, 0.90 );
+		self.frame:SetFrameStrata( "LOW" );
+		
+		self.frame:SetClampedToScreen( true );
+		self.frame:SetPoint( "TOPLEFT", PVPFrame, "TOPRIGHT", -10, -12 );
+		--self.frame:SetPoint( "CENTER", UIParent, "CENTER", 0, 80 );		
+		
+		self.frame:SetHeight( 400 );
+		self.frame:SetWidth( 340 );
+		self.frame:Show();
+
+		-- For viewing today/yesterday honor
+		self.todayView = CreateFrame( "Button", self.frame:GetName() .. "ViewToday", self.frame, "UIPanelButtonGrayTemplate" );
+		self.todayView:SetPoint( "BOTTOMLEFT", self.frame, "BOTTOMLEFT", 1, 2 );
+		self.todayView:SetText( L["View Today"] );
+		self.todayView:SetHeight( 16 );
+		self.todayView:SetWidth( 110 );
+		self.todayView:SetFont( ( self.todayView:GetFont() ), 11 );
+		self.todayView:SetScript( "OnClick", function() Honest:UpdateHonorUI( "today" ); end );
+
+		self.yesterdayView = CreateFrame( "Button", self.frame:GetName() .. "ViewYesterday", self.frame, "UIPanelButtonGrayTemplate" );
+		self.yesterdayView:SetPoint( "BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -1, 2 );
+		self.yesterdayView:SetText( L["View Yesterday"] );
+		self.yesterdayView:SetHeight( 16 );
+		self.yesterdayView:SetWidth( 110 );
+		self.yesterdayView:SetFont( ( self.yesterdayView:GetFont() ), 11 );
+		self.yesterdayView:SetScript( "OnClick", function() Honest:UpdateHonorUI( "yesterday" ); end );
+
+		-- Estimated text
+		self.estimateText = self.frame:CreateFontString( self.frame:GetName() .. "Estimate", "BACKGROUND" );
+		self.estimateText:SetFontObject( GameFontNormalSmall );
+		self.estimateText:SetPoint( "TOPLEFT", self.frame, "TOPLEFT", 5, -8 );
+		self.estimateText:Show();
+		
+		-- Kill honor
+		self.killText = self.frame:CreateFontString( self.frame:GetName() .. "KillTotal", "BACKGROUND" );
+		self.killText:SetFontObject( GameFontNormalSmall );
+		self.killText:ClearAllPoints();
+		self.killText:SetPoint( "TOPLEFT", self.frame, "TOPLEFT", 5, -30 );
+		self.killText:Show();
+
+		-- BATTLEGROUND STATS
+		-- Bonus honor
+		self.bonusText = self.frame:CreateFontString( self.frame:GetName() .. "BonusTotal", "BACKGROUND" );
+		self.bonusText:SetFontObject( GameFontNormalSmall );
+		self.bonusText:ClearAllPoints();
+		self.bonusText:SetPoint( "TOPRIGHT", self.frame, "TOPRIGHT", -5, -30 );
+		self.bonusText:Show();
+		
+		
+		-- Battlefield name
+		self.battlefieldText = self.frame:CreateFontString( self.frame:GetName() .. "BattlefieldName", "BACKGROUND" );
+		self.battlefieldText:SetFontObject( GameFontNormalSmall );
+		self.battlefieldText:SetText( L["Battlefield"] );
+		self.battlefieldText:Show();
+
+		-- Average
+		self.avgText = self.frame:CreateFontString( self.frame:GetName() .. "AverageText", "BACKGROUND" );
+		self.avgText:SetFontObject( GameFontNormalSmall );
+		self.avgText:SetText( L["Avg Honor"] );
+		self.avgText:SetPoint( "TOPLEFT", self.battlefieldText, "TOPRIGHT", 85, 0 );
+		self.avgText:Show();
+
+		-- Perct
+		self.perctText = self.frame:CreateFontString( self.frame:GetName() .. "PerctText", "BACKGROUND" );
+		self.perctText:SetFontObject( GameFontNormalSmall );
+		self.perctText:SetText( L["Perct"] );
+		self.perctText:SetPoint( "TOPLEFT", self.avgText, "TOPRIGHT", 15, 0 );
+		self.perctText:Show();
+		
+		-- Wins
+		self.winText = self.frame:CreateFontString( self.frame:GetName() .. "WinText", "BACKGROUND" );
+		self.winText:SetFontObject( GameFontNormalSmall );
+		self.winText:SetText( L["Wins"] );
+		self.winText:SetPoint( "TOPLEFT", self.perctText, "TOPRIGHT", 15, 0 );
+		self.winText:Show();
+
+		-- Loses
+		self.loseText = self.frame:CreateFontString( self.frame:GetName() .. "LoseText", "BACKGROUND" );
+		self.loseText:SetFontObject( GameFontNormalSmall );
+		self.loseText:SetText( L["Loses"] );
+		self.loseText:SetPoint( "TOPLEFT", self.winText, "TOPRIGHT", 15, 0 );
+		self.loseText:Show();
+		
+		-- ARENA STATS
+		-- Arena name
+		self.arenaText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaName", "BACKGROUND" );
+		self.arenaText:SetFontObject( GameFontNormalSmall );
+		self.arenaText:SetText( L["Arena"] );
+		self.arenaText:Show();
+
+		-- Bracket
+		self.bracketText = self.frame:CreateFontString( self.frame:GetName() .. "BracketText", "BACKGROUND" );
+		self.bracketText:SetFontObject( GameFontNormalSmall );
+		self.bracketText:SetText( L["Bracket"] );
+		self.bracketText:SetPoint( "TOPLEFT", self.arenaText, "TOPRIGHT", 85, 0 );
+		self.bracketText:Show();
+
+		-- Rated
+		self.ratedText = self.frame:CreateFontString( self.frame:GetName() .. "RatedText", "BACKGROUND" );
+		self.ratedText:SetFontObject( GameFontNormalSmall );
+		self.ratedText:SetText( L["Type"] );
+		self.ratedText:SetPoint( "TOPLEFT", self.bracketText, "TOPRIGHT", 15, 0 );
+		self.ratedText:Show();
+
+		-- Perct
+		self.arenaPerctText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaPerctText", "BACKGROUND" );
+		self.arenaPerctText:SetFontObject( GameFontNormalSmall );
+		self.arenaPerctText:SetText( L["Perct"] );
+		self.arenaPerctText:SetPoint( "TOPLEFT", self.ratedText, "TOPRIGHT", 15, 0 );
+		self.arenaPerctText:Show();
+		
+		-- Wins
+		self.arenaWinText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaWinText", "BACKGROUND" );
+		self.arenaWinText:SetFontObject( GameFontNormalSmall );
+		self.arenaWinText:SetText( L["Wins"] );
+		self.arenaWinText:SetPoint( "TOPLEFT", self.arenaPerctText, "TOPRIGHT", 15, 0 );
+		self.arenaWinText:Show();
+
+		-- Loses
+		self.arenaLoseText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaLoseText", "BACKGROUND" );
+		self.arenaLoseText:SetFontObject( GameFontNormalSmall );
+		self.arenaLoseText:SetText( L["Loses"] );
+		self.arenaLoseText:SetPoint( "TOPLEFT", self.arenaWinText, "TOPRIGHT", 15, 0 );
+		self.arenaLoseText:Show();
+	end
+	
+	Honest:UpdateHonorUI( "today" );
 end
