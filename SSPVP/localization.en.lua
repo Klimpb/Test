@@ -27,9 +27,7 @@ SSPVPLocals = {
 	
 	["You are about to leave the active or queued battlefield %s, are you sure?"] = "You are about to leave the active or queued battlefield %s, are you sure?",
 	["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"] = "You are about to leave the active or queued arena %s (%dvs%d), are you sure?",
-	
-	["Sorry, this feature is disabled currently while I work out the new formula stuff."] = "Sorry, this feature is disabled currently while I work out the new formula stuff.",
-	
+		
 	["Battlefield Info"] = "Battlefield Info",
 	
 	["Time before start"] = "Time before start",
