@@ -11,7 +11,7 @@ HonestLocals = {
 	
 	["Arena has reset! You gained %d points, for a total of %d."] = "Arena has reset! You gained %d points, for a total of %d.",
 	["Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d."] = "Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d.",
-	["Honor has reset! Estimated %d, Actual %d, Difference %d (%d%% off)"] = "Honor has reset! Estimated %d, Actual %d, Difference %d (%d%% off)",
+	["Honor has reset! Estimated %d, Actual %d, Difference %d (%.2f%% off)"] = "Honor has reset! Estimated %d, Actual %d, Difference %d (%.2f%% off)",
 	
 	["Actual Honor Points: %d"] = "Actual Honor Points: %d",
 	["Estimated Honor Points: %d"] = "Estimated Honor Points: %d",
@@ -22,6 +22,9 @@ HonestLocals = {
 	["on"] = "on",
 	["off"] = "off",
 	
+	["View Today"] = "View Today",
+	["View Yesterday"] = "View Yesterday",
+	
 	["Actual honor gains is now %s"] = "Actual honor gains is now %s",
 	["Estimated honor gains is now %s"] = "Estimated honor gains is now %s",
 	["Total times killed is now %s"] = "Total times killed is now %s",
@@ -31,13 +34,14 @@ HonestLocals = {
 	["killed - Toggles showing how many times you've killed a person"] = "killed - Toggles showing how many times you've killed a person",
 	
 	["Honest Estimated: |cFFFFFFFF%d|r / Blizzard Estimated: |cFFFFFFFF%d|r"] = "Honest Estimated: |cFFFFFFFF%d|r / Blizzard Estimated: |cFFFFFFFF%d|r",
+	["Honest Estimated: |cFFFFFFFF%d|r / Actual Honor: |cFFFFFFFF%d|r"] = "Honest Estimated: |cFFFFFFFF%d|r / Actual Honor: |cFFFFFFFF%d|r",
 	["Kill Honor: |cFFFFFFFF%d|r (|cFFFFFFFF%.2f%%|r)"] = "Kill Honor: |cFFFFFFFF%d|r (|cFFFFFFFF%.2f%%|r)",
 	["Bonus Honor: |cFFFFFFFF%d|r (|cFFFFFFFF%.2f%%|r)"] = "Bonus Honor: |cFFFFFFFF%d|r (|cFFFFFFFF%.2f%%|r)",
 	["%s: %d"] = "%s: %d",
 	["Battlefield"] = "Battlefield",
 	["Wins"] = "Wins",
 	["Loses"] = "Loses",
-	["Ratio"] = "Ratio",
+	["Perct"] = "Perct",
 	["Avg Honor"] = "Avg Honor",
 	["Arena"] = "Arena",
 	["Type"] = "Type",
