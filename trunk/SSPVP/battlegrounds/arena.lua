@@ -156,7 +156,7 @@ function Arena:UpdateEnemyText( enemy, rowID, text )
 	if( SSPVP.db.profile.arena.showTalents and AEI ) then
 		local tree1, tree2, tree3 = AEI:GetTalents( enemy.name, enemy.server );
 		
-		if( tree1 and tree2 and tree3 ) then
+		if( tree1 > 0 or tree2 > 0 or tree3 > 0 ) then
 			extras = extras .. "[" .. tree1 .. "/" .. tree2 .. "/" .. tree3 .. "] ";
 		end
 	end
@@ -195,6 +195,8 @@ function Arena:UpdateEnemyHealth( id, health, maxHealth )
 	if( self.frame ) then
 		if( enemy.isDead or health == 0 ) then
 			getglobal( self.frame:GetName() .. "Row" .. rowID ):SetAlpha( SSPVP.db.profile.arena.deadOpacity );
+		else
+			getglobal( self.frame:GetName() .. "Row" .. rowID ):SetAlpha( 1.0 );
 		end
 		
 		Arena:UpdateEnemyText( enemy, rowID, text );
@@ -861,17 +863,27 @@ function Arena.CalculateGoal( currentGames, currentTotal )
 end
 
 -- Points -> Rating
-function Arena.CalculateRating( points )
-	if( true == true ) then
-		SSPVP:Print( L["Sorry, this feature is disabled currently while I work out the new formula stuff."] );
-		return;
+local function GetRating( points )
+	local rating = 0;
+	if( points > 376 ) then
+		rating = ( -1.0 / 0.00386405 ) * math.log( ( 1426.79 - points ) / ( 918.836 * points ) );
+	else
+		rating = ( points + 194 ) / 0.38;
 	end
 	
-	points = tonumber( points );
+	if( rating < 0 ) then
+		rating = 0;
+	end
 	
-	SSPVP:Print( string.format( L["[%d vs %d] %d points = %d rating"], 5, 5, points, floor( -400 * math.log( ( 2894 - points ) / ( 259 * points ) ) + 0.5 ) ) );
-	SSPVP:Print( string.format( L["[%d vs %d] %d points = %d rating"], 3, 3, points, floor( -400 * math.log( ( 0.80 * 2894 - points ) / ( 259 * points ) ) + 0.5 ) ) );
-	SSPVP:Print( string.format( L["[%d vs %d] %d points = %d rating"], 2, 2, points, floor( -400 * math.log( ( 0.70 * 2894 - points ) / ( 259 * points ) ) + 0.5 ) ) );
+	return math.floor( rating + 0.5 );
+end
+
+function Arena.CalculateRating( points )
+	points = tonumber( points );
+
+	SSPVP:Print( string.format( L["[%d vs %d] %d points = %d rating"], 5, 5, points, GetRating( points ) ) );
+	SSPVP:Print( string.format( L["[%d vs %d] %d points = %d rating"], 3, 3, points, GetRating( points * 0.80 ) ) );
+	SSPVP:Print( string.format( L["[%d vs %d] %d points = %d rating"], 2, 2, points, GetRating( points * 0.70 ) ) );
 end
 
 -- Rating -> Points

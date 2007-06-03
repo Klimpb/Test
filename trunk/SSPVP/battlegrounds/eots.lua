@@ -160,7 +160,7 @@ function EoTS:UpdateCarrier()
 		button = self.allianceButton;
 		text = self.allianceText;
 		
-		if( not button.positionSet ) then
+		if( not button.positionSet and AlwaysUpFrame1Text ) then
 			button.positionSet = true;
 
 			button:ClearAllPoints();
@@ -173,7 +173,7 @@ function EoTS:UpdateCarrier()
 		button = self.hordeButton;
 		text = self.hordeText;
 		
-		if( not button.positionSet ) then
+		if( not button.positionSet and AlwaysUpFrame2Text ) then
 			button.positionSet = true;
 
 			button:ClearAllPoints();

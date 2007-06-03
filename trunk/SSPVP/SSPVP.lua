@@ -386,6 +386,10 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				else
 					self:Print( string.format( L["You are now in the queue for %s."], map ) );
 				end
+				
+				if( ( GetBattlefieldInfo() ) == map and BattlefieldFrame:IsShown() ) then
+					HideUIPanel( BattlefieldFrame );
+				end
 			end
 			
 		elseif( status == "active" and i ~= activeBF.id ) then
@@ -406,8 +410,10 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				if( SSPVP.db.profile.bf.minimap ) then
 					BattlefieldMinimap_LoadUI();
 
-					BattlefieldMinimap:Show();
-					BattlefieldMinimap_Update();
+					if( BattlefieldMinimap ) then
+						BattlefieldMinimap:Show();
+						BattlefieldMinimap_Update();
+					end
 
 				elseif( BattlefieldMinimap ) then
 					BattlefieldMinimap:Hide();
