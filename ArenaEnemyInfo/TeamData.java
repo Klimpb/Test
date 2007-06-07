@@ -266,7 +266,7 @@ public class TeamData {
 	public void GetArenaTeam( int row, String rank, String rating, String teamName, String teamRealm, String battlegroup, String bracket ) throws Exception {
 		System.out.println( "#" + rank + " (" + row + "/20), " +  rating + ", " + teamRealm + ", " + teamName );
 
-		URL url = new URL( config.get( "armory" ) + "team-info.xml?b=" + battlegroup + "&ts=" + bracket + "&t=" + teamName.replaceAll( " ", "+" ) );
+		URL url = new URL( config.get( "armory" ) + "team-info.xml?r=" + teamRealm.replaceAll( " ", "+" ) + "&b=" + battlegroup + "&ts=" + bracket + "&t=" + teamName.replaceAll( " ", "+" ) );
 		conn = ( HttpURLConnection ) url.openConnection();
 		conn.setRequestProperty( "User-Agent", "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.1) Gecko/20061204 Firefox/2.0.0.1" );
 
@@ -792,7 +792,11 @@ public class TeamData {
 		fw.close();
 	}
 
-	public static void main( String[] args ) throws Exception {
-		new TeamData();
+	public static void main( String[] args ) {
+		try {
+			new TeamData();
+		} catch( Exception e ) {
+			System.out.println( e );
+		}
 	}
 }
