@@ -221,7 +221,9 @@ end
 
 -- This deals with scanning name plates for health values
 local function HealthValueChanged( ... )
-	this.SSValueChanged( ... );
+	if( this.SSValueChanged ) then
+		this.SSValueChanged( ... );
+	end
 	
 	local _, _, _, _, nameFrame = this:GetParent():GetRegions();
 	local plateName = nameFrame:GetText();
