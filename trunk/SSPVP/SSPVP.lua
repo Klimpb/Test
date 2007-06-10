@@ -602,7 +602,7 @@ function SSPVP:QueueReady( id, map )
 			delayType = "bgDelay";
 		end
 	end
-
+	
 	-- Not joining anything else, just register the auto join
 	if( not joiningBF ) then
 		joiningBF = id;
