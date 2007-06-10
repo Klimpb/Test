@@ -268,6 +268,7 @@ function Honest:CheckDay()
 			record = {},
 			bonus = {},
 			kill = {},
+			killed = {},
 		};
 		                
 		
