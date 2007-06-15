@@ -2,6 +2,7 @@
 ## Title: Honest
 ## Notes: Honor estimation, and PvP data mod
 ## SavedVariables: HonestDB
+## OptionalDeps: OptionHouse
 
 Dongle.lua
 
