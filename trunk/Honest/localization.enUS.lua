@@ -32,6 +32,13 @@ HonestLocals = {
 	["actual - Toggles showing actual honor gained for kills"] = "actual - Toggles showing actual honor gained for kills",
 	["estimated - Toggles showing estimated honor gained for kills"] = "estimated - Toggles showing estimated honor gained for kills",
 	["killed - Toggles showing how many times you've killed a person"] = "killed - Toggles showing how many times you've killed a person",
+	["ui - Opens the OptionHouse UI"] = "ui - Opens the OptionHouse UI",
+	
+	["Honest"] = "Honest",
+	["General"] = "General",
+	["Show actual honor gains"] = "Show actual honor gains",
+	["Show estimated honor gains"] = "Show estimated honor gains",
+	["Show how many times an enemy has died"] = "Show how many times an enemy has died",
 	
 	["Honest Estimated: |cFFFFFFFF%d|r / Blizzard Estimated: |cFFFFFFFF%d|r"] = "Honest Estimated: |cFFFFFFFF%d|r / Blizzard Estimated: |cFFFFFFFF%d|r",
 	["Honest Estimated: |cFFFFFFFF%d|r / Actual Honor: |cFFFFFFFF%d|r"] = "Honest Estimated: |cFFFFFFFF%d|r / Actual Honor: |cFFFFFFFF%d|r",

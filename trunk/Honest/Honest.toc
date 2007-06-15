@@ -5,6 +5,8 @@
 
 Dongle.lua
 
+OptionHouse\OptionHouse.lua
+
 localization.enUS.lua
 localization.deDE.lua
 localization.frFR.lua
