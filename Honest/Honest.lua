@@ -7,6 +7,7 @@ local StartTime = 0;
 local HonorGained = 0;
 
 local RegisteredFrames = {};
+local OH = DongleStub("OptionHouse-Alpha0.1")
 
 function Honest:Enable()
 	self.defaults = {
@@ -53,6 +54,7 @@ function Honest:Enable()
 
 	self.cmd = self:InitializeSlashCommand( L["Honest slash commands"], "Honest", "honest" );
 	--self.cmd:InjectDBCommands( self.db, "delete", "copy", "list", "set" );
+	self.cmd:RegisterslashHandler( L["ui - Opens the OptionHoues UI"], "ui", OH.Open )
 	self.cmd:RegisterSlashHandler( L["actual - Toggles showing actual honor gained for kills"], "actual", "ToggleActual" );	
 	self.cmd:RegisterSlashHandler( L["estimated - Toggles showing estimated honor gained for kills"], "estimated", "ToggleEstimated" );	
 	self.cmd:RegisterSlashHandler( L["killed - Toggles showing how many times you've killed a person"], "killed", "ToggleKilled" );	
@@ -81,6 +83,10 @@ function Honest:Enable()
 	self:PVPFrame_Update();
 	self:CheckDay();
 	
+	-- Register with OH
+	local ui = OH:RegisterAddOn( L["Honest"], L["Honest"], "Amarand", "r" .. tonumber( string.match( "$Revision$", "$ Revision: ([0-9]+) $" ) ) )
+	ui:RegisterCategory( L["General"], self, CreateUI )
+	
 	-- For upgrading format to the new one with split arena thing,
 	-- I could make it transfer it to the new one too, but i'm lazy.
 	for location, record in pairs( self.db.profile.today.record ) do
@@ -88,6 +94,56 @@ function Honest:Enable()
 			self.db.profile.today.record[ location ] = nil;
 		end
 	end
+end
+
+function Honest:CreateUI()
+	local frame = CreateFrame("Frame")
+	frame:SetScript("OnShow", function()
+		Honest.actualCheck:SetChecked( Honest.db.profile.showActual )	
+		Honest.estimateCheck:SetChecked( Honest.db.profile.showEstimated )	
+		Honest.killedCheck:SetChecked( Honest.db.profile.showKilled )	
+	end )
+	
+	self.actualCheck = CreateFrame( "Checkbox", nil, frame, "OptionsCheckButtonTemplate" )
+	self.actualCheck:SetPoint( "TOPLEFT", 5, -5 )
+	self.actualCheck:SetHeight( 16 )
+	self.actualCheck:SetWidth( 16 )
+	self.actualCheck:SetText( L["Show actual honor gains"] )
+	self.actualCheck:SetScript( "OnClick", function()
+		if( this:GetChecked() ) then
+			Honest.db.profile.showActual = true
+		else
+			Honest.db.profile.showActual = false		
+		end
+	end )
+	
+	self.estimateCheck = CreateFrame( "Checkbox", nil, frame, "OptionsCheckButtonTemplate" )
+	self.estimateCheck:SetPoint( "TOPLEFT", 5, -25 )
+	self.estimateCheck:SetHeight( 16 )
+	self.estimateCheck:SetWidth( 16 )
+	self.estimateCheck:SetText( L["Show estimated honor gains"] )
+	self.estimateCheck:SetScript( "OnClick", function()
+		if( this:GetChecked() ) then
+			Honest.db.profile.showEstimated = true
+		else
+			Honest.db.profile.showEstimated = false		
+		end
+	end )
+	
+	self.killedCheck = CreateFrame( "Checkbox", nil, frame, "OptionsCheckButtonTemplate" )
+	self.killedCheck:SetPoint( "TOPLEFT", 5, -50 )
+	self.killedCheck:SetHeight( 16 )
+	self.killedCheck:SetWidth( 16 )
+	self.killedCheck:SetText( L["Show how many times an enemy has died"] )
+	self.killedCheck:SetScript( "OnClick", function()
+		if( this:GetChecked() ) then
+			Honest.db.profile.showKilled = true
+		else
+			Honest.db.profile.showKilled = false		
+		end
+	end )
+	
+	return frame
 end
 
 function Honest:HideHonest()
