@@ -54,7 +54,7 @@ function Honest:Enable()
 
 	self.cmd = self:InitializeSlashCommand( L["Honest slash commands"], "Honest", "honest" );
 	--self.cmd:InjectDBCommands( self.db, "delete", "copy", "list", "set" );
-	self.cmd:RegisterSlashHandler( L["ui - Opens the OptionHoues UI"], "ui", OH.Open )
+	self.cmd:RegisterSlashHandler( L["ui - Opens the OptionHouse UI"], "ui", OH.Open )
 	self.cmd:RegisterSlashHandler( L["actual - Toggles showing actual honor gained for kills"], "actual", "ToggleActual" );	
 	self.cmd:RegisterSlashHandler( L["estimated - Toggles showing estimated honor gained for kills"], "estimated", "ToggleEstimated" );	
 	self.cmd:RegisterSlashHandler( L["killed - Toggles showing how many times you've killed a person"], "killed", "ToggleKilled" );	
