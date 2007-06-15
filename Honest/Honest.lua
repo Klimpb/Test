@@ -84,7 +84,7 @@ function Honest:Enable()
 	self:CheckDay();
 	
 	-- Register with OH
-	local ui = OH:RegisterAddOn( L["Honest"], L["Honest"], "Amarand", "r" .. tonumber( string.match( "$Revision$", "$ Revision: ([0-9]+) $" ) ) )
+	local ui = OH:RegisterAddOn( L["Honest"], L["Honest"], "Amarand", "r" .. tonumber( string.match( "$Revision$", "(%d+)" ) or 1 ) )
 	ui:RegisterCategory( L["General"], self, CreateUI )
 	
 	-- For upgrading format to the new one with split arena thing,
