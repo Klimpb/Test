@@ -1,5 +1,5 @@
 local major = "DongleStub"
-local minor = tonumber(string.match("$Revision: 427 $", "(%d+)") or 1)
+local minor = tonumber(string.match("$Revision: 431 $", "(%d+)") or 1)
 
 local g = getfenv(0)
 
@@ -124,8 +124,8 @@ end
   Begin Library Implementation
 ---------------------------------------------------------------------------]]
 
-local major = "OptionHouse-Alpha-0.1"
-local minor = tonumber(string.match("$Revision: 427 $", "(%d+)") or 1)
+local major = "OptionHouse-Alpha0.2"
+local minor = tonumber(string.match("$Revision: 431 $", "(%d+)") or 1)
 
 assert(DongleStub, string.format("%s requires DongleStub.", major))
 
@@ -158,7 +158,6 @@ local L = {
 	["NAME"] = "Name",
 }
 
--- CAN HAS STDIO? KTHXBAI
 local function assert(level,condition,message)
 	if not condition then
 		error(message,level)
@@ -331,8 +330,6 @@ local function createOHFrame()
 	button:SetScript("OnClick", function()
 		HideUIPanel(frame)
 	end )
-	
-	tabOnClick(1)
 end
 
 local function focusGained()
@@ -1246,7 +1243,30 @@ tabfunctions[1] = function(hide)
 	updateConfigList()
 end
 
-function OptionHouse:Open()
+function OptionHouse.Open( self, addon, category, subcategory )
+	argcheck(addon, 2, "string", "nil")
+	argcheck(category, 3, "string", "nil")
+	argcheck(subcategory, 4, "string", "nil")
+
+	createOHFrame()
+	tabOnClick(1)
+	
+	if( addon ) then OptionHouseOptionsFrame.selectedAddon = addon end
+	if( category ) then OptionHouseOptionsFrame.selectedCategory = category end
+	if( subcategory ) then OptionHouseOptionsFrame.selectedSubCat = subcategory end
+	
+	if( addon or category or subcategory ) then
+		updateConfigList()
+	end
+	
+	frame:Show()
+end
+
+-- 1 = Configuration / 2 = Management / 3 = Performance
+function OptionHouse:OpenTab( id )
+	argcheck(id, 1, "number")
+	
+	tabOnClick(id)
 	createOHFrame()
 	frame:Show()
 end
@@ -1347,7 +1367,7 @@ local function Activate(self, old)
 		menubutton:SetPoint(a1, fr, a2, x, y)
 
 		GameMenuButtonKeybindings:SetPoint(a1, menubutton, a2, x, y)
-		GameMenuFrame:SetHeight(GameMenuFrame:GetHeight()+25)
+		GameMenuFrame:SetHeight(GameMenuFrame:GetHeight() + 25)
 	end
 	
 	for name, addon in pairs(addons) do
