@@ -3,12 +3,15 @@ local UI = SSPVP:NewModule( "SSPVP-UI" );
 local L = SSPVPLocals;
 local soundPlaying;
 
-
 function UI:Initialize()
 	SSPVP.cmd:RegisterSlashHandler( L["on - Enables SSPVP"], "on", self.CmdEnable );
 	SSPVP.cmd:RegisterSlashHandler( L["off - Disables SSPVP"], "off", self.CmdDisable );	
 	SSPVP.cmd:RegisterSlashHandler( L["ui - Pulls up the configuration page."], "ui", self.OpenUI );
 	SSPVP.cmd:RegisterSlashHandler( L["map - Toggles the battlefield minimap regardless of being inside a battleground."], "map", self.ToggleMinimap );
+	
+	local OptionHouse = DongleStub("OptionHouse-1.0")
+	local obj = OptionHouse:RegisterAddOn( "SSPVP", nil, "Amarand", "$Revision$" )
+	obj:RegisterCategory( "General", self, "LoadUI" )
 end
 
 function UI:ToggleMinimap()
@@ -38,13 +41,6 @@ function UI:CmdDisable()
 	SSPVP:Print( L["Is now disabled."] );
 end
 
-function UI:Reload()
-	local module = SSPVP:HasModule( this.ChangeArg1 or this.arg1 );
-	if( module and module.Reload ) then
-		module:Reload();
-	end
-end
-
 function UI:ToggleSSPVP()
 	if( SSPVP.db.profile.general.enabled ) then
 		SSPVP:Enable();	
@@ -67,7 +63,245 @@ function UI:PlaySound()
 	end
 end
 
+-- VAR MANAGEMENT
+function UI:SetValue( vars, val )
+	if( #( vars ) == 3 ) then
+		SSPVP.db.profile[ vars[1] ][ vars[2] ][ vars[3] ] = val
+	elseif( #( vars ) == 2 ) then
+		SSPVP.db.profile[ vars[1] ][ vars[2] ] = val
+	elseif( #( vars ) == 1 ) then
+		SSPVP.db.profile[ vars[1] ] = val
+	end
+end
+
+function UI:GetValue( vars )
+	if( #( vars ) == 3 ) then
+		return SSPVP.db.profile[ vars[1] ][ vars[2] ][ vars[3] ]
+	elseif( #( vars ) == 2 ) then
+		return SSPVP.db.profile[ vars[1] ][ vars[2] ]
+	elseif( #( vars ) == 1 ) then
+		return SSPVP.db.profile[ vars[1] ]
+	end
+	
+	return nil
+end
+
+-- CHECKBOX
+function UI.OnCheck( self )
+	if( self.func ) then
+		self.func( self )
+	end
+	
+	if( self:GetChecked() ) then
+		UI:SetValue( self.vars, true )
+	else
+		UI:SetValue( self.vars, false )
+	end
+end
+
+function UI:CreateCheckBox( parent, text, func, ... )
+	local name = parent:GetName() .. "Option" .. ( parent.id or 1 )
+	parent.id = ( parent.id or 0 ) + 1
+	
+	local check = CreateFrame( "CheckButton", name, parent, "OptionsCheckButtonTemplate" )
+	check.func = func
+	check.vars = { ... }
+	check:SetToplevel(true)
+	check:SetScript( "OnClick", UI.OnCheck )
+	check:SetChecked( UI:GetValue( check.vars ) )
+	
+	getglobal( name .. "Text" ):SetText( text )
+	
+	return check
+end
+
+-- EDIT BOXES
+function UI.OnTextChanged( self )
+	if( self.func ) then
+		self.func( self )
+	end
+	
+	UI:SetValue( self.vars, self:GetText() )
+end
+
+function UI:CreateInput( parent, infoText, func, ... )
+	local name = parent:GetName() .. "Option" .. ( parent.id or 1 )
+	parent.id = ( parent.id or 0 ) + 1
+	
+	local input = CreateFrame( "EditBox", name, parent, "InputBoxTemplate" )
+	input.func = func
+	input.vars = { ... }	
+	input:SetToplevel(true)
+	input:SetAutoFocus(false)
+	input:SetScript( "OnTextChanged", UI.OnTextChanged )
+	input:SetText( UI:GetValue( input.vars ) )
+	
+	local text = input:CreateFontString( name .. "Text", input, "GameFontNormalSmall" )
+	text:SetPoint( "LEFT", input, "RIGHT", 5, 0 )
+	text:SetText( infoText )
+	
+	return input
+end
+
+-- DROPDOWN
+function UI.DropdownShown( self )
+	UIDropDownMenu_Initialize( self, UI.InitDropdown )
+end
+
+function UI.DropdownClicked( self )
+	local frame = self.owner;
+
+	UIDropDownMenu_SetSelectedID( frame, self:GetID() );
+	for index, row in pairs( frame.list ) do
+		if( index == self:GetID() ) then
+			UI:SetValue( frame.vars, row[1] );			
+		end
+	end
+	
+	if( self.func ) then
+		self.func( self )
+	end
+end
+
+function UI.InitDropdown( self )
+	if( string.find( self:GetName(), "Button$" ) ) then
+		for id, row in pairs( getglobal( string.gsub( self:GetName(), "Button$", "" ) ).list ) do
+			UIDropDownMenu_AddButton( { value = row[1], text = row[2], owner = frame, func = UI.DropdownClicked } );
+		end
+	else
+		for id, row in pairs( self.list ) do
+			UIDropDownMenu_AddButton( { value = row[1], text = row[2], owner = frame, func = UI.DropdownClicked } );
+		end
+	end
+end
+
+function UI:CreateDropdown( parent, infoText, list, func, ... )
+	local name = parent:GetName() .. "Option" .. ( parent.id or 1 )
+	parent.id = ( parent.id or 0 ) + 1
+	
+	local frame = CreateFrame( "Frame", name, parent, "UIDropDownMenuTemplate" )
+	frame:SetToplevel(true)
+	frame:SetScript( "OnShow", UI.DropdownShown )
+	frame.func = func
+	
+	local text = input:CreateFontString( name .. "Text", input, "GameFontNormalSmall" )
+	text:SetPoint( "LEFT", input, "RIGHT", 60, 3 )
+	text:SetText( infoText )
+	
+	return frame
+end
+
+-- COLOR PICKER
+function UI.ColorEntered( self )
+	getglobal( self:GetName().."Border" ):SetVertexColor( NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b );
+end
+
+function UI.ColorLeft( self )
+	getglobal( self:GetName().."Border" ):SetVertexColor( HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b );
+end
+
+function UI:SetColor()
+	local r, g, b = ColorPickerFrame:GetColorRGB();
+
+	getglobal( ColorPickerFrame.buttonName .. "NormalTexture" ):SetVertexColor( r, g, b )
+	UI:SetValue( ColorPickerFrame.vars, { r = r, g = g, b = b } )
+	
+	if( ColorPickerFrame.callbackFunc ) then
+		ColorPickerFrame.callbackFunc()
+	end
+end
+
+function UI:CancelColor( previous )
+	getglobal( ColorPickerFrame.buttonName .. "NormalTexture" ):SetVertexColor( prevous.r, previous.g, previous.b )
+	UI:SetValue( ColorPickerFrame.vars, previous )
+	
+	if( ColorPickerFrame.callbackFunc ) then
+		ColorPickerFrame.callbackFunc()
+	end
+end
+
+function UI.OpenPicker( self )
+	local color = UI:GetValue( self.vars )
+	
+	ColorPickerFrame.buttonName = self:GetName()
+	ColorPickerFrame.vars = self.vars
+	ColorPickerFrame.callbackFunc = self.func
+	ColorPickerFrame.func = UI.SetColor
+	ColorPickerFrame.cancelFunc = UI.CancelColor
+	
+	ColorPickerFrame.previousValues = color
+	ColorPickerFrame:SetColorRGB( color.r, color.g, color.b )
+	ColorPickerFrame:Show()
+end
+
+function UI:CreateColor( parent, infoText, func, ... )
+	local name = parent:GetName() .. "Option" .. ( parent.id or 1 )
+	parent.id = ( parent.id or 0 ) + 1
+	
+	local button = CreateFrame( "Button", name, parent )
+	button:SetHeight( 18 )
+	button:SetWidth( 18 )
+	button:SetScript( "OnClick", UI.OpenPicker )
+	button:SetScript( "OnEnter", UI.ColorEntered )
+	button:SetScript( "OnLeave", UI.ColorLeft )
+	button:GetNormalTexture():SetTexture( "Interface\\ChatFrame\\ChatFrameColorSwatch" )
+	button:SetToplevel(true)
+	button.vars = { ... }
+	button.func = func
+	
+	local border = button:CreateTexture( name .. "Border", "BACKGROUND" )
+	border:SetHeight( 16 )
+	border:SetWidth( 16 )
+	border:SetPoint( "CENTER", 0, 0 )
+	border:SetTexture( 1, 1, 1 )
+	
+	local text = button:CreateFontString( name .. "Text", input, "GameFontNormalSmall" )
+	text:SetPoint( "LEFT", button, "RIGHT", 7, 0 )
+	text:SetText( infoText )
+	
+	return button
+end
+
+-- SLIDERS
+function UI.SliderChanged( self )
+	UI:SetValue( self.vars, self:GetValue() )
+	
+	if( self.func ) then
+		self.func( self )
+	end
+end
+
+function UI:CreateSlider( parent, infoText, func, ... )
+	local name = parent:GetName() .. "Option" .. ( parent.id or 1 )
+	parent.id = ( parent.id or 0 ) + 1
+	
+	local frame = CreateFrame( "Slider", name, parent, "OptionsSliderTemplate" )
+	frame.vars = { ... }
+	frame.func = func
+	frame:SetWidth( 140 )
+	frame:SetHeight( 16 )
+	frame:SetScript( "OnValueChanged", UI.SliderChanged )
+	frame:SetMinMaxValues( 0.0, 1.0 )
+	frame:SetValueStep( 0.01 )
+	frame:SetValue( UI:GetValue( frame.vars ) )
+	frame:SetToplevel(true)
+
+	getglobal( name .. "Low" ):SetText( "0%" )
+	getglobal( name .. "High" ):SetText( "100%" )
+	getglobal( name .. "Text" ):SetText( infoText )
+
+	return frame
+end
+
 function UI:LoadUI()
+	local frame = CreateFrame("Frame", "SSPVPUI")
+	local check = self:CreateCheckBox( frame, "Test Check", function() Debug( "Called" ) end, "general", "test" )
+	check:SetPoint( "TOPLEFT", 5, -5 )
+	
+	
+	return frame
+	
+	--[[
 	SSUI:RegisterUI( "sspvp", { defaultTab = "SSGeneral", title = L["SSPVP"], get = function( vars ) return SSPVP.db.profile[ vars[1] ][ vars[2] ]; end, set = function( vars, value ) SSPVP.db.profile[ vars[1] ][ vars[2] ] = value; end } );
 
 	SSUI:RegisterTab( "sspvp", "SSGeneral", L["General"], 1 );
@@ -217,6 +451,7 @@ function UI:LoadUI()
 	for _, element in pairs( UIList ) do
 		SSUI:RegisterElement( "sspvp", element );
 	end
+	]]
 end
 
 function SSPVP:LoadUI()
