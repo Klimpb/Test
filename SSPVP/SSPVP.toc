@@ -1,5 +1,6 @@
 ## Interface: 20100
-## Title: SSPVP $Revision$
+## Title: SSPVP
+## Version: $Revision$
 ## Notes: PvP, Battleground and Arena mod
 ## SavedVariables: SSPVPDB
 ## X-SSUI: sspvp

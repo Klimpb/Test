@@ -10,7 +10,7 @@ function UI:Initialize()
 	SSPVP.cmd:RegisterSlashHandler( L["map - Toggles the battlefield minimap regardless of being inside a battleground."], "map", self.ToggleMinimap );
 	
 	local OptionHouse = DongleStub("OptionHouse-1.0")
-	local obj = OptionHouse:RegisterAddOn( "SSPVP", nil, "Amarand", "$Revision$" )
+	local obj = OptionHouse:RegisterAddOn( "SSPVP", nil, "Amarand", tonumber(string.match("$Revision$", "(%d+)") or 1) )
 	obj:RegisterCategory( "General", self, "LoadUI" )
 end
 
