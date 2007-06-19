@@ -111,29 +111,32 @@ end
 
 function EoTS:UpdateCarrierAttributes()
 	if( InCombatLockdown() ) then
-		self.hordeText:SetAlpha( 0.75 );
-		self.allianceText:SetAlpha( 0.75 );
+		if( carrierFaction == "Alliance" and carrierName ~= self.allianceText.carrierName ) then
+			self.allianceText:SetAlpha( 0.75 );
+		elseif( carrierFaction == "Horde" and carrierName ~= self.hordeText.carrierName ) then
+			self.hordeText:SetAlpha( 0.75 );
+		end
 				
 		SSPVP:RegisterOOCUpdate( EoTS, "UpdateCarrierAttributes" );
 		return;
 	end
 	
 	if( carrierFaction == "Alliance" ) then
+		self.allianceText:SetAlpha( 1 );
 		self.allianceButton:SetAttribute( "type", "macro" );
 		self.allianceButton:SetAttribute( "macrotext", "/target " .. carrierName );
+		self.allianceButton.carrierName = carrierName
 		self.allianceButton:Show();
 
-		self.hordeText:SetAlpha( 1 );
-		self.hordeText.colorSet = nil;
 		self.hordeButton:Hide();
 
 	elseif( carrierFaction == "Horde" ) then
+		self.hordeText:SetAlpha( 1 );
 		self.hordeButton:SetAttribute( "type", "macro" );
 		self.hordeButton:SetAttribute( "macrotext", "/target " .. carrierName );
+		self.hordeButton.carrierName = carrierName
 		self.hordeButton:Show();
 
-		self.allianceText:SetAlpha( 1 );
-		self.allianceText.colorSet = nil;
 		self.allianceButton:Hide();
 	else
 		self.allianceText.colorSet = nil;
@@ -141,6 +144,9 @@ function EoTS:UpdateCarrierAttributes()
 		
 		self.allianceButton.positionSet = nil;
 		self.hordeButton.positionSet = nil;
+		
+		self.allianceButton.carrierName = nil
+		self.hordeButton.carrierName = nil
 
 		self.allianceButton:Hide();
 		self.hordeButton:Hide();
@@ -169,6 +175,7 @@ function EoTS:UpdateCarrier()
 			text:ClearAllPoints();
 			text:SetPoint( "LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame1Text:GetRight() + 5, AlwaysUpFrame1Text:GetTop() - 5 );
 		end
+		
 	elseif( carrierFaction == "Horde" ) then
 		button = self.hordeButton;
 		text = self.hordeText;
@@ -190,9 +197,15 @@ function EoTS:UpdateCarrier()
 		local name, classToken;
 		for i=1, GetNumBattlefieldScores() do
 			name, _, _, _, _, _, _, _, _, classToken = GetBattlefieldScore( i );
-
-			if( string.find( name, "^" .. carrierName ) ) then
-				text:SetTextColor( RAID_CLASS_COLORS[ classToken ].r, RAID_CLASS_COLORS[ classToken ].g, RAID_CLASS_COLORS[ classToken ].b );	
+			
+			if( string.match( name, "-" ) ) then
+				if( carrierNames[ faction ] == ( string.split( "-", name ) ) ) then
+					text:SetTextColor( RAID_CLASS_COLORS[ classToken ].r, RAID_CLASS_COLORS[ classToken ].g, RAID_CLASS_COLORS[ classToken ].b );
+					text.colorSet = true;
+					break
+				end
+			elseif( name == carrierNames[ faction ] ) then
+				text:SetTextColor( RAID_CLASS_COLORS[ classToken ].r, RAID_CLASS_COLORS[ classToken ].g, RAID_CLASS_COLORS[ classToken ].b );
 				text.colorSet = true;
 				break;
 			end
