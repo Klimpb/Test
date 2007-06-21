@@ -108,7 +108,6 @@ function Honest:CreateUI()
 	self.actualCheck:SetWidth( 32 )
 	self.actualCheck:SetHeight( 32 )
 	self.actualCheck:SetPoint( "TOPLEFT", 5, -5 )
-	self.actualCheck:SetToplevel(true)
 	HonestUIActualText:SetText( L["Show actual honor gains"] )
 	self.actualCheck:SetScript( "OnClick", function()
 		if( this:GetChecked() ) then
@@ -120,7 +119,6 @@ function Honest:CreateUI()
 	
 	self.estimateCheck = CreateFrame( "CheckButton", "HonestUIEstimated", frame, "OptionsCheckButtonTemplate" )
 	self.estimateCheck:SetPoint( "TOPLEFT", 5, -35 )
-	self.estimateCheck:SetToplevel(true)
 	HonestUIEstimatedText:SetText( L["Show estimated honor gains"] )
 	self.estimateCheck:SetScript( "OnClick", function()
 		if( this:GetChecked() ) then
@@ -132,7 +130,6 @@ function Honest:CreateUI()
 	
 	self.killedCheck = CreateFrame( "CheckButton", "HonestUIKilled", frame, "OptionsCheckButtonTemplate" )
 	self.killedCheck:SetPoint( "TOPLEFT", 5, -65 )
-	self.killedCheck:SetToplevel(true)
 	HonestUIKilledText:SetText( L["Show how many times an enemy has died"] )
 	self.killedCheck:SetScript( "OnClick", function()
 		if( this:GetChecked() ) then
