@@ -1,7 +1,6 @@
 Honest = DongleStub("Dongle-1.0"):New( "Honest" );
 
 local L = HonestLocals;
-
 local LastWin = 0;
 local StartTime = 0;
 local HonorGained = 0;
