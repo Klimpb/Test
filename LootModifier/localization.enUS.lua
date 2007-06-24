@@ -1,3 +1,6 @@
 LootModLocals = {
-	["%s, %s"] = "%s, %s",
+	["Items"] = "Items",
+	["Previous"] = "Previous",
+	["Next"] = "Next",
+	["Weapon"] = "Weapon",
 };
