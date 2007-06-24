@@ -13,6 +13,7 @@ localization.fr.lua
 
 SSPVP.lua
 
+## extras\config-new.lua
 extras\config.lua
 extras\mover.lua
 extras\overlay.lua

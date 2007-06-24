@@ -227,22 +227,26 @@ function Mover:WorldStateAlwaysUpFrame_Update()
 				captureTotal = captureTotal + 1;
 				
 			elseif( not SSPVP.db.profile.mover.world and extendedUI == "" ) then
-				if( not Mover.worldFrame ) then
-					Mover:CreateWorld();
-				end
-				
 				-- Resize the mover frame to what the longest always up row is
-				currentWidth = getglobal( "AlwaysUpFrame" .. alwaysTotal .. "Text" ):GetWidth();
-				if( dynamicIcon ~= "" ) then
-					currentWidth = currentWidth + getglobal( "AlwaysUpFrame" .. alwaysTotal .. "DynamicIconButtonIcon" ):GetWidth();
+				currentWidth = getglobal( "AlwaysUpFrame" .. alwaysTotal .. "Text" )
+				if( currentWidth ) then
+					if( not Mover.worldFrame ) then
+						Mover:CreateWorld();
+					end
+
+					currentWidth = currentWidth:GetWidth()
+					
+					if( dynamicIcon ~= "" ) then
+						currentWidth = currentWidth + getglobal( "AlwaysUpFrame" .. alwaysTotal .. "DynamicIconButtonIcon" ):GetWidth();
+					end
+
+					if( Mover.worldFrame.totalWidth < currentWidth ) then
+						Mover.worldFrame:SetWidth( currentWidth );
+						Mover.worldFrame.totalWidth = currentWidth;
+					end
+
+					alwaysTotal = alwaysTotal + 1;
 				end
-				
-				if( Mover.worldFrame.totalWidth < currentWidth ) then
-					Mover.worldFrame:SetWidth( currentWidth );
-					Mover.worldFrame.totalWidth = currentWidth;
-				end
-			
-				alwaysTotal = alwaysTotal + 1;
 			end
 		end
 	end
