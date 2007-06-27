@@ -1,4 +1,4 @@
-LootMod = DongleStub("Dongle-1.0"):New("LM")
+LootMod = DongleStub("Dongle-1.0"):New("LootMod")
 local L = LootModLocals
 
 function LootMod:Initialize()
@@ -11,12 +11,19 @@ function LootMod:Initialize()
 	self.defaults = {
 		profile = {
 			showType = true,
+			showSubType = true,
 			locked = true,
-			position = { x = 0, y = 0 },
+			typeColor = { r = 1, g = 1, b = 1 },
 		},
 	}
 	
 	self.db = self:InitializeDB( "LootModDB", self.defaults )
+
+	-- Register with OptionHouse
+	local OH = DongleStub("OptionHouse-1.0")
+	local ui = OH:RegisterAddOn( "LootModifier", L["Loot Mod"], "Amarand", "r" .. tonumber( string.match( "$Revision: 64 $", "(%d+)" ) or 1 ) )
+	ui:RegisterCategory( L["General"], self, "CreateUI" )
+	
 	
 	-- Prevents the old LF from showing
 	LootFrame:UnregisterAllEvents()	
@@ -29,8 +36,8 @@ function LootMod:Initialize()
 	self.frame:SetHeight( 256 )
 	self.frame:SetWidth( 256 )
 	self.frame:SetHitRectInsets( 0, 70, 0, 0 )
-	self.frame:SetMovable( true )
-	self.frame:EnableMouse( true )
+	self.frame:SetMovable( not self.db.profile.locked )
+	self.frame:EnableMouse( not self.db.profile.locked )
 	self.frame:SetClampedToScreen( true )
 	self.frame:SetScript( "OnShow", self.LootOnShow )
 	self.frame:SetScript( "OnHide", self.LootOnHide )
@@ -129,7 +136,7 @@ function LootMod:Initialize()
 		
 		-- Type, "One-Hand Sword", "Armor", ect
 		text = button:CreateFontString( button:GetName() .. "ItemType", "GameFontNormal" )
-		text:SetPoint( "TOPLEFT", button:GetName() .. "Text", "TOPLEFT", 0, -10 )
+		text:SetPoint( "TOPLEFT", button:GetName() .. "Text", "TOPLEFT", 0, -13 )
 		text:SetFont( ( GameFontNormalSmall:GetFont() ), 10 )
 		text:SetJustifyH( "LEFT" )
 		text:SetWidth( 150 )
@@ -140,6 +147,60 @@ function LootMod:Initialize()
 	StaticPopupDialogs["CONFIRM_LOOT_DISTRIBUTION"].OnAccept = function( data )
 		GiveMasterLoot( self.frame.selectedSlot, data )
 	end
+end
+
+function LootMod:CreateUI()
+	local frame = CreateFrame("Frame")
+	frame:SetScript("OnShow", function()
+		LootMod.uiLocked:SetChecked( LootMod.db.profile.locked )
+		LootMod.uiType:SetChecked( LootMod.db.profile.showType )
+		LootMod.uiSubType:SetChecked( LootMod.db.profile.showSubType )
+	end )
+	
+	self.uiLocked = CreateFrame( "CheckButton", "LMUILocked", frame, "OptionsCheckButtonTemplate" )
+	self.uiLocked:SetWidth( 32 )
+	self.uiLocked:SetHeight( 32 )
+	self.uiLocked:SetPoint( "TOPLEFT", 5, -5 )
+	LMUILockedText:SetText( L["Lock loot frame"] )
+	self.uiLocked:SetScript( "OnClick", function( self )
+		if( self:GetChecked() ) then
+			LootMod.db.profile.locked = true
+		else
+			LootMod.db.profile.locked = false
+		end
+		
+		LootMod.frame:SetMovable( not LootMod.db.profile.locked )
+		LootMod.frame:EnableMouse( not LootMod.db.profile.locked )
+	end )
+
+	self.uiType = CreateFrame( "CheckButton", "LMUIType", frame, "OptionsCheckButtonTemplate" )
+	self.uiType:SetWidth( 32 )
+	self.uiType:SetHeight( 32 )
+	self.uiType:SetPoint( "TOPLEFT", 5, -35 )
+	LMUITypeText:SetText( L["Show item type"] )
+	self.uiType:SetScript( "OnClick", function( self )
+		if( self:GetChecked() ) then
+			LootMod.db.profile.showType = true
+		else
+			LootMod.db.profile.showType = false
+		end
+	end )
+
+	self.uiSubType = CreateFrame( "CheckButton", "LMUISubType", frame, "OptionsCheckButtonTemplate" )
+	self.uiSubType:SetWidth( 32 )
+	self.uiSubType:SetHeight( 32 )
+	self.uiSubType:SetPoint( "TOPLEFT", 5, -65 )
+	LMUISubTypeText:SetText( L["Show sub item type"] )
+	self.uiSubType:SetScript( "OnClick", function( self )
+		if( self:GetChecked() ) then
+			LootMod.db.profile.showSubType = true
+		else
+			LootMod.db.profile.showSubType = false
+		end
+	end )
+
+	
+	return frame
 end
 
 -- Have  to take it over since the default LF wont have anything set
@@ -202,17 +263,29 @@ function LootMod:UpdateLootList()
 					if( itemLink ) then
 						_, _, _, _, _, itemType, subType = GetItemInfo( itemLink )
 						
-						-- Showing "Weapon" when it's obvious it's a weapon is pointless
-						if( itemType == L["Weapon"] ) then
-							itemType = "\n|cffffffff" .. subType .. "|r"
-						elseif( itemType ~= subType ) then
-							itemType = "\n|cffffffff" .. itemType .. ", " .. subType .. "|r"
-						else
-							itemType = "\n|cffffffff" .. itemType .. "|r"						
+						local typeText
+						-- It's rather obvious it's a weapon already, don't show it
+						if( itemType == L["Weapon"] or not self.db.profile.showType ) then
+							itemType = nil
 						end
 						
-						getglobal( button:GetName() .. "ItemType" ):SetText( itemType )
-						getglobal( button:GetName() .. "ItemType" ):Show()
+						if( itemType == subType or not self.db.profile.showSubType ) then
+							subType = nil
+						end
+						
+						if( itemType and subType ) then
+							typeText = itemType .. ", " .. subType
+						elseif( itemType or subType ) then
+							typeText = itemType or subType
+						end
+				
+						if( typeText ) then
+							getglobal( button:GetName() .. "ItemType" ):SetTextColor( self.db.profile.typeColor.r, self.db.profile.typeColor.g, self.db.profile.typeColor.b, 1 )
+							getglobal( button:GetName() .. "ItemType" ):SetText( typeText )
+							getglobal( button:GetName() .. "ItemType" ):Show()
+						else
+							getglobal( button:GetName() .. "ItemType" ):Hide()
+						end
 					end
 				end
 				
