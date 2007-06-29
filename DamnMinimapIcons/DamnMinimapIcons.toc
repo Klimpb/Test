@@ -1,0 +1,6 @@
+## Title: Damn Minimap Icons
+## Notes: Removes all the minimap icons that addons add and throws them onto nSideBar
+## Interface: 20100
+## LoadOnDemand: 0
+nSideBar.lua
+DamnMinimapIcons.lua
