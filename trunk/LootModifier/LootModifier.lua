@@ -21,7 +21,7 @@ function LootMod:Initialize()
 
 	-- Register with OptionHouse
 	local OH = DongleStub("OptionHouse-1.0")
-	local ui = OH:RegisterAddOn( "LootModifier", L["Loot Mod"], "Amarand", "r" .. tonumber( string.match( "$Revision: 64 $", "(%d+)" ) or 1 ) )
+	local ui = OH:RegisterAddOn( "LootModifier", L["Loot Mod"], "Amarand", "r" .. tonumber( string.match( "$Revision$", "(%d+)" ) or 1 ) )
 	ui:RegisterCategory( L["General"], self, "CreateUI" )
 	
 	

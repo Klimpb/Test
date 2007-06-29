@@ -1,6 +1,6 @@
 PVPSync = SSPVP:NewModule( "SSPVP-Sync" );
 
-local version = "1.2";
+local version = "r" .. tonumber( string.match( "$Revision$", "(%d+)" ) or 1 )
 
 function PVPSync:Enable()
 	self:RegisterEvent( "CHAT_MSG_ADDON" );

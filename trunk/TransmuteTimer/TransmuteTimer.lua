@@ -20,7 +20,7 @@ local L = {
 	["/transmute char - Toggles checking for different characters you aren't on"] = "/transmute char - Toggles checking for different characters you aren't on",
 	["/transmute check - Lists time left on all transmutes."] = "/transmute check - Lists time left on all transmutes.",
 	
-	["%s: %s - %s, %s: %s"] = "%s: %s - %s, %s: %s",
+	["%s, %s - %s, %s, %s"] = "%s, %s - %s, %s, %s",
 	["Alchemy transmute tracking is now %s."] = "Alchemy transmute tracking is now %s.",
 	["Tailoring transmute tracking is now %s."] = "Tailoring transmute tracking is now %s.",
 	["Cross-server checking is now %s."] = "Cross-server checking is now %s.",
@@ -108,9 +108,9 @@ local function OnEvent()
 						end
 					
 						if( timers[ i ].ready <= crtTime ) then
-							DEFAULT_CHAT_FRAME:AddMessage( string.format( L["%s timer ready for %s - %s, %s."], type, timers[ i ].name, realm, timers[ i ].faction ) );
+							Print( string.format( L["%s timer ready for %s - %s, %s."], type, timers[ i ].name, realm, timers[ i ].faction ) );
 						else
-							DEFAULT_CHAT_FRAME:AddMessage( string.format( L["%s: %s - %s, %s: %s"], type, timers[ i ].name, realm, timers[ i ].faction, SecondsToTime( timers[ i ].ready - crtTime ) ) );
+							Print( string.format( L["%s, %s - %s, %s, %s"], type, timers[ i ].name, realm, timers[ i ].faction, SecondsToTime( timers[ i ].ready - crtTime ) ) );
 						end
 					end
 				end
