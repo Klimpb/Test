@@ -199,12 +199,12 @@ function EoTS:UpdateCarrier()
 			name, _, _, _, _, _, _, _, _, classToken = GetBattlefieldScore( i );
 			
 			if( string.match( name, "-" ) ) then
-				if( carrierNames[ faction ] == ( string.split( "-", name ) ) ) then
+				if( carrierName == ( string.split( "-", name ) ) ) then
 					text:SetTextColor( RAID_CLASS_COLORS[ classToken ].r, RAID_CLASS_COLORS[ classToken ].g, RAID_CLASS_COLORS[ classToken ].b );
 					text.colorSet = true;
 					break
 				end
-			elseif( name == carrierNames[ faction ] ) then
+			elseif( name == carrierName ) then
 				text:SetTextColor( RAID_CLASS_COLORS[ classToken ].r, RAID_CLASS_COLORS[ classToken ].g, RAID_CLASS_COLORS[ classToken ].b );
 				text.colorSet = true;
 				break;
