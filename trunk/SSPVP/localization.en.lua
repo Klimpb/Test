@@ -341,6 +341,8 @@ SSPVPLocals = {
 	-- UI
 	["SSPVP"] = "SSPVP",
 	["General"] = "General",
+	["Frame Moving"] = "Frame Moving",
+	["Auto Queue"] = "Auto Queue",
 	["Battleground"] = "Battleground",
 	["Auto Join"] = "Auto Join",
 	["Auto Leave"] = "Auto Leave",
@@ -349,6 +351,7 @@ SSPVPLocals = {
 	["Queue Overlay"] = "Queue Overlay",
 	["Auto turn in"] = "Auto turn in",
 	["Modules"] = "Modules",
+	["Priorities"] = "Priorities",
 	
 	-- Module names
 	["SSPVP-AB"] = "Arathi Basin",
@@ -382,7 +385,8 @@ SSPVPLocals = {
 	["Enable overlay"] = "Enable overlay",
 	["afk"] = "Away from Keyboard",
 	["instance"] = "Inside an instance",
-	["arena"] = "Rated & Scrim Arena",
+	["ratedArena"] = "Rated Arena",
+	["skirmArena"] = "Skirmish Arena",
 	["eots"] = "Eye of the Storm",
 	["av"] = "Alterac Valley",
 	["ab"] = "Arathi Basin",

@@ -139,7 +139,8 @@ function SSPVP:Initialize()
 			priority = {
 				afk = 1,
 				instance = 2,
-				arena = 3,
+				ratedArena = 3,
+				skirmArena = 3,
 				eots = 3,
 				av = 3,
 				ab = 3,
@@ -564,7 +565,16 @@ function SSPVP:AutoJoinBattlefield()
 	if( UnitIsAFK( "player" ) ) then
 		currentType = "afk";
 	elseif( activeBF.id > 0 ) then
-		currentType = activeBF.abbrev;
+		if( activeBF.abbrev == "arena" ) then
+			if( activeBF.isRegistered ) then
+				currentType = "ratedArena"
+			else
+				currentType = "skirmArena"
+			end
+		else
+			currentType = activeBF.abbrev;
+		end
+		
 	elseif( isInstance and type ~= "pvp" ) then
 		currentType = "instance";
 	elseif( GetNumPartyMembers() > 0 or GetNumRaidMembers() > 0 ) then
