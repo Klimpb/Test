@@ -828,6 +828,7 @@ local function Activate(self, old)
 	if( old ) then
 		addons = old.addons or addons
 		evtFrame = old.evtFrame or evtFrame
+		tabfunctions = old.tabfunctions or tabfunctions
 	else
 		-- Secure headers are supported so don't want the window stuck open in combat
 		evtFrame = CreateFrame("Frame")
@@ -859,6 +860,10 @@ local function Activate(self, old)
 		end
 	end
 
+	self.addons = addons
+	self.evtFrame = evtFrame
+	self.tabfunctions = tabfunctions
+
 	-- Upgrade functions to point towards the latest revision
 	for name, addon in pairs(addons) do
 		for _, method in pairs(methods) do
@@ -870,7 +875,7 @@ local function Activate(self, old)
 	SLASH_OPTHOUSE2 = "/oh"
 	SlashCmdList["OPTHOUSE"] = OptionHouse.Open
 	
-	-- Problems with issecurevariable if we don't do this
+	-- Problems with issecurevariable if we odn't do this
 	self:TaintFix()
 end
 
