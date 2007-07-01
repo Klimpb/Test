@@ -85,6 +85,7 @@ SSPVPLocals = {
 	["Your group has joined the queue for"] = "Your group has joined the queue for",
 	
 	-- Rated and Skirmish
+	["All Arenas"] = "All Arenas",
 	["R"] = "R",
 	["S"] = "S",
 	["Rated"] = "Rated",
@@ -348,10 +349,14 @@ SSPVPLocals = {
 	["Auto Leave"] = "Auto Leave",
 	["Battlefield"] = "Battlefield",
 	["Overlay"] = "Overlay",
-	["Queue Overlay"] = "Queue Overlay",
+	["Queue"] = "Queue",
+	["Display"] = "Display",
+	["Enemy Display"] = "Enemy Display",
+	["Frame Display"] = "Frame Display",
 	["Auto turn in"] = "Auto turn in",
 	["Modules"] = "Modules",
 	["Priorities"] = "Priorities",
+	["Color"] = "Color",
 	
 	-- Module names
 	["SSPVP-AB"] = "Arathi Basin",
@@ -407,10 +412,10 @@ SSPVPLocals = {
 	["Enemy row opacity if they are currently dead."] = "Enemy row opacity if they are currently dead.",
 	
 	["Enable modified player/inspect pvp screens"] = "Enable modified player/inspect pvp screens",
-	["Shows the points gained next to the rating on both players and inspect pvp screens, the bracket for the inspected players team will also be shown next to the name."] = "Shows the points gained next to the rating on both players and inspect pvp screens, the bracket for the inspected players team will also be shown next to the name.",
 	["Enable auto leave"] = "Enable auto leave",
 	["Enable confirmation when leaving"] = "Enable confirmation when leaving",
-	["Auto leave delay"] = "Auto leave delay",
+	["Battleground leave delay"] = "Battleground leave delay",
+	["Arena leave delay"] = "Arena leave delay",
 	["Auto accept corpse ressurects inside a battlefield"] = "Auto accept corpse ressurects inside a battlefield",
 	["Take score screenshot on game end"] = "Take score screenshot on game end",
 	
@@ -419,7 +424,6 @@ SSPVPLocals = {
 	["Show player levels next to names on score board"] = "Show player levels next to names on score board",
 	
 	["Enable enemy team report"] = "Enable enemy team report",
-	["Reports team you are facing when you mouse over them inside an arena, this will also pull up a frame you can click to target them.\nThis will NOT update while you are in combat."] = "Reports team you are facing when you mouse over them inside an arena, this will also pull up a frame you can click to target them.\nThis will NOT update while you are in combat.",
 	["Targetting frame scale: %d%%"] = "Targetting frame scale: %d%%",
 	
 	["Enable estimated final score overlay"] = "Enable estimated final score overlay",
@@ -447,7 +451,6 @@ SSPVPLocals = {
 	["Always hide"] = "Always hide",
 	["Always show"] = "Always show",
 	["Auto hiding"] = "Auto hiding",
-	["Mode to use when displaying category text, auto will show it when more then one category is being shown."] = "Mode to use when displaying category text, auto will show it when more then one category is being shown.",
 	["Lock overlay"] = "Lock overlay",
 	["Background color"] = "Background color",
 	["Border color"] = "Border color",
@@ -463,14 +466,12 @@ SSPVPLocals = {
 	["Interval in seconds between messages"] = "Interval in seconds between messages",
 	["Enable interval capture messages"] = "Enable interval capture messages",
 	["Interval frequency increase"] = "Interval frequency increase",
-	["The percentage to increase the frequency of the capture alerts, this will active when 2 minutes is left before something is captured."] = "The percentage to increase the frequency of the capture alerts, this will active when 2 minutes is left before something is captured.",
 	
 	["25%"] = "25%",
 	["50%"] = "50%",
 	["75%"] = "75%",
 	
 	["Show enemy minions on arena enemy frames"] = "Show enemy minions on arena enemy frames",
-	["Controls display of Warlock and Mage Elemental pets"] = "Controls display of Warlock and Mage Elemental pets",
 	
 	["Show enemy class icon"] = "Show enemy class icon",
 	["Enemy pet name color"] = "Enemy pet name color",
@@ -478,7 +479,6 @@ SSPVPLocals = {
 	["Show enemy number next to name on arena frames"] = "Show enemy number next to name on arena frames",
 	
 	["Show time taken before the flag was captured"] = "Show time taken before the flag was captured",
-	["Tells how long it took from the time the flag was picked up to the time the flag was captured."] = "Tells how long it took from the time the flag was picked up to the time the flag was captured.",
 	
 	["Enable auto join"] = "Enable auto join",
 	["Battleground join delay"] = "Battleground join delay",
@@ -494,19 +494,15 @@ SSPVPLocals = {
 	["Auto accept corpse ressurections inside a battlefield"] = "Auto accept corpse ressurections inside a battlefield",
 
 	["Block all messages starting with [SS]"] = "Block all messages starting with [SS]",
-	["This will block all messages that SSPVP sent out, this is mainly timers or found messages in Arenas."] = "This will block all messages that SSPVP sent out, this is mainly timers or found messages in Arenas.",
 	["Lock world PvP objectives"] = "Lock world PvP objectives",
 	["Lock battlefield scoreboard"] = "Lock battlefield scoreboard",
 	["Lock capture bars"] = "Lock capture bars",
 	["Show world PvP objectives in overlay"] = "Show world PvP objectives in overlay",
-	["This will hide the world PvP objectives frame and show it inside the overlay instead."] = "This will hide the world PvP objectives frame and show it inside the overlay instead.",
 	["Enable SSPVP"] = "Enable SSPVP",
 	["Default Channel"] = "Default Channel",
-	["Default channel that all information like score board faction balance and timers are sent to."] = "Default channel that all information like score board faction balance and timers are sent to.",
 	["Auto group queue when leader"] = "Auto group queue when leader",
 	["Auto solo queue when ungrouped"] = "Auto solo queue when ungrouped",
 	["Sound file"] = "Sound file",
-	["Sound file to play when a queue is ready, the file must be inside Interface\\AddOns\\SSPVP and have been present when you started the game."] = "Sound file to play when a queue is ready, the file must be inside Interface\\AddOns\\SSPVP and have been present when you started the game.",
 };
 
 BINDING_HEADER_SSPVP = "SSPVP";

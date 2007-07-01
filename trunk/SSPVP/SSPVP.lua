@@ -152,7 +152,8 @@ function SSPVP:Initialize()
 				enabled = true,
 				confirm = true,
 				screen = false,
-				delay = 0,
+				arenaDelay = 0,
+				bgDelay = 0,
 			},
 			turnin = {
 				enabled = true,
@@ -169,6 +170,14 @@ function SSPVP:Initialize()
 		
 	SSOverlay:AddCategory( "general", L["Time before start"], -1 );
 	SSOverlay:AddCategory( "queue", L["Battlefield queues"], 1 );
+	
+	-- Grab the list of team mates
+	for i=1, MAX_ARENA_TEAMS do
+		ArenaTeamRoster(i)
+	end
+
+	-- "Upgrade", we removed arena and added ratedARena/skirmArena instead
+	self.db.profile.priority.arena = nil
 end
 
 function SSPVP:Enable()
@@ -310,12 +319,48 @@ function SSPVP:BATTLEFIELDS_SHOW()
 		status, map, _, _, _, registeredMatch = GetBattlefieldStatus( i );
 		if( status == "queued" or status == "confirm" ) then
 			queued = queued + 1;
-			
+		
+		-- We're queued for a registered match already, or queued for this already
 		elseif( ( status ~= "none" and shownField == map ) or registeredMatch == 1 ) then
 			return;
 		end
 	end
 	
+	-- Auto select an option in arena queue depending on team mates
+	if( shownField == L["All Arenas"] ) then
+		if( ( ( GetNumPartyMembers() > 0 ) or ( GetNumRaidMembers() > 0 ) ) and IsPartyLeader() ) then
+			local teamTotals = { [2] = 0, [3] = 0, [5] = 0 }
+			for teamID=1, MAX_ARENA_TEAMS do
+				local _, teamSize = GetArenaTeam(teamID)
+				if( teamSize > 0 ) then
+					teamTotals[teamSize] = 1
+
+					for memberID=1, GetNumArenaTeamMembers(teamID, 1) do
+						local playerName = GetArenaTeamRosterInfo(teamID, memberID)
+
+						for partyID=1, GetNumPartyMembers() do
+							if( UnitName("party" .. partyID) == playerName ) then
+								teamTotals[teamSize] = teamTotals[teamSize] + 1
+							end
+						end
+					end
+				end
+			end
+	
+			if( teamTotals[5] == 5 ) then
+				ArenaFrame.selection = 3
+			elseif( teamTotals[3] == 3 ) then
+				ArenaFrame.selection = 2
+			elseif( teamTotals[2] == 2 ) then
+				ArenaFrame.selection = 1
+			end
+
+			ArenaFrame_Update()
+		end
+	end
+
+	
+	-- Max queues, don't bother trying
 	if( queued == MAX_BATTLEFIELD_QUEUES ) then
 		return;
 	end
@@ -504,13 +549,14 @@ end
 function SSPVP:QueueBattlefieldLeave()
 	-- Make sure we don't have a battlefield thats ready to be joined
 	local active = 0;
-	local status, map;
+	local status, map, abbrev
 	
 	for i=1, MAX_BATTLEFIELD_QUEUES do
 		status, map = GetBattlefieldStatus( i );
 		
 		if( status == "active" ) then
 			active = active + 1;
+			abbrev = self:GetBattlefieldAbbrev(map)
 		elseif( status == "confirm" ) then
 			SSPVP:Print( string.format( L["The battlefield %s is ready to join, auto leave has been disabled."], map ) );
 			return;
@@ -518,7 +564,11 @@ function SSPVP:QueueBattlefieldLeave()
 	end
 	
 	if( active == 1 ) then
-		self:RegisterTimer( self, "LeaveBattlefield", self.db.profile.leave.delay );
+		if( abbrev == "arena" ) then
+			self:RegisterTimer( self, "LeaveBattlefield", self.db.profile.leave.arenaDelay );
+		else
+			self:RegisterTimer( self, "LeaveBattlefield", self.db.profile.leave.bgDelay );
+		end
 	end
 end
 
@@ -583,8 +633,16 @@ function SSPVP:AutoJoinBattlefield()
 		currentType = "none";
 	end
 	
-	local _, joinMap, _, _, _, teamSize = GetBattlefieldStatus( joiningBF );
+	local _, joinMap, _, _, _, teamSize, isRated = GetBattlefieldStatus( joiningBF );
 	local joinAbbrev = SSPVP:GetBattlefieldAbbrev( joinMap );
+	
+	if( joinAbbrev == "arena" ) then
+		if( isRated ) then
+			joinAbbrev = "ratedArena"
+		else
+			joinAbbrev = "skirmArena"
+		end
+	end
 	
 	-- Don't bother trying to auto join if we're already inside
 	if( joinAbbrev == activeBF.abbrev ) then
