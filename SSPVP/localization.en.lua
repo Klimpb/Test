@@ -85,13 +85,16 @@ SSPVPLocals = {
 	["Your group has joined the queue for"] = "Your group has joined the queue for",
 	
 	-- Rated and Skirmish
-	["All Arenas"] = "All Arenas",
 	["R"] = "R",
 	["S"] = "S",
 	["Rated"] = "Rated",
 	["Skirmish"] = "Skirmish",
 	["%s [%s] (%dvs%d)"] = "%s [%s] (%dvs%d)",
 	["%s |cffffffff(%dvs%d)|r"] = "%s |cffffffff(%dvs%d)|r",
+	["All Arenas"] = "All Arenas",
+	
+	-- FooBar +15 points (1515 rating) / LoseBar -15 points (1485 rating)
+	["%s %d points (%d rating) / %s %d points (%d rating)"] = "%s %d points (%d rating) / %s %d points (%d rating)",
 	
 	["Queue for Alterac Valley in %d seconds."] = "Queue for Alterac Valley in %d seconds.",
 	["Queueing in %d second(s)."] = "Queueing in %d second(s).",
@@ -357,6 +360,7 @@ SSPVPLocals = {
 	["Modules"] = "Modules",
 	["Priorities"] = "Priorities",
 	["Color"] = "Color",
+	["Reformat"] = "Reformat",
 	
 	-- Module names
 	["SSPVP-AB"] = "Arathi Basin",
@@ -401,6 +405,13 @@ SSPVPLocals = {
 	
 	["Disable %s"] = "Disable %s",
 	
+	["Priority override mode"] = "Priority override mode",
+	["Less than (<)"] = "Less than (<)",
+	["Less than/equal(<=)"] = "Less than/equal(<=)",
+	
+	["Show talents next to name (requires ArenaEnemyInfo)"] = "Show talents next to name (requires ArenaEnemyInfo)",
+	["Show team name/rating in chat after game ends"] = "Show team name/rating in chat after game ends",
+	
 	["Row padding"] = "Row padding",
 	["Spacing in between rows in the overlay"] = "Spacing in between rows in the overlay",
 	["Category padding"] = "Category padding",
@@ -442,6 +453,7 @@ SSPVPLocals = {
 	["Show carrier health when available"] = "Show carrier health when available",
 	
 	["Show enemy health next to name on arena frame"] = "Show enemy health next to name on arena frame",
+	["Append server name when sending whispers in battlefields"] = "Append server name when sending whispers in battlefields",
 	
 	["Timer format"] = "Timer format",
 	["Category text type"] = "Category text type",

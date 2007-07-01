@@ -279,33 +279,14 @@ function Score:CreateInfoButtons()
 			GameTooltip:Show();
 		end );
 	end
-	
-	if( Orig_WSSF_OnShow ) then
-		Orig_WSSF_OnShow();
-	end
 end
 
 function Score:WorldStateScoreFrame_Update()
-	local index, name, classToken, nameButton, teamName, oldRating, newRating, dataFailure, isArena;
-
-	if( select( 2, IsActiveBattlefieldArena() ) ) then
-		isArena = true;
-		
-		for i=0, 1 do
-			_, oldRating, newRating = GetBattlefieldTeamInfo( i );
-			if( oldRating <= 0 or newRating <= 0 ) then
-				dataFailure = true;
-			end
-		end
-	end
-	
 	for i=1, MAX_WORLDSTATE_SCORE_BUTTONS do
-		nameButton = getglobal( "WorldStateScoreButton" .. i .. "Name" );
+		local nameButton = getglobal( "WorldStateScoreButton" .. i .. "Name" );
 		
 		if( nameButton ) then
-			index = FauxScrollFrame_GetOffset( WorldStateScoreScrollFrame ) + i;
-			
-			name, _, _, _, _, faction, _, _, _, classToken = GetBattlefieldScore( index );
+			local name, _, _, _, _, faction, _, _, _, classToken = GetBattlefieldScore(FauxScrollFrame_GetOffset(WorldStateScoreScrollFrame) + i);
 		
 			if( name ) then
 				local nameText = getglobal( "WorldStateScoreButton" .. i .. "Name" );
@@ -318,30 +299,22 @@ function Score:WorldStateScoreFrame_Update()
 					nameText:SetVertexColor( RAID_CLASS_COLORS[ classToken ].r, RAID_CLASS_COLORS[ classToken ].g, RAID_CLASS_COLORS[ classToken ].b );
 				end
 				
+				local level = ""
+				if( SSPVP.db.profile.score.level ) then
+					if( enemies[ name ] ) then
+						level = "|cffffffff[" .. enemies[name] .. "]|r "
+					elseif( friendlies[ name ] ) then
+						level = "|cffffffff[" .. friendlies[name] .. "]|r "
+					end
+				end
+
 				if( string.match( name, "-" ) ) then
 					name, server = string.match( name, "(.+)%-(.+)" );
 				else
 					server = GetRealmName();				
 				end
 
-				nameButton:SetText( name .. " |cffffffff- " .. server .. "|r" );
-
-				if( SSPVP.db.profile.score.level ) then
-					if( enemies[ name ] ) then
-						nameText:SetText( "[" .. enemies[ name ] .. "] " .. nameText:GetText() );
-					elseif( friendlies[ name ] ) then
-						nameText:SetText( "[" .. friendlies[ name ] .. "] " .. nameText:GetText() );
-					end
-				end
-
-				if( isArena ) then
-					teamName, oldRating, newRating = GetBattlefieldTeamInfo( faction );
-					if( not dataFailure ) then
-						getglobal( "WorldStateScoreButton" .. i .. "HonorGained" ):SetText( newRating - oldRating .. " (" .. newRating .. ")" );
-					else
-						getglobal( "WorldStateScoreButton" .. i .. "HonorGained" ):SetText( "----" );
-					end
-				end
+				nameButton:SetText( level .. name .. " |cffffffff- " .. server .. "|r" );
 			end
 		end
 	end

@@ -30,7 +30,7 @@ end
 
 local Orig_SendChatMessage = SendChatMessage;
 function SendChatMessage( text, type, language, target, ... )
-	if( Reformat.moduleEnabled and target and type == "WHISPER" and not string.match( target, "-" ) ) then
+	if( SSPVP.db.profile.reformat.autoAppend and Reformat.moduleEnabled and target and type == "WHISPER" and not string.match( target, "-" ) ) then
 		local foundName;
 		local foundPlayers = 0;
 				

@@ -21,8 +21,6 @@ end
 
 function PVPSync:CHAT_MSG_ADDON( event, prefix, msg, type, author )
 	if( prefix == "SSPVP" or prefix == "SSAV" ) then
-		--SSPVP:DebugF( 3, "[%s/%s] %s", author, type, msg );
-		
 		local dataType, data = string.match( msg, "([^:]+)%:(.+)" );
 		if( not dataType ) then
 			dataType = msg;
