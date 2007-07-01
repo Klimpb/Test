@@ -35,6 +35,7 @@ function UI:Initialize()
 		["EOTS"] = {L["Eye of the Storm"], {
 			["EOverlay"] = L["Overlay"],	
 		}},
+		["Reformat"] = L["Reformat"],
 		["Battlefield"] = L["Battlefield"],
 		["Overlay"] = {L["Overlay"], {
 			["Queue"] = L["Queue"],
@@ -60,6 +61,14 @@ function UI:Initialize()
 		else
 			obj:RegisterCategory(cat, self, "LoadFrame", true)
 		end
+	end
+end
+
+function UI:ToggleSSPVP()
+	if( SSPVP.db.profile.general.enabled ) then
+		SSPVP:Enable()
+	else
+		SSPVP:Disable()
 	end
 end
 
@@ -643,12 +652,16 @@ function UI:LoadUI()
 		{ text = L["Lock battlefield scoreboard"], type = "check", func = self.Reload, arg1 = "SSPVP-Mover", var = { "mover", "score" }, parent = "Mover" },
 		{ text = L["Lock capture bars"], type = "check", func = self.Reload, arg1 = "SSPVP-Mover", var = { "mover", "capture" }, parent = "Mover" },
 		
-		
+		-- Reformat
+		{ text = L["Append server name when sending whispers in battlefields"], type = "check", var = { "reformat", "autoAppend" }, parent = "Reformat" },
+
  		-- Auto join
  		{ text = L["Enable auto join"], type = "check", var = { "join", "enabled" }, parent = "Join" },
 		{ text = L["Battleground join delay"], type = "input", forceType = "int", width = 30, var = { "join", "bgDelay" }, parent = "Join" },
 		{ text = L["AFK battleground join delay"], type = "input", forceType = "int", width = 30, var = { "join", "bgAfk" }, parent = "Join" },
 		{ text = L["Arena join delay"], type = "input", forceType = "int", width = 30, var = { "join", "arenaDelay" }, parent = "Join" },
+		{ text = L["Default Channel"], type = "dropdown", list = { { "less", L["Less than (<)"] }, { "lseql", L["Less than/equal(<=)"] } },  var = { "join", "type" }, parent = "Join" },
+
 		{ text = L["Battlefield auto joining priorities"], list = priorityList, type = "priority", var = { "priority" }, parent = "Priorities" },
  		
  		-- Auto leave
@@ -690,13 +703,15 @@ function UI:LoadUI()
 		-- Arena
 		{ text = L["Enable enemy team report"], func = self.Reload, arg1 = "SSPVP-Arena", type = "check", var = { "arena", "target" }, parent = "Arena" },
 		{ text = L["Lock team report frame"], type = "check", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "locked" }, parent = "Arena" },
+		--{ text = L["Show team name/rating in chat after game ends"], type = "check", arg1 = "SSPVP-Arena", var = { "arena", "chatInfo" }, parent = "Arena" },
 		
+		{ text = L["Show talents next to name (requires ArenaEnemyInfo)"], type = "check", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "showTalents" }, parent = "Enemy" },
 		{ text = L["Show enemy number next to name on arena frames"], type = "check", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "enemyNum" }, parent = "Enemy" },
 		{ text = L["Show enemy health next to name on arena frame"], type = "check", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "showHealth" }, parent = "Enemy" },
 		{ text = L["Show enemy class icon"], type = "check", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "showIcon" }, parent = "Enemy" },
 		{ text = L["Show enemy minions on arena enemy frames"],  type = "check", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "showPets" }, parent = "Enemy" },
-		{ text = L["Enemy pet name color"], type = "color", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "petColor" }, parent = "Enemy" },
 		
+		{ text = L["Enemy pet name color"], type = "color", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "petColor" }, parent = "Frame" },
 		{ text = L["Border color"], type = "color", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "border" }, parent = "Frame" },
 		{ text = L["Background color"], type = "color", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "background" }, parent = "Frame" },
 		{ text = L["Background opacity: %d%%"], func = self.Reload, arg1 = "SSPVP-Arena", showValue = true, isPercent = true, type = "slider", var = { "arena", "opacity" }, parent = "Frame" },

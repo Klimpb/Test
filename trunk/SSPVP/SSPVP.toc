@@ -5,6 +5,7 @@
 ## SavedVariables: SSPVPDB
 
 Dongle.lua
+OptionHouse.lua
 
 localization.en.lua
 localization.de.lua
