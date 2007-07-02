@@ -5,6 +5,7 @@
 ## SavedVariables: LootModDB
 
 Dongle.lua
+OptionHouse.lua
 
 localization.enUS.lua
 localization.deDE.lua
