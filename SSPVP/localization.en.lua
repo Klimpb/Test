@@ -451,6 +451,7 @@ SSPVPLocals = {
 	["Show captures to win"] = "Show captures to win",
 	["Show total flag captures for Alliance and Horde"] = "Show total flag captures for Alliance and Horde",
 	["Show carrier health when available"] = "Show carrier health when available",
+	["Overlay frame scale: %d%%"] = "Overlay frame scale: %d%%",
 	
 	["Show enemy health next to name on arena frame"] = "Show enemy health next to name on arena frame",
 	["Append server name when sending whispers in battlefields"] = "Append server name when sending whispers in battlefields",

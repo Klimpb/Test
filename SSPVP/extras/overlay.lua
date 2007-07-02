@@ -28,10 +28,11 @@ function SSOverlay:Reload()
 		getglobal( self.frame:GetName() .. "Row" .. i ):EnableMouse( SSPVP.db.profile.overlay.locked );
 	end
 	
-	SSOverlay:RemoveRow( "catText" );
-	SSOverlay:UpdateColors();	
-	SSOverlay:UpdateCategoryText();
-	SSOverlay:UpdateOverlayText();
+	self.frame:SetScale(SSPVP.db.profile.overlay.scale)
+	self:RemoveRow( "catText" )
+	self:UpdateColors()	
+	self:UpdateCategoryText()
+	self:UpdateOverlayText()
 end
 
 function SSOverlay:GetFactionColor( faction )
@@ -53,6 +54,7 @@ function SSOverlay:CreateOverlay()
 	self.frame = CreateFrame( "Frame", "SSOverlayFrame", UIParent );
 	
 	self.frame.highestWidth = 0;
+	self.frame:SetScale(SSPVP.db.profile.overlay.scale)
 	self.frame:SetClampedToScreen( true );
 	self.frame:RegisterForDrag( "LeftButton" );
 	

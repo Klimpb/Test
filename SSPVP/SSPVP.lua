@@ -40,6 +40,7 @@ function SSPVP:Initialize()
 				catType = "auto",
 				rowPad = 0,
 				catPad = 0,
+				scale = 1.0,
 				displayType = "down",
 			},
 			positions = {
@@ -542,8 +543,6 @@ end
 -- Theres delay issues if we don't check leaving battlefield before this.
 function SSPVP:LeaveBattlefield()
 	if( GetBattlefieldWinner() ) then
-		--[[
-		-- Untested
 		if( SSPVP.db.profile.arena.chatInfo and (IsActiveBattlefieldArena()) and select(2, IsActiveBattlefieldArena()) ) then
 			local winName, winRating, winPoints
 			local loseName, loseRating, losePoints
@@ -563,8 +562,7 @@ function SSPVP:LeaveBattlefield()
 				SSPVP:Print(string.format(L["%s %d points (%d rating) / %s %d points (%d rating)"], winName, winPoints, winRating, loseName, losePoints, loseRating))
 			end
 		end
-		]]
-
+		
 		confirmedBFLeave = true
 		LeaveBattlefield()
 	end
