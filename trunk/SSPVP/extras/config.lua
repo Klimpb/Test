@@ -580,15 +580,18 @@ function UI:LoadFrame(category, subCat)
 					element:SetPoint( "TOPLEFT", frame:GetName() .. "Option" .. frame.id - 2, "TOPLEFT", 0, -45 )
 				end
 				
-				
 				if( row.minVal ) then
+					local _, maxValue = row:GetMinMaxValues()
+					
 					getglobal(element:GetName() .. "Low"):SetText(row.minText)
-					row:SetMinMaxValues(row.minVal, select(2, row:GetMinMaxValues()))
+					row:SetMinMaxValues(row.minVal, maxValue)
 				end
 				
 				if( row.maxVal ) then
+					local minValue = row:GetMinMaxValues()
+
 					getglobal(element:GetName() .. "High"):SetText(row.maxText)
-					row:SetMinMaxValues((select(1, row:GetMinMaxValues())), row.maxVal)
+					row:SetMinMaxValues(minValue, row.maxVal)
 				end
 			
 			elseif( row.type == "priority" ) then
@@ -654,6 +657,7 @@ function UI:LoadUI()
 		
 		-- Reformat
 		{ text = L["Append server name when sending whispers in battlefields"], type = "check", var = { "reformat", "autoAppend" }, parent = "Reformat" },
+		{ text = L["Block raid join/leave spam in battlegrounds"], type = "check", var = { "reformat", "blockSpam" }, parent = "Reformat" },
 
  		-- Auto join
  		{ text = L["Enable auto join"], type = "check", var = { "join", "enabled" }, parent = "Join" },

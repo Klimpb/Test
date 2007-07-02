@@ -48,6 +48,7 @@ function SSPVP:Initialize()
 				arena = { x = 300, y = 600 },
 			},
 			reformat = {
+				blockSpam = true,
 				autoAppend = true,
 			},
 			graveyard = {

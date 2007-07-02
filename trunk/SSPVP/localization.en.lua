@@ -421,7 +421,7 @@ SSPVPLocals = {
 	["Top -> Bottom"] = "Top -> Bottom",
 	["Dead enemy opacity: %d%%"] = "Dead enemy opacity: %d%%",
 	["Enemy row opacity if they are currently dead."] = "Enemy row opacity if they are currently dead.",
-	
+	["Block raid join/leave spam in battlegrounds"] = "Block raid join/leave spam in battlegrounds",
 	["Enable modified player/inspect pvp screens"] = "Enable modified player/inspect pvp screens",
 	["Enable auto leave"] = "Enable auto leave",
 	["Enable confirmation when leaving"] = "Enable confirmation when leaving",

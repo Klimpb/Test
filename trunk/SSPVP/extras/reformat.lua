@@ -21,7 +21,7 @@ end
 
 local Orig_ChatFrame_SystemEventHandler = ChatFrame_SystemEventHandler;
 function ChatFrame_SystemEventHandler( event, ... )
-	if( Reformat.moduleEnabled and arg1 and ( string.match( arg1, JoinedRaid ) or string.match( arg1, LeftRaid ) ) ) then
+	if( SSPVP.db.profile.reformat.blockSpam and Reformat.moduleEnabled and arg1 and ( string.match( arg1, JoinedRaid ) or string.match( arg1, LeftRaid ) ) ) then
 		return true;
 	end
 	
