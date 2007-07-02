@@ -318,7 +318,7 @@ function RT:CreateUI()
 	self.namespaceInput:SetWidth( 150 );
 	self.namespaceInput:SetAutoFocus( false );
 	self.namespaceInput.blockShow = true;
-	self.namespaceInput:SetScript( "OnTextChanged", self.ShowNamespaceProfile );
+	self.namespaceInput:SetScript( "OnEnterPressed", self.OnInputNamespace );
 	self.namespaceInput:SetText( self.db.enteredName );
 	self.namespaceInput:ClearAllPoints();
 	self.namespaceInput:SetPoint( "BOTTOMRIGHT", self.namespaceName, "TOPRIGHT", 175, -14 );
@@ -677,9 +677,9 @@ function RT:ShowNamespaceProfile()
 		self.extrasFrame.currentPage = "namespace";
 	end
 	
-	local namespaceText = string.trim( self.namespaceInput:GetText() );
+	local namespaceText = self.currNamespaceText or ""
 	local searchFilter = string.trim( self.nsSearchInput:GetText() );
-	local namespace = getglobal( namespaceText );
+	local namespace = self.currNamespace
 	
 	if( not namespace ) then
 		self:UIError( string.format( L["No namespace called \"%s\" seems to exist."], namespaceText ) );
@@ -1054,3 +1054,17 @@ function RT:GetEventCPU( text )
 		end
 	end
 end
+
+function RT.OnInputNamespace()
+	local namespaceText = string.trim( RT.namespaceInput:GetText() );
+	local namespace = getglobal( namespaceText )
+	if( not namespace ) then
+		pcall(function() namespace = loadstring("return "..namespaceText)() end);
+	end
+	RT.currNamespace = namespace
+	RT.currNamespaceText = namespaceText
+	RT:ShowNamespaceProfile()
+end
+
+
+RT:Load()
