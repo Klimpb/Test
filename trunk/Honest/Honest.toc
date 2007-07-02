@@ -5,8 +5,7 @@
 ## OptionalDeps: OptionHouse
 
 Dongle.lua
-
-OptionHouse\OptionHouse.lua
+OptionHouse.lua
 
 localization.enUS.lua
 localization.deDE.lua
