@@ -1,4 +1,4 @@
-RT = DongleStub("Dongle-1.0"):New( "RT" );
+RT = {}
 
 local L = ResourceToolsLocals;
 local ScriptProfiling;
@@ -6,29 +6,63 @@ local ScriptProfiling;
 local TOTAL_SCROLL_ROWS = 15;
 local TOTAL_COLUMNS = 5;
 
+local cmdPatterns = {
+	["mem (%S+)"] = "GetMemUsage",
+	["ui"] = "ToggleUI",
+	["cpu"] = "ToggleCPU",
+	["reset"] = "ResetCPU",
+	["total (%S+)"] = "GetTotalCPU",
+	["frame (%S+) (%S+)"] = "GetFrameCPU",
+	["func (%S+) (%S+)"] = "GetFunctionCPU",
+	["event (.+)"] = "GetEventCPU",
+}
+
+local function SlashParser(cmd)
+	if cmd ~= "" then
+		for regEx, method in pairs(cmdPatterns) do
+			if cmd:match(regEx) then
+				RT[method](RT, cmd:match(regEx))
+				return
+			end
+		end
+	end
+	
+	ChatFrame1:AddMessage( L["ResourceTools Slash Commands"])
+	ChatFrame1:AddMessage( L["/rt mem <name> - Lists memory usage of the specified addon"])
+	ChatFrame1:AddMessage( L["/rt ui - Toggles the profiling UI"]  )
+	ChatFrame1:AddMessage( L["/rt cpu - Toggles CPU usage on and off"] )
+	ChatFrame1:AddMessage( L["/rt reset - Resets CPU stats"] )
+	ChatFrame1:AddMessage( L["/rt total <addon> - Total CPU usage of the specified addon"] )
+	ChatFrame1:AddMessage( L["/rt frame <name> <true/false> - CPU usage on the specified frame, second argument is to include children"])
+	ChatFrame1:AddMessage( L["/rt func <name> <true/false> - CPU usage on the specified function, second argument is to include subroutines."])
+	ChatFrame1:AddMessage( L["/rt event <name> or all - Event names to register CPU usage for, you can specify multiple ones with a comma, or use \"all\" for a total based on all events."] )
+	
+end
+
+function RT:Load()
+	local frame = CreateFrame("Frame")
+	frame:SetScript("OnEvent", function() self:Enable() end)
+	frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+	self.frame = frame
+end
+
 function RT:Enable()
+
 	self.defaults = {
-		profile = {
-			includeSub = true,
-			hideInjected = true,
-			hideZeroFuncs = true,
-			hideZeroEvents = true,
-			searchName = "",
-			enteredName = "",
-			searchEvent = "",
-		}
+		includeSub = true,
+		hideInjected = true,
+		hideZeroFuncs = true,
+		hideZeroEvents = true,
+		searchName = "",
+		enteredName = "",
+		searchEvent = "",
 	}
 	
-	self.db = self:InitializeDB( "ResourceToolsDB", self.defaults )
-	self.cmd = self:InitializeSlashCommand( L["ResourceTools Slash Commands"], "ResourceTools", "resourcetools", "rt" );
-	self.cmd:RegisterSlashHandler( L["/rt mem <name> - Lists memory usage of the specified addon"], "mem (%S+)", "GetMemUsage" );	
-	self.cmd:RegisterSlashHandler( L["/rt ui - Toggles the profiling UI"], "ui", "ToggleUI" );
-	self.cmd:RegisterSlashHandler( L["/rt cpu - Toggles CPU usage on and off"], "cpu", "ToggleCPU" );
-	self.cmd:RegisterSlashHandler( L["/rt reset - Resets CPU stats"], "reset", "ResetCPU" );
-	self.cmd:RegisterSlashHandler( L["/rt total <addon> - Total CPU usage of the specified addon"], "total (%S+)", "GetTotalCPU" );
-	self.cmd:RegisterSlashHandler( L["/rt frame <name> <true/false> - CPU usage on the specified frame, second argument is to include children"], "frame (%S+) (%S+)", "GetFrameCPU" );
-	self.cmd:RegisterSlashHandler( L["/rt func <name> <true/false> - CPU usage on the specified function, second argument is to include subroutines."], "func (%S+) (%S+)", "GetFunctionCPU" );
-	self.cmd:RegisterSlashHandler( L["/rt event <name> or all - Event names to register CPU usage for, you can specify multiple ones with a comma, or use \"all\" for a total based on all events."], "event (.+)", "GetEventCPU" );
+	if not ResourceToolsDB then ResourceToolsDB = {} end
+	self.db = setmetatable(ResourceToolsDB, {__index=function(t,k) return self.defaults[k] end})
+	--self.db = self:InitializeDB( "ResourceToolsDB", self.defaults )
+	SlashCmdList["RESOURCETOOLS"] = SlashParser
+	SLASH_RESOURCETOOLS1 = "/rt"
 	
 	if( not RTEvents ) then
 		RTEvents = {};
@@ -84,40 +118,41 @@ function RT:Enable()
 	end
 end
 
+--[[
 function RT:Disable()
 	if( self.frame ) then
-		self.db.profile.searchName = self.nsSearchInput:GetText();
-		self.db.profile.enteredName = self.namespaceInput:GetText();
-		self.db.profile.searchEvent = self.eventInput:GetText();
+		self.db.searchName = self.nsSearchInput:GetText();
+		self.db.enteredName = self.namespaceInput:GetText();
+		self.db.searchEvent = self.eventInput:GetText();
 		
 		if( not self.namespaceSubs:GetChecked() ) then
-			self.db.profile.includeSub = false;		
+			self.db.includeSub = false;		
 		else
-			self.db.profile.includeSub = true;
+			self.db.includeSub = true;
 		end
 
 		if( not self.nsHideZero:GetChecked() ) then
-			self.db.profile.hideZeroFuncs = false;		
+			self.db.hideZeroFuncs = false;		
 		else
-			self.db.profile.hideZeroFuncs = true;
+			self.db.hideZeroFuncs = true;
 		end
 
 		if( not self.evtHideZero:GetChecked() ) then
-			self.db.profile.hideZeroEvents = false;		
+			self.db.hideZeroEvents = false;		
 		else
-			self.db.profile.hideZeroEvents = true;
+			self.db.hideZeroEvents = true;
 		end
 		
 		if( not self.nsHideInject:GetChecked() ) then
-			self.db.profile.hideInjected = false;
+			self.db.hideInjected = false;
 		else
-			self.db.profile.hideInjected = true;	
+			self.db.hideInjected = true;	
 		end
 	end
 end
-
+]]
 local elapsed = 0;
-function RT:OnUpdate()
+function RT.OnUpdate(frame, arg1)
 	elapsed = elapsed + arg1;
 	
 	if( elapsed >= 2 ) then
@@ -151,7 +186,7 @@ function RT:ToggleUI()
 end
 
 function RT:CreateUI()
-	if( self.frame ) then
+	if( self.frame.initialized ) then
 		return;
 	end
 	
@@ -267,7 +302,7 @@ function RT:CreateUI()
 	self.nsSearchInput:SetHeight( 18 );
 	self.nsSearchInput:SetWidth( 150 );
 	self.nsSearchInput:SetAutoFocus( false );
-	self.nsSearchInput:SetText( self.db.profile.searchName );
+	self.nsSearchInput:SetText( self.db.searchName );
 	self.nsSearchInput.blockShow = true;
 	self.nsSearchInput:SetScript( "OnTextChanged", self.ShowNamespaceProfile );
 	self.nsSearchInput:ClearAllPoints();
@@ -284,7 +319,7 @@ function RT:CreateUI()
 	self.namespaceInput:SetAutoFocus( false );
 	self.namespaceInput.blockShow = true;
 	self.namespaceInput:SetScript( "OnTextChanged", self.ShowNamespaceProfile );
-	self.namespaceInput:SetText( self.db.profile.enteredName );
+	self.namespaceInput:SetText( self.db.enteredName );
 	self.namespaceInput:ClearAllPoints();
 	self.namespaceInput:SetPoint( "BOTTOMRIGHT", self.namespaceName, "TOPRIGHT", 175, -14 );
 	
@@ -293,7 +328,7 @@ function RT:CreateUI()
 	self.namespaceSubs:SetWidth( 26 );
 	self.namespaceSubs:SetPoint( "TOPLEFT", self.namespaceName, "TOPLEFT", 0, -20 );
 	self.namespaceSubs.blockShow = self.namespaceSubs:GetChecked();
-	self.namespaceSubs:SetChecked( self.db.profile.includeSub );
+	self.namespaceSubs:SetChecked( self.db.includeSub );
 	self.namespaceSubs:SetScript( "OnClick", self.ShowNamespaceProfile );
 	getglobal( self.namespaceSubs:GetName() .. "Text" ):SetText( L["Include subroutines"] );
 
@@ -301,7 +336,7 @@ function RT:CreateUI()
 	self.nsHideZero:SetHeight( 26 );
 	self.nsHideZero:SetWidth( 26 );
 	self.nsHideZero:SetPoint( "TOPLEFT", self.namespaceSubs, "TOPLEFT", 0, -20 );
-	self.nsHideZero:SetChecked( self.db.profile.hideZeroFuncs );
+	self.nsHideZero:SetChecked( self.db.hideZeroFuncs );
 	self.nsHideZero.blockShow = self.nsHideZero:GetChecked();
 	self.nsHideZero:SetScript( "OnClick", self.ShowNamespaceProfile );
 	getglobal( self.nsHideZero:GetName() .. "Text" ):SetText( L["Hide uncalled functions"] );
@@ -310,7 +345,7 @@ function RT:CreateUI()
 	self.nsHideInject:SetHeight( 26 );
 	self.nsHideInject:SetWidth( 26 );
 	self.nsHideInject:SetPoint( "TOPLEFT", self.nsHideZero, "TOPLEFT", 0, -20 );
-	self.nsHideInject:SetChecked( self.db.profile.hideInjected );
+	self.nsHideInject:SetChecked( self.db.hideInjected );
 	self.nsHideInject.blockShow = self.nsHideInject:GetChecked();
 	self.nsHideInject:SetScript( "OnClick", self.ShowNamespaceProfile );
 	getglobal( self.nsHideInject:GetName() .. "Text" ):SetText( L["Hide injected functions"] );
@@ -339,7 +374,7 @@ function RT:CreateUI()
 	self.eventInput:SetHeight( 18 );
 	self.eventInput:SetWidth( 150 );
 	self.eventInput:SetAutoFocus( false );
-	self.eventInput:SetText( self.db.profile.searchEvent );
+	self.eventInput:SetText( self.db.searchEvent );
 	self.eventInput.blockShow = true;
 	self.eventInput:SetScript( "OnTextChanged", self.ShowEventProfile );
 	self.eventInput:ClearAllPoints();
@@ -349,7 +384,7 @@ function RT:CreateUI()
 	self.evtHideZero:SetHeight( 26 );
 	self.evtHideZero:SetWidth( 26 );
 	self.evtHideZero:SetPoint( "TOPLEFT", self.eventSearch, "TOPLEFT", 0, -20 );
-	self.evtHideZero:SetChecked( self.db.profile.hideZeroEvents );
+	self.evtHideZero:SetChecked( self.db.hideZeroEvents );
 	self.evtHideZero.blockShow = self.evtHideZero:GetChecked();
 	self.evtHideZero:SetScript( "OnClick", self.ShowEventProfile );
 	getglobal( self.evtHideZero:GetName() .. "Text" ):SetText( L["Hide uncalled events"] );
@@ -414,6 +449,7 @@ function RT:UpdateUI()
 		self.overallEvent:SetText( L["All Events: Disabled"] );
 	end
 	
+	self.frame.initialized = true
 	self:UpdateOpenPanel();	
 end
 
