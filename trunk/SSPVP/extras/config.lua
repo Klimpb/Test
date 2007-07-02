@@ -692,8 +692,9 @@ function UI:LoadUI()
 		{ text = L["Border color"], func = self.Reload, arg1 = "SSPVP-Overlay", type = "color", var = { "overlay", "border" }, parent = "Display" },
 		{ text = L["Text color"], func = self.Reload, arg1 = "SSPVP-Overlay", type = "color", var = { "overlay", "textColor" }, parent = "Display" },
 		{ text = L["Category text color"], func = self.Reload, arg1 = "SSPVP-Overlay", type = "color", var = { "overlay", "categoryColor" }, parent = "Display" },
-		{ text = L["Background opacity: %d%%"], func = self.Reload, arg1 = "SSPVP-Overlay", showValue = true, isPercent = true, type = "slider", var = { "overlay", "opacity" }, parent = "Display" },
-		{ text = L["Text opacity: %d%%"], func = self.Reload, arg1 = "SSPVP-Overlay", showValue = true, isPercent = true, type = "slider", var = { "overlay", "textOpacity" }, parent = "Display" },
+		{ text = L["Background opacity: %d%%"], func = self.Reload, arg1 = "SSPVP-Overlay", type = "slider", var = { "overlay", "opacity" }, parent = "Display" },
+		{ text = L["Text opacity: %d%%"], func = self.Reload, arg1 = "SSPVP-Overlay", type = "slider", var = { "overlay", "textOpacity" }, parent = "Display" },
+		{ text = L["Overlay frame scale: %d%%"], func = self.Reload, arg1 = "SSPVP-Overlay", maxVal = 2.0, maxText = "200%", type = "slider", var = { "overlay", "scale" }, parent = "Display" },
 
 		{ text = L["Enable queue overlay"], type = "check", func = SSPVP.Reload, var = { "queue", "enabled" }, parent = "Queue" },
 		{ text = L["Show queue overlay inside battlegrounds"], func = SSPVP.Reload, type = "check", var = { "queue", "insideField" }, parent = "Queue" },
@@ -703,7 +704,7 @@ function UI:LoadUI()
 		-- Arena
 		{ text = L["Enable enemy team report"], func = self.Reload, arg1 = "SSPVP-Arena", type = "check", var = { "arena", "target" }, parent = "Arena" },
 		{ text = L["Lock team report frame"], type = "check", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "locked" }, parent = "Arena" },
-		--{ text = L["Show team name/rating in chat after game ends"], type = "check", arg1 = "SSPVP-Arena", var = { "arena", "chatInfo" }, parent = "Arena" },
+		{ text = L["Show team name/rating in chat after game ends"], type = "check", arg1 = "SSPVP-Arena", var = { "arena", "chatInfo" }, parent = "Arena" },
 		
 		{ text = L["Show talents next to name (requires ArenaEnemyInfo)"], type = "check", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "showTalents" }, parent = "Enemy" },
 		{ text = L["Show enemy number next to name on arena frames"], type = "check", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "enemyNum" }, parent = "Enemy" },
@@ -714,9 +715,9 @@ function UI:LoadUI()
 		{ text = L["Enemy pet name color"], type = "color", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "petColor" }, parent = "Frame" },
 		{ text = L["Border color"], type = "color", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "border" }, parent = "Frame" },
 		{ text = L["Background color"], type = "color", func = self.Reload, arg1 = "SSPVP-Arena", var = { "arena", "background" }, parent = "Frame" },
-		{ text = L["Background opacity: %d%%"], func = self.Reload, arg1 = "SSPVP-Arena", showValue = true, isPercent = true, type = "slider", var = { "arena", "opacity" }, parent = "Frame" },
-		{ text = L["Dead enemy opacity: %d%%"], func = self.Reload, arg1 = "SSPVP-Arena", showValue = true, isPercent = true, type = "slider", var = { "arena", "deadOpacity" }, parent = "Frame" },
-		{ text = L["Targetting frame scale: %d%%"], func = self.Reload, arg1 = "SSPVP-Arena", showValue = true, isPercent = true, type = "slider", var = { "arena", "scale" }, parent = "Frame" },
+		{ text = L["Background opacity: %d%%"], func = self.Reload, arg1 = "SSPVP-Arena", type = "slider", var = { "arena", "opacity" }, parent = "Frame" },
+		{ text = L["Dead enemy opacity: %d%%"], func = self.Reload, arg1 = "SSPVP-Arena", type = "slider", var = { "arena", "deadOpacity" }, parent = "Frame" },
+		{ text = L["Targetting frame scale: %d%%"], func = self.Reload, arg1 = "SSPVP-Arena", maxVal = 2.0, maxText = "200%", type = "slider", var = { "arena", "scale" }, parent = "Frame" },
  		
  		-- Alterac Valley
 		{ text = L["Enable capture timers"], type = "check", func = self.Reload, arg1 = "SSPVP-AV", var = { "av", "timers" }, parent = "AV" },

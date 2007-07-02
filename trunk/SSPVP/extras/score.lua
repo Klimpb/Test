@@ -282,6 +282,8 @@ function Score:CreateInfoButtons()
 end
 
 function Score:WorldStateScoreFrame_Update()
+	local isArena = (IsActiveBattlefieldArena())
+
 	for i=1, MAX_WORLDSTATE_SCORE_BUTTONS do
 		local nameButton = getglobal( "WorldStateScoreButton" .. i .. "Name" );
 		
@@ -305,6 +307,15 @@ function Score:WorldStateScoreFrame_Update()
 						level = "|cffffffff[" .. enemies[name] .. "]|r "
 					elseif( friendlies[ name ] ) then
 						level = "|cffffffff[" .. friendlies[name] .. "]|r "
+					end
+				end
+
+				if( isArena ) then
+					teamName, oldRating, newRating = GetBattlefieldTeamInfo( faction );
+					if( not dataFailure ) then
+						getglobal( "WorldStateScoreButton" .. i .. "HonorGained" ):SetText( newRating - oldRating .. " (" .. newRating .. ")" );
+					else
+						getglobal( "WorldStateScoreButton" .. i .. "HonorGained" ):SetText( "----" );
 					end
 				end
 
