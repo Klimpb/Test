@@ -41,12 +41,13 @@ end
 
 function RT:Load()
 	local frame = CreateFrame("Frame")
-	frame:SetScript("OnEvent", function() self:Enable() end)
+	frame:SetScript("OnEvent", function(frame,event,...) self[event](self,...) end)
 	frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+	frame:RegisterEvent("PLAYER_LOGOUT")
 	self.frame = frame
 end
 
-function RT:Enable()
+function RT:PLAYER_ENTERING_WORLD()
 
 	self.defaults = {
 		includeSub = true,
@@ -118,8 +119,7 @@ function RT:Enable()
 	end
 end
 
---[[
-function RT:Disable()
+function RT:PLAYER_LOGOUT()
 	if( self.frame ) then
 		self.db.searchName = self.nsSearchInput:GetText();
 		self.db.enteredName = self.namespaceInput:GetText();
@@ -150,7 +150,8 @@ function RT:Disable()
 		end
 	end
 end
-]]
+
+
 local elapsed = 0;
 function RT.OnUpdate(frame, arg1)
 	elapsed = elapsed + arg1;
@@ -318,10 +319,14 @@ function RT:CreateUI()
 	self.namespaceInput:SetWidth( 150 );
 	self.namespaceInput:SetAutoFocus( false );
 	self.namespaceInput.blockShow = true;
-	self.namespaceInput:SetScript( "OnEnterPressed", self.OnInputNamespace );
+	self.namespaceInput:SetScript( "OnEnterPressed", function()
+		self:LoadNamespace()
+		self:ShowNamespaceProfile()
+	end )
 	self.namespaceInput:SetText( self.db.enteredName );
 	self.namespaceInput:ClearAllPoints();
 	self.namespaceInput:SetPoint( "BOTTOMRIGHT", self.namespaceName, "TOPRIGHT", 175, -14 );
+	self:LoadNamespace()
 	
 	self.namespaceSubs = CreateFrame( "CheckButton", self.frame:GetName() .. "NamespaceSubRout", self.frame, "OptionsCheckButtonTemplate" );
 	self.namespaceSubs:SetHeight( 26 );
@@ -1055,7 +1060,7 @@ function RT:GetEventCPU( text )
 	end
 end
 
-function RT.OnInputNamespace()
+function RT.LoadNamespace()
 	local namespaceText = string.trim( RT.namespaceInput:GetText() );
 	local namespace = getglobal( namespaceText )
 	if( not namespace ) then
@@ -1063,7 +1068,6 @@ function RT.OnInputNamespace()
 	end
 	RT.currNamespace = namespace
 	RT.currNamespaceText = namespaceText
-	RT:ShowNamespaceProfile()
 end
 
 
