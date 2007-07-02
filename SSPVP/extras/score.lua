@@ -1,283 +1,281 @@
-local Score = SSPVP:NewModule( "SSPVP-Score" );
-Score.activeIn = "bf";
+local Score = SSPVP:NewModule( "SSPVP-Score" )
+Score.activeIn = "bf"
 
-local L = SSPVPLocals;
-local enemies = {};
-local friendlies = {};
-
-local Orig_WSSF_OnShow;
+local L = SSPVPLocals
+local enemies = {}
+local friendlies = {}
 
 function Score:Initialize()
-	hooksecurefunc( "WorldStateScoreFrame_Update", self.WorldStateScoreFrame_Update );
+	hooksecurefunc( "WorldStateScoreFrame_Update", self.WorldStateScoreFrame_Update )
 
-	WorldStateScoreFrame:HookScript( "OnShow", self.CreateInfoButtons );
-	WorldStateScoreFrame:HookScript( "OnHide", self.ResetScoreFaction );
+	WorldStateScoreFrame:HookScript( "OnShow", self.CreateInfoButtons )
+	WorldStateScoreFrame:HookScript( "OnHide", self.ResetScoreFaction )
 	
-	SSOverlay:AddCategory( "fact", L["Faction Balance"], 0 );
+	SSOverlay:AddCategory( "fact", L["Faction Balance"], 0 )
 end
 
 function Score:EnableModule()
-	self:RegisterEvent( "PLAYER_TARGET_CHANGED" );
-	self:RegisterEvent( "UPDATE_MOUSEOVER_UNIT" );
-	self:RegisterEvent( "RAID_ROSTER_UPDATE" );
-	self:RegisterEvent( "UPDATE_BATTLEFIELD_SCORE" );
+	self:RegisterEvent( "PLAYER_TARGET_CHANGED" )
+	self:RegisterEvent( "UPDATE_MOUSEOVER_UNIT" )
+	self:RegisterEvent( "RAID_ROSTER_UPDATE" )
+	self:RegisterEvent( "UPDATE_BATTLEFIELD_SCORE" )
 end
 
 function Score:DisableModule()
-	self:UnregisterAllEvents();
-	SSOverlay:RemoveCategory( "fact" );
+	self:UnregisterAllEvents()
+	SSOverlay:RemoveCategory( "fact" )
 end
 
 function Score:Reload()
 	if( not SSPVP.db.profile.general.factBalance ) then
-		SSOverlay:RemoveCategory( "fact" );
+		SSOverlay:RemoveCategory( "fact" )
 	end
 	
-	Score:RAID_ROSTER_UPDATE();
-	Score:UPDATE_BATTLEFIELD_SCORE();
+	Score:RAID_ROSTER_UPDATE()
+	Score:UPDATE_BATTLEFIELD_SCORE()
 end
 
 function Score:ResetScoreFaction()
-	SetBattlefieldScoreFaction( nil );
+	SetBattlefieldScoreFaction( nil )
 end
 
 function Score:RAID_ROSTER_UPDATE()
 	if( not SSPVP.db.profile.score.level ) then
-		return;
+		return
 	end
 	
 	for i=1, GetNumRaidMembers() do
-		local name, server = UnitName( "raid" .. i );
+		local name, server = UnitName( "raid" .. i )
 		
 		if( server ) then
-			friendlies[ name .. "-" .. server ] = UnitLevel( "raid" .. i );
+			friendlies[ name .. "-" .. server ] = UnitLevel( "raid" .. i )
 		else
-			friendlies[ name ] = UnitLevel( "raid" .. i );
+			friendlies[ name ] = UnitLevel( "raid" .. i )
 		end
 	end
 end
 
 function Score:UPDATE_BATTLEFIELD_SCORE()
 	if( not SSPVP.db.profile.general.factBalance ) then
-		return;
+		return
 	end
 	
-	local faction;
-	local alliance = 0;
-	local horde = 0;
+	local faction
+	local alliance = 0
+	local horde = 0
 	
 	for i=1, GetNumBattlefieldScores() do
-		_, _, _, _, _, faction, _, _, _, classToken = GetBattlefieldScore( i );
+		_, _, _, _, _, faction, _, _, _, classToken = GetBattlefieldScore( i )
 		
 		if( faction == 0 ) then
-			horde = horde + 1;
+			horde = horde + 1
 		elseif( faction == 1 ) then
-			alliance = alliance + 1;
+			alliance = alliance + 1
 		end
 	end
 	
 	if( ( alliance == SSPVP:MaxBattlefieldPlayers() and horde == SSPVP:MaxBattlefieldPlayers() ) or ( alliance == 0 and horde == 0 ) ) then
-		SSOverlay:RemoveCategory( "fact" );
-		return;
+		SSOverlay:RemoveCategory( "fact" )
+		return
 	end
 	
-	SSOverlay:UpdateText( "fact", L["Alliance: %d"], SSOverlay:GetFactionColor( "Alliance" ), alliance );
-	SSOverlay:UpdateText( "fact", L["Horde: %d"], SSOverlay:GetFactionColor( "Horde" ), horde );
+	SSOverlay:UpdateText( "fact", L["Alliance: %d"], SSOverlay:GetFactionColor( "Alliance" ), alliance )
+	SSOverlay:UpdateText( "fact", L["Horde: %d"], SSOverlay:GetFactionColor( "Horde" ), horde )
 end
 
 function Score:UPDATE_MOUSEOVER_UNIT()
 	if( SSPVP.db.profile.score.level ) then
-		self:CheckUnit( "mouseover" );
+		self:CheckUnit( "mouseover" )
 	end
 end
 
 function Score:PLAYER_TARGET_CHANGED()
 	if( SSPVP.db.profile.score.level ) then
-		self:CheckUnit( "target" );
+		self:CheckUnit( "target" )
 	end
 end
 
 function Score:CheckUnit( unit )
 	if( UnitIsEnemy( unit, "player" ) and UnitIsPVP( unit ) and UnitIsPlayer( unit ) ) then	
-		local name, server = UnitName( unit );
+		local name, server = UnitName( unit )
 		if( server ) then
-			enemies[ name .. "-" .. server ] = UnitLevel( unit );
+			enemies[ name .. "-" .. server ] = UnitLevel( unit )
 		else
-			enemies[ name ] = UnitLevel( unit );
+			enemies[ name ] = UnitLevel( unit )
 		end
 	end	
 end
 
 function Score:CreateFactionInfo( faction )
-	local factionColor, factionID;
+	local factionColor, factionID
 	if( faction == "Alliance" ) then
-		factionColor = "|cff0070dd";
-		factionID = 1;
+		factionColor = "|cff0070dd"
+		factionID = 1
 
 	elseif( faction == "Horde" ) then
-		factionColor = RED_FONT_COLOR_CODE;
-		factionID = 0;
+		factionColor = RED_FONT_COLOR_CODE
+		factionID = 0
 	end
 	
-	local serverCount = {};
-	local classCount = {};
-	local totalPlayers = 0;
+	local serverCount = {}
+	local classCount = {}
+	local totalPlayers = 0
 	
-	local name, playerFaction, class, found;
+	local name, playerFaction, class, found
 	
 	for i=1, GetNumBattlefieldScores() do
-		name, _, _, _, _, playerFaction, _, _, class = GetBattlefieldScore( i );
+		name, _, _, _, _, playerFaction, _, _, class = GetBattlefieldScore( i )
 		if( name and playerFaction == factionID ) then
-			local server = GetRealmName();
+			local server = GetRealmName()
 			if( string.find( name, "%-" ) ) then
-				_, server = string.match( name, "(.+)%-(.+)" );
+				_, server = string.match( name, "(.+)%-(.+)" )
 			end
 
-			found = nil;
+			found = nil
 			
 			for id, row in pairs( serverCount ) do
 				if( row.server == server ) then
-					serverCount[ id ].total = row.total + 1;
-					found = true;
-					break;
+					serverCount[ id ].total = row.total + 1
+					found = true
+					break
 				end
 			end
 			
 			if( not found ) then
-				table.insert( serverCount, { total = 1, server = server } );
+				table.insert( serverCount, { total = 1, server = server } )
 			end
 			
-			found = nil;
+			found = nil
 			
 			for id, row in pairs( classCount ) do
 				if( row.class == class ) then
-					classCount[ id ].total = row.total + 1;
-					found = true;
-					break;
+					classCount[ id ].total = row.total + 1
+					found = true
+					break
 				end
 			end
 			
 			if( not found ) then
-				table.insert( classCount, { total = 1, class = class } );
+				table.insert( classCount, { total = 1, class = class } )
 			end
 			
-			totalPlayers = totalPlayers + 1;
+			totalPlayers = totalPlayers + 1
 		end
 	end
 	
-	table.sort( serverCount, function( a, b ) return a.total > b.total; end );
-	table.sort( classCount, function( a, b ) return a.total > b.total; end );
+	table.sort( serverCount, function( a, b ) return a.total > b.total end )
+	table.sort( classCount, function( a, b ) return a.total > b.total end )
 	
-	return serverCount, classCount, L[ faction ], factionColor, totalPlayers;
+	return serverCount, classCount, L[ faction ], factionColor, totalPlayers
 end
 
 function Score:PrintFactionInfo( faction )
-	local servers, classes, faction, _, players = self:CreateFactionInfo( faction );
+	local servers, classes, faction, _, players = self:CreateFactionInfo( faction )
 	
-	local minCount = 2;
+	local minCount = 2
 	if( SSPVP:IsPlayerIn( "av" ) ) then
-		minCount = 4;
+		minCount = 4
 	end
 	
 	for i=#( servers ), 1, -1 do
 		if( servers[ i ].total < minCount ) then
-			table.remove( servers, i );
+			table.remove( servers, i )
 		end
 	end
 	
-	SSPVP:ChannelMessage( string.format( L["%s (%d players)"], faction, players ) );
+	SSPVP:ChannelMessage( string.format( L["%s (%d players)"], faction, players ) )
 
-	local parsedServers = {};
+	local parsedServers = {}
 	for _, row in pairs( servers ) do
-		table.insert( parsedServers, row.server .. ": " .. row.total );
+		table.insert( parsedServers, row.server .. ": " .. row.total )
 	end
 	
-	SSPVP:ChannelMessage( table.concat( parsedServers, ", " ) );
+	SSPVP:ChannelMessage( table.concat( parsedServers, ", " ) )
 	
-	local parsedClasses = {};
+	local parsedClasses = {}
 	for _, row in pairs( classes ) do
-		table.insert( parsedClasses, row.class .. ": " .. row.total );
+		table.insert( parsedClasses, row.class .. ": " .. row.total )
 	end
 	
-	SSPVP:ChannelMessage( table.concat( parsedClasses, ", " ) );
+	SSPVP:ChannelMessage( table.concat( parsedClasses, ", " ) )
 end
 
 function Score:TooltipFactionInfo( faction )
-	local servers, classes, faction, color, players = self:CreateFactionInfo( faction );
+	local servers, classes, faction, color, players = self:CreateFactionInfo( faction )
 	if( players == 0 ) then
-		return L["No data found"];
+		return L["No data found"]
 	end
 	
-	local tooltip = string.format( L["%s (%d players)"], color .. faction .. FONT_COLOR_CODE_CLOSE, players ) .. "\n\n";
+	local tooltip = string.format( L["%s (%d players)"], color .. faction .. FONT_COLOR_CODE_CLOSE, players ) .. "\n\n"
 	
-	tooltip = tooltip .. color .. L["Server Balance"] .. FONT_COLOR_CODE_CLOSE .. "\n";
+	tooltip = tooltip .. color .. L["Server Balance"] .. FONT_COLOR_CODE_CLOSE .. "\n"
 	for _, row in pairs( servers ) do
-		tooltip = tooltip .. row.server .. ": " .. row.total .. "\n";
+		tooltip = tooltip .. row.server .. ": " .. row.total .. "\n"
 	end
 	
-	tooltip = tooltip .. "\n" .. color .. L["Class Balance"] .. FONT_COLOR_CODE_CLOSE .. "\n";
+	tooltip = tooltip .. "\n" .. color .. L["Class Balance"] .. FONT_COLOR_CODE_CLOSE .. "\n"
 	for _, row in pairs( classes ) do
-		tooltip = tooltip .. row.class .. ": " .. row.total .. "\n";
+		tooltip = tooltip .. row.class .. ": " .. row.total .. "\n"
 	end
 	
-	return tooltip;
+	return tooltip
 end
 
 function Score:CreateInfoButtons()
-	local button;
+	local button
 	
 	if( not PVPScoreAllianceInfo ) then
-		button = CreateFrame( "Button", "PVPScoreAllianceInfo", WorldStateScoreFrame, "GameMenuButtonTemplate" );
-		button:SetWidth( 50 );
-		button:SetHeight( 19 );
+		button = CreateFrame( "Button", "PVPScoreAllianceInfo", WorldStateScoreFrame, "GameMenuButtonTemplate" )
+		button:SetWidth( 50 )
+		button:SetHeight( 19 )
 
-		button:SetFont( GameFontHighlightSmall:GetFont() );
+		button:SetFont( GameFontHighlightSmall:GetFont() )
 
-		button:SetText( L["Alliance"] );
-		button:SetPoint( "TOPRIGHT", WorldStateScoreFrame, "TOPRIGHT", -190, -18 );
+		button:SetText( L["Alliance"] )
+		button:SetPoint( "TOPRIGHT", WorldStateScoreFrame, "TOPRIGHT", -190, -18 )
 
 		button:SetScript( "OnLeave", function()
-			GameTooltip:Hide();
-		end );
+			GameTooltip:Hide()
+		end )
 
 		button:SetScript( "OnMouseUp", function()
 			if( arg1 == "RightButton" ) then
-				Score:PrintFactionInfo( "Alliance" );
+				Score:PrintFactionInfo( "Alliance" )
 			end
-		end );
+		end )
 
 		button:SetScript( "OnEnter", function()
-			GameTooltip:SetOwner( this, "ANCHOR_BOTTOMLEFT" );
-			GameTooltip:SetText( Score:TooltipFactionInfo( "Alliance" ) );
-			GameTooltip:Show();
-		end );
+			GameTooltip:SetOwner( this, "ANCHOR_BOTTOMLEFT" )
+			GameTooltip:SetText( Score:TooltipFactionInfo( "Alliance" ) )
+			GameTooltip:Show()
+		end )
 	end
 	
 	if( not PVPScoreHordeInfo ) then
-		button = CreateFrame( "Button", "PVPScoreHordeInfo", WorldStateScoreFrame, "GameMenuButtonTemplate" );
-		button:SetWidth( 40 );
-		button:SetHeight( 19 );
+		button = CreateFrame( "Button", "PVPScoreHordeInfo", WorldStateScoreFrame, "GameMenuButtonTemplate" )
+		button:SetWidth( 40 )
+		button:SetHeight( 19 )
 
-		button:SetFont( GameFontHighlightSmall:GetFont() );
+		button:SetFont( GameFontHighlightSmall:GetFont() )
 
-		button:SetText( L["Horde"] );
-		button:SetPoint( "TOPRIGHT", WorldStateScoreFrame, "TOPRIGHT", -140, -18 );
+		button:SetText( L["Horde"] )
+		button:SetPoint( "TOPRIGHT", WorldStateScoreFrame, "TOPRIGHT", -140, -18 )
 
 		button:SetScript( "OnLeave", function()
-			GameTooltip:Hide();
-		end );
+			GameTooltip:Hide()
+		end )
 
 		button:SetScript( "OnMouseUp", function()
 			if( arg1 == "RightButton" ) then
-				Score:PrintFactionInfo( "Horde" );
+				Score:PrintFactionInfo( "Horde" )
 			end
-		end );
+		end )
 
 		button:SetScript( "OnEnter", function()
-			GameTooltip:SetOwner( this, "ANCHOR_BOTTOMLEFT" );
-			GameTooltip:SetText( Score:TooltipFactionInfo( "Horde" ) );
-			GameTooltip:Show();
-		end );
+			GameTooltip:SetOwner( this, "ANCHOR_BOTTOMLEFT" )
+			GameTooltip:SetText( Score:TooltipFactionInfo( "Horde" ) )
+			GameTooltip:Show()
+		end )
 	end
 end
 
@@ -285,20 +283,20 @@ function Score:WorldStateScoreFrame_Update()
 	local isArena = (IsActiveBattlefieldArena())
 
 	for i=1, MAX_WORLDSTATE_SCORE_BUTTONS do
-		local nameButton = getglobal( "WorldStateScoreButton" .. i .. "Name" );
+		local nameButton = getglobal( "WorldStateScoreButton" .. i .. "Name" )
 		
 		if( nameButton ) then
-			local name, _, _, _, _, faction, _, _, _, classToken = GetBattlefieldScore(FauxScrollFrame_GetOffset(WorldStateScoreScrollFrame) + i);
+			local name, _, _, _, _, faction, _, _, _, classToken = GetBattlefieldScore(FauxScrollFrame_GetOffset(WorldStateScoreScrollFrame) + i)
 		
 			if( name ) then
-				local nameText = getglobal( "WorldStateScoreButton" .. i .. "Name" );
+				local nameText = getglobal( "WorldStateScoreButton" .. i .. "Name" )
 
 				if( SSPVP.db.profile.score.icon ) then
-					getglobal( "WorldStateScoreButton" .. i .. "ClassButtonIcon" ):Hide();
+					getglobal( "WorldStateScoreButton" .. i .. "ClassButtonIcon" ):Hide()
 				end
 
 				if( SSPVP.db.profile.score.color and RAID_CLASS_COLORS[ classToken ] and name ~= UnitName( "player" ) ) then
-					nameText:SetVertexColor( RAID_CLASS_COLORS[ classToken ].r, RAID_CLASS_COLORS[ classToken ].g, RAID_CLASS_COLORS[ classToken ].b );
+					nameText:SetVertexColor( RAID_CLASS_COLORS[ classToken ].r, RAID_CLASS_COLORS[ classToken ].g, RAID_CLASS_COLORS[ classToken ].b )
 				end
 				
 				local level = ""
@@ -311,21 +309,21 @@ function Score:WorldStateScoreFrame_Update()
 				end
 
 				if( isArena ) then
-					teamName, oldRating, newRating = GetBattlefieldTeamInfo( faction );
+					teamName, oldRating, newRating = GetBattlefieldTeamInfo( faction )
 					if( not dataFailure ) then
-						getglobal( "WorldStateScoreButton" .. i .. "HonorGained" ):SetText( newRating - oldRating .. " (" .. newRating .. ")" );
+						getglobal( "WorldStateScoreButton" .. i .. "HonorGained" ):SetText( newRating - oldRating .. " (" .. newRating .. ")" )
 					else
-						getglobal( "WorldStateScoreButton" .. i .. "HonorGained" ):SetText( "----" );
+						getglobal( "WorldStateScoreButton" .. i .. "HonorGained" ):SetText( "----" )
 					end
 				end
 
 				if( string.match( name, "-" ) ) then
-					name, server = string.match( name, "(.+)%-(.+)" );
+					name, server = string.match( name, "(.+)%-(.+)" )
 				else
-					server = GetRealmName();				
+					server = GetRealmName()				
 				end
 
-				nameButton:SetText( level .. name .. " |cffffffff- " .. server .. "|r" );
+				nameButton:SetText( level .. name .. " |cffffffff- " .. server .. "|r" )
 			end
 		end
 	end
