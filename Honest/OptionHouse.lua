@@ -1,9 +1,5 @@
--- TECHNICALLY
--- We're suppose to embed DongleStub, but since we make sure to load Dongle.lua
--- before OptionHouse it'll exist anyway
-
 local major = "OptionHouse-1.0"
-local minor = tonumber(string.match("$Revision: 475 $", "(%d+)") or 1)
+local minor = tonumber(string.match("$Revision: 479 $", "(%d+)") or 1)
 
 assert(DongleStub, string.format("%s requires DongleStub.", major))
 
@@ -14,7 +10,7 @@ local L = {
 	["BAD_ARGUMENT"] = "bad argument #%d to '%s' (%s expected, got %s)",
 	["MUST_CALL"] = "You must call '%s' from an OptionHouse addon object.",
 	["ADDON_ALREADYREG"] = "The addon '%s' is already registered with OptionHouse.",
-	["UNKNOWN_TAB"] = "No tap with the id %d exists, only %d tabs are registered.",
+	["UNKNOWN_TAB"] = "No tab with the id %d exists, only %d tabs are registered.",
 	["CATEGORY_ALREADYREG"] = "A category named '%s' already exists in '%s'",
 	["NO_CATEGORYEXISTS"] = "No category named '%s' in '%s' exists.",
 	["NO_SUBCATEXISTS"] = "No sub-category '%s' exists in '%s' for the addon '%s'.",
@@ -195,7 +191,7 @@ local function createExpandList()
 		searchBy = nil
 	end
 
-	-- [1] = Row name, [2] = Row type, [3] = Is selected, [4] = data, [5] = isLast
+	-- [1] = Row name, [2] = Row type, [3] = Is selected, [4] = Config Data, [5] = isLast
 	for _, addon in pairs( frame.addons ) do
 		-- Valid search, or no search used
 		if( ( searchBy and string.find(string.lower(addon.name), searchBy) ) or not searchBy ) then
@@ -656,7 +652,7 @@ function OptionHouse.RegisterTab( self, text, func, type )
 	assert(3, select(2, issecurevariable(self, "RegisterTab")) == "OptionHouse", L["IS_PRIVATEAPI"])
 	table.insert(tabfunctions, {func = func, handler = self, text = text, type = type})
 
-	-- Will create all the queued frames if needed
+	-- Will create all of the tabs when the frame is created if needed
 	if( not frame ) then
 		return
 	end
@@ -721,10 +717,10 @@ end
 
 function OptionHouse:OpenTab(id)
 	argcheck(id, 1, "number")
-	assert(3, #(tabfunctions) <= id, string.format(L["UNKNOWN_TAB"], id, #(tabfunctions)))	
+	assert(3, #(tabfunctions) > id, string.format(L["UNKNOWN_TAB"], id, #(tabfunctions)))	
 
-	tabOnClick(id)
 	createOHFrame()
+	tabOnClick(id)
 	frame:Show()
 end
 
@@ -842,6 +838,7 @@ local function Activate(self, old)
 
 		-- Make sure it hasn't been created already.
 		-- don't have to upgrade the referance because it just uses the slash command
+		-- which will upgrade below to use the current version anyway
 		if( not GameMenuButtonOptionHouse ) then
 			local menubutton = CreateFrame("Button", "GameMenuButtonOptionHouse", GameMenuFrame, "GameMenuButtonTemplate")
 			menubutton:SetText(L["OPTION_HOUSE"])
@@ -851,7 +848,7 @@ local function Activate(self, old)
 				SlashCmdList["OPTHOUSE"]()
 			end)
 
-			-- Position below Interface Options
+			-- Position below "Interface Options"
 			local a1, fr, a2, x, y = GameMenuButtonKeybindings:GetPoint()
 			menubutton:SetPoint(a1, fr, a2, x, y)
 
@@ -875,7 +872,7 @@ local function Activate(self, old)
 	SLASH_OPTHOUSE2 = "/oh"
 	SlashCmdList["OPTHOUSE"] = OptionHouse.Open
 	
-	-- Problems with issecurevariable if we odn't do this
+	-- Problems with issecurevariable if we don't do this
 	self:TaintFix()
 end
 
