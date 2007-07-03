@@ -1,9 +1,170 @@
+--[[-------------------------------------------------------------------------
+  Copyright (c) 2006-2007, Dongle Development Team
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are
+  met:
+
+      * Redistributions of source code must retain the above copyright
+        notice, this list of conditions and the following disclaimer.
+      * Redistributions in binary form must reproduce the above
+        copyright notice, this list of conditions and the following
+        disclaimer in the documentation and/or other materials provided
+        with the distribution.
+      * Neither the name of the Dongle Development Team nor the names of
+        its contributors may be used to endorse or promote products derived
+        from this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+---------------------------------------------------------------------------]]
+local major = "DongleStub"
+local minor = tonumber(string.match("$Revision: 313 $", "(%d+)") or 1)
+
+local g = getfenv(0)
+
+if not g.DongleStub or g.DongleStub:IsNewerVersion(major, minor) then
+	local lib = setmetatable({}, {
+		__call = function(t,k) 
+			if type(t.versions) == "table" and t.versions[k] then 
+				return t.versions[k].instance
+			else
+				error("Cannot find a library with name '"..tostring(k).."'", 2)
+			end
+		end
+	})
+
+	function lib:IsNewerVersion(major, minor)
+		local versionData = self.versions and self.versions[major]
+
+		-- If DongleStub versions have differing major version names
+		-- such as DongleStub-Beta0 and DongleStub-1.0-RC2 then a second
+		-- instance will be loaded, with older logic.  This code attempts
+		-- to compensate for that by matching the major version against
+		-- "^DongleStub", and handling the version check correctly.
+
+		if major:match("^DongleStub") then
+			local oldmajor,oldminor = self:GetVersion()
+			if self.versions and self.versions[oldmajor] then
+				return minor > oldminor
+			else
+				return true
+			end
+		end
+
+		if not versionData then return true end
+		local oldmajor,oldminor = versionData.instance:GetVersion()
+		return minor > oldminor
+	end
+	
+	local function NilCopyTable(src, dest)
+		for k,v in pairs(dest) do dest[k] = nil end
+		for k,v in pairs(src) do dest[k] = v end
+	end
+
+	function lib:Register(newInstance, activate, deactivate)
+		assert(type(newInstance.GetVersion) == "function",
+			"Attempt to register a library with DongleStub that does not have a 'GetVersion' method.")
+
+		local major,minor = newInstance:GetVersion()
+		assert(type(major) == "string",
+			"Attempt to register a library with DongleStub that does not have a proper major version.")
+		assert(type(minor) == "number",
+			"Attempt to register a library with DongleStub that does not have a proper minor version.")
+
+		-- Generate a log of all library registrations
+		if not self.log then self.log = {} end
+		table.insert(self.log, string.format("Register: %s, %s", major, minor))
+
+		if not self:IsNewerVersion(major, minor) then return false end
+		if not self.versions then self.versions = {} end
+
+		local versionData = self.versions[major]
+		if not versionData then
+			-- New major version
+			versionData = {
+				["instance"] = newInstance,
+				["deactivate"] = deactivate,
+			}
+			
+			self.versions[major] = versionData
+			if type(activate) == "function" then
+				table.insert(self.log, string.format("Activate: %s, %s", major, minor))
+				activate(newInstance)
+			end
+			return newInstance
+		end
+		
+		local oldDeactivate = versionData.deactivate
+		local oldInstance = versionData.instance
+		
+		versionData.deactivate = deactivate
+		
+		local skipCopy
+		if type(activate) == "function" then
+			table.insert(self.log, string.format("Activate: %s, %s", major, minor))
+			skipCopy = activate(newInstance, oldInstance)
+		end
+
+		-- Deactivate the old libary if necessary
+		if type(oldDeactivate) == "function" then
+			local major, minor = oldInstance:GetVersion()
+			table.insert(self.log, string.format("Deactivate: %s, %s", major, minor))
+			oldDeactivate(oldInstance, newInstance)
+		end
+
+		-- Re-use the old table, and discard the new one
+		if not skipCopy then
+			NilCopyTable(newInstance, oldInstance)
+		end
+		return oldInstance
+	end
+
+	function lib:GetVersion() return major,minor end
+
+	local function Activate(new, old)
+		-- This code ensures that we'll move the versions table even
+		-- if the major version names are different, in the case of 
+		-- DongleStub
+		if not old then old = g.DongleStub end
+
+		if old then
+			new.versions = old.versions
+			new.log = old.log
+		end
+		g.DongleStub = new
+	end
+	
+	-- Actually trigger libary activation here
+	local stub = g.DongleStub or lib
+	lib = stub:Register(lib, Activate)
+end
+
+--[[-------------------------------------------------------------------------
+  Begin Library Implementation
+---------------------------------------------------------------------------]]
 local major = "OptionHouse-1.0"
-local minor = tonumber(string.match("$Revision: 479 $", "(%d+)") or 1)
+local minor = tonumber(string.match("$Revision: 486 $", "(%d+)") or 1)
+
+-- Create a tainted variable to fix tainting issues
+local function taintfix() end
 
 assert(DongleStub, string.format("%s requires DongleStub.", major))
 
 if not DongleStub:IsNewerVersion(major, minor) then return end
+
+-- Call the taint fix function to fix issues with issecurevariable()
+taintfix()
 
 local L = {
 	["IS_PRIVATEAPI"] = "You are trying to call a private api from a non-OptionHouse module.",
@@ -639,8 +800,6 @@ local function createOHFrame()
 	end)
 end
 
-function OptionHouse:TaintFix() self.TaintFix = nil end
-
 -- PRIVATE API's
 -- These are only to be used for the standalone OptionHouse modules
 function OptionHouse:CreateSearchInput(frame, onChange)
@@ -871,9 +1030,6 @@ local function Activate(self, old)
 	SLASH_OPTHOUSE1 = "/opthouse"
 	SLASH_OPTHOUSE2 = "/oh"
 	SlashCmdList["OPTHOUSE"] = OptionHouse.Open
-	
-	-- Problems with issecurevariable if we don't do this
-	self:TaintFix()
 end
 
 OptionHouse = DongleStub:Register(OptionHouse, Activate)
