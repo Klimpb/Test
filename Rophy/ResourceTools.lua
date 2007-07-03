@@ -162,6 +162,12 @@ function RT.OnUpdate(frame, arg1)
 	end
 end
 
+function RT:Print(msg)
+	if msg then
+		ChatFrame1:AddMessage("|cFF33FF99ResourceTools:|r"..tostring(msg))
+	end
+end
+
 function RT:SortOnClick()
 	if( this.sortType ) then
 		if( this.sortType ~= RT.extrasFrame.sortType ) then
@@ -945,7 +951,7 @@ function RT:GetTotalCPU( addon )
 	end
 
 	UpdateAddOnCPUUsage();
-	self:Echo( string.format( L["%s: %.3f seconds."], addon, GetAddOnCPUUsage( addon ) ) );
+	self:Print( string.format( L["%s: %.3f seconds."], addon, GetAddOnCPUUsage( addon ) ) );
 end
 
 function RT:GetFrameCPU( text, includeChildren )
@@ -1053,9 +1059,9 @@ function RT:GetEventCPU( text )
 		end
 
 		if( called > 0 ) then
-			self:Echo( string.format( L["%s: %.3f seconds, called %d times, %.3f average."], event, seconds, called, seconds / called ) );
+			self:Print( string.format( L["%s: %.3f seconds, called %d times, %.3f average."], event, seconds, called, seconds / called ) );
 		else
-			self:Echo( string.format( L["%s: no events by this name have been triggered."], event ) );
+			self:Print( string.format( L["%s: no events by this name have been triggered."], event ) );
 		end
 	end
 end
