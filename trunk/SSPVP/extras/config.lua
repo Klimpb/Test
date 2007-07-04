@@ -42,8 +42,8 @@ function UI:Initialize()
 			["Display"] = L["Display"],
 		}},
 		["Arena"] = {L["Arenas"], {
-			["Frame"] = "Frame Display",
-			["Enemy"] = "Enemy Display",
+			["Frame"] = L["Frame Display"],
+			["Enemy"] = L["Enemy Display"],
 		}},
 	}
 
@@ -581,17 +581,17 @@ function UI:LoadFrame(category, subCat)
 				end
 				
 				if( row.minVal ) then
-					local _, maxValue = row:GetMinMaxValues()
+					local _, maxValue = element:GetMinMaxValues()
 					
 					getglobal(element:GetName() .. "Low"):SetText(row.minText)
-					row:SetMinMaxValues(row.minVal, maxValue)
+					element:SetMinMaxValues(row.minVal, maxValue)
 				end
 				
 				if( row.maxVal ) then
-					local minValue = row:GetMinMaxValues()
+					local minValue = element:GetMinMaxValues()
 
 					getglobal(element:GetName() .. "High"):SetText(row.maxText)
-					row:SetMinMaxValues(minValue, row.maxVal)
+					element:SetMinMaxValues(minValue, row.maxVal)
 				end
 			
 			elseif( row.type == "priority" ) then
