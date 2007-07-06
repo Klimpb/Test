@@ -3,6 +3,7 @@ HonestLocals = {
 	["%s dies, honorable kill (%s)"] = "%s dies, honorable kill (%s)",
 	["%s dies, honorable kill"] = "%s dies, honorable kill",
 	["%s (%s) (%dvs%d)"] = "%s (%s) (%dvs%d)",
+	["honorable kill"] = "honorable kill",
 	["%s (%dvs%d)"] = "%s (%dvs%d)",
 	["Unknown"] = "Unknown",
 	
