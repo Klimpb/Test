@@ -616,7 +616,7 @@ function Honest:UpdateHonorUI( day )
 			record.perct = record.win / ( record.win + record.lose )
 
 			if( self.db.profile[ day ].bonus[ location ] or self.db.profile[ day ].kill[ location ] ) then
-				record.avg = ( self.db.profile[ day ].bonus[ location ] or 0 + self.db.profile[ day ].kill[ location ] or 0 ) / ( record.win + record.lose )
+				record.avg = ( self.db.profile[ day ].bonus[ location ] or 0 ) + ( self.db.profile[ day ].kill[ location ] or 0 ) / ( record.win + record.lose )
 			else
 				record.avg = 0
 			end
