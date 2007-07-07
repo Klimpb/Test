@@ -11,7 +11,7 @@ HonestLocals = {
 	["(.+) %((.+)%) %(([0-9]+)vs([0-9]+)%)"] = "(.+) %((.+)%) %(([0-9]+)vs([0-9]+)%)",
 	
 	["Arena has reset! You gained %d points, for a total of %d."] = "Arena has reset! You gained %d points, for a total of %d.",
-	["Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d."] = "Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d.",
+	["Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d, standing #%d."] = "Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d, standing #%d.",
 	["Honor has reset! Estimated %d, Actual %d, Difference %d (%.2f%% off)"] = "Honor has reset! Estimated %d, Actual %d, Difference %d (%.2f%% off)",
 	
 	["Actual Honor Points: %d"] = "Actual Honor Points: %d",

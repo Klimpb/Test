@@ -282,22 +282,18 @@ function ChatFrame_MessageEventHandler( event )
 end
 
 function Honest:CheckArenaReset()
-	-- This is a quick hacky little way of doing it
-	-- not that it really matters
-	self.eventFires = self.eventFires - 1
-	if( self.eventFires <= 0 ) then
-		self:UnregisterEvent("ARENA_TEAM_ROSTER_UPDATE")
-	end
-	
+	self:UnregisterEvent("ARENA_TEAM_ROSTER_UPDATE")
+		
 	-- Only show the message if we gained points, HOPEFULLY
 	-- this will mean it only shows on reset and not when we spend points
 	if( GetArenaCurrency() >= self.db.profile.arena.lastWeek ) then
 		local pointsTeam, pointsBracket, teamName, teamSize, teamRating
+		local teamStanding, pointsStanding
 		local teamPoints = 0
 		local highestPoints = 0
 
 		for i=1, MAX_ARENA_TEAMS do
-			teamName, teamSize, teamRating = GetArenaTeam( i )
+			teamName, teamSize, teamRating, _, _, _, _, _, _, teamStanding = GetArenaTeam( i )
 
 			if( teamName ) then
 				if( teamRating > 1500 ) then
@@ -319,16 +315,17 @@ function Honest:CheckArenaReset()
 				if( teamPoints > highestPoints ) then
 					pointsTeam = teamName
 					pointsBracket = teamSize
+					pointsStanding = teamStanding
 					highestPoints = floor( teamPoints )
 				end
 			end
 		end
-
-		-- If it still failed to get info, then show a generic info thing
-		if( not pointsTeam ) then
-			self:Print( string.format( L["Arena has reset! You gained %d points, for a total of %d."], ( GetArenaCurrency() - self.db.profile.arena.lastWeek ), GetArenaCurrency() ) )
+				
+		-- Double check, make sure we actually got the data
+		if( pointsTeam ) then
+			self:Print( string.format( L["Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d, standing #%d."], highestPoints, pointsTeam, pointsBracket, pointsBracket, GetArenaCurrency(), pointsStanding ) )
 		else
-			self:Print( string.format( L["Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d."], highestPoints, pointsTeam, pointsBracket, pointsBracket, GetArenaCurrency() ) )
+			self:Print( string.format( L["Arena has reset! You gained %d points, for a total of %d."], ( GetArenaCurrency() - self.db.profile.arena.lastWeek ), GetArenaCurrency() ) )
 		end
 	end
 
@@ -338,7 +335,7 @@ end
 function Honest:CheckDay()
 	-- Check arena
 	if( GetArenaCurrency() ~= self.db.profile.arena.lastWeek ) then
-		self.eventFires = MAX_ARENA_TEAMS
+		self:RegisterEvent("ARENA_TEAM_ROSTER_UPDATE", "CheckArenaReset")
 
 		for i=1, MAX_ARENA_TEAMS do
 			ArenaTeamRoster(i)
