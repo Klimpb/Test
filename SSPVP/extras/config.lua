@@ -550,7 +550,7 @@ function UI:LoadFrame(category, subCat)
 				element = self:CreateCheckBox(frame, row.text, row.func, row.var, row.arg1)
 				
 			elseif( row.type == "input" ) then
-				element = self:CreateInput(frame, row.text, row.func, row.var, row.arg1)
+				element = self:CreateInput(frame, row.text, row.func, row.var, row.arg1, row.forceType)
 				offsetY = 15
 				
 				if( row.width ) then
