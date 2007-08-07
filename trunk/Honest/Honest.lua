@@ -282,11 +282,15 @@ function ChatFrame_MessageEventHandler( event )
 end
 
 function Honest:CheckArenaReset()
-	self:UnregisterEvent("ARENA_TEAM_ROSTER_UPDATE")
-		
+	self.eventFires = self.eventFires - 1
+	
+	if( self.eventFires <= 0 ) then
+		self:UnregisterEvent("ARENA_TEAM_ROSTER_UPDATE")
+	end
+	
 	-- Only show the message if we gained points, HOPEFULLY
 	-- this will mean it only shows on reset and not when we spend points
-	if( GetArenaCurrency() >= self.db.profile.arena.lastWeek ) then
+	if( GetArenaCurrency() > self.db.profile.arena.lastWeek ) then
 		local pointsTeam, pointsBracket, teamName, teamSize, teamRating
 		local teamStanding, pointsStanding
 		local teamPoints = 0
@@ -335,6 +339,7 @@ end
 function Honest:CheckDay()
 	-- Check arena
 	if( GetArenaCurrency() ~= self.db.profile.arena.lastWeek ) then
+		self.eventFires = MAX_ARENA_TEAMS
 		self:RegisterEvent("ARENA_TEAM_ROSTER_UPDATE", "CheckArenaReset")
 
 		for i=1, MAX_ARENA_TEAMS do
@@ -628,7 +633,7 @@ function Honest:UpdateHonorUI( day )
 			record.perct = record.win / ( record.win + record.lose )
 
 			if( self.db.profile[ day ].bonus[ location ] or self.db.profile[ day ].kill[ location ] ) then
-				record.avg = ( self.db.profile[ day ].bonus[ location ] or 0 ) + ( self.db.profile[ day ].kill[ location ] or 0 ) / ( record.win + record.lose )
+				record.avg = ( ( self.db.profile[ day ].bonus[ location ] or 0 ) + ( self.db.profile[ day ].kill[ location ] or 0 ) ) / ( record.win + record.lose )
 			else
 				record.avg = 0
 			end
