@@ -65,11 +65,13 @@ function Ace3:StartGame()
 	self:Print( "Take a guess!" )
 end
 
-function Ace3:GuessSuit(betMoney, checkSuit)
+function Ace3:GuessSuit(cmd)
 	if( #(dealer) == 0 ) then
 		self:Print( "You don't have a game currently running." )
 		return
 	end
+	
+	local betMoney, guessedSuit = string.split( ",", cmd )
 	
 	local suit
 	
@@ -107,12 +109,14 @@ function Ace3:GuessSuit(betMoney, checkSuit)
 
 end
 
-function Ace3:GuessCard(betMoney, guessedCard)
+function Ace3:GuessCard(cmd)
 	if( #(dealer) == 0 ) then
 		self:Print( "You don't have a game currently running." )
 		return
 	end
 	
+	local betMoney, guessedCard = string.split( ",", cmd )
+
 	local card
 	
 	for _, checkCard in pairs(cards) do
