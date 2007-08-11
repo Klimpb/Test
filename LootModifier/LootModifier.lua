@@ -46,11 +46,18 @@ function LootMod:Initialize()
 	self.frame:Hide()
 	
 	-- Background texture
-	local texture = self.frame:CreateTexture( self.frame:GetName() .. "BGTexture", "ARTWORK" )
-	texture:SetTexture( "Interface\\AddOns\\LootModifier\\LootWindow.tga" )
-	texture:SetAllPoints()
-	texture:Show()
-	
+	self.frame.topTexture = self.frame:CreateTexture(nil, "ARTWORK")
+	self.frame.topTexture:SetWidth(512)
+	self.frame.topTexture:SetHeight(128)
+	self.frame.topTexture:SetTexture("Interface\\AddOns\\LootModifier\\images\\LootPanel-Top.tga")
+	self.frame.topTexture:SetPoint("TOPLEFT", 0, 0)
+
+	self.frame.bottomTexture = self.frame:CreateTexture(nil, "ARTWORK")
+	self.frame.bottomTexture:SetWidth(512)
+	self.frame.bottomTexture:SetHeight(16)
+	self.frame.bottomTexture:SetTexture("Interface\\AddOns\\LootModifier\\images\\LootPanel-Bottom.tga")
+	self.frame.bottomTexture:SetPoint("TOPLEFT", 0, -512)
+
 	local text = self.frame:CreateFontString( self.frame:GetName() .. "ItemsText", "ARTWORK", "GameFontNormal" )
 	text:SetText( L["Items"] )
 	text:SetPoint( "TOPLEFT", self.frame, "TOPLEFT", 10, -6 )
