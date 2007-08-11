@@ -5,39 +5,42 @@ local suits = { "Heart", "Spade", "Diamond", "Clover" }
 
 local dealer = {}
 local player = {}
-local money = 50
+local gold = 50
 local bet = 0
+local rules
 
 function Ace3:OnInitialize()
-	Ac3:RegisterChatCommand("/ace3", {
+	Ace3:RegisterChatCommand("/ace3", {
 	type = "group",
 	args = {
-		msg = {
+		start = {
 			type = "execute",
-			name = "Start game"
+			name = "Start game",
 			desc = "Starts a new game of Ace3",
 			handler = Ace3,
 			func = "StartGame",
 		},
-		msg = {
+		suit = {
 			type = "text",
-			name = "Guess Suit"
-			desc = "Takes a guess at what suit the dealer has",
+			name = "Guess Suit",
+			desc = "[<bet> <Heart, Spade, Diamond, Clover>] Takes a guess at what suit the dealer has",
 			handler = Ace3,
 			set = "GuessSuit",
+			get = false,
 			usage = "<bet> <Heart, Spade, Diamond, Clover>",
 		},
-		msg = {
+		card = {
 			type = "text",
-			name = "Guess Card"
-			desc = "Takes a guess at what card the dealer has",
+			name = "Guess Card",
+			desc = "[<bet> <Ace, Jack, Queen, King, 1-10>] Takes a guess at what card the dealer has",
 			handler = Ace3,
+			get = false,
 			set = "GuessCard",
 			usage = "<bet> <Ace, Jack, Queen, King, 1-10>",
 		},
-		msg = {
+		stop = {
 			type = "execute",
-			name = "End game"
+			name = "End game",
 			desc = "Finishes a started game of Ace3",
 			handler = Ace3,
 			func = "EndGame",
@@ -47,22 +50,81 @@ end
 
 function Ace3:GenerateDealer()
 	dealer = {}
-	table.insert( dealer, { card = cards[math.random(1, #(cards))], suit = suits[math.random(1, #(cards))] )
+
+	table.insert( dealer, { card = cards[math.random(1, #(cards))], suit = suits[math.random(1, #(suits))] } )
+	table.insert( dealer, { card = cards[math.random(1, #(cards))], suit = suits[math.random(1, #(suits))] } )
+	table.insert( dealer, { card = cards[math.random(1, #(cards))], suit = suits[math.random(1, #(suits))] } )
 end
 
-function Ace3:StartGame()
+function Ace3:GeneratePlayer()
+	player = {}
+
 	local yourCards = {}
 	for i=1, 3 do
-		local row = { card = cards[math.random(1, #(cards))], suit = suits[math.random(1, #(cards))] }
+		local row = { card = cards[math.random(1, #(cards))], suit = suits[math.random(1, #(suits))] }
 		
 		table.insert( yourCards, row.card .. " of " .. row.suit )
 		table.insert( player, row )
 	end
-		
-	self:GenerateDealer()
 	
-	self:Print( "[Money: " .. money .. "] Your cards: " .. table.concat( ",", yourCards ) )
+	self:Print( "Your cards: " .. table.concat( yourCards, ", " ) )
+end
+
+function Ace3:StartGame()
+	self:GeneratePlayer()
+	self:GenerateDealer()
 	self:Print( "Take a guess!" )
+	
+	if( not rules ) then
+		self:Print( "Rules: You can take a guess at one of the dealers 3 cards and you'll win bet * 1.5, or you can try and guess the suit for bet * 0.50." )
+		self:Print( "The dealer will take a guess at one of your cards or suits depending what you were guessing for him, if your guess is wrong you lose the amount of gold you bet." )
+		self:Print( "If the dealer guesses you lose the amount of gold you gained" )
+		self:Print( "If you run out of gold, you lose" )
+		self:Print( "You start out with 50 gold." );
+		rules = true
+	end
+end
+
+function Ace3:DealerGuess(bet, type)
+	if( type == "suit" ) then
+		local suit = suits[math.random(1, #suits)]
+		
+		for _, row in pairs(player) do
+			if( row.suit == suit ) then
+				gold = math.abs( gold - bet )
+				self:Print( "Dealer guessed correctly! [" .. row.card .. " of " .. row.suit .. "] [Gold: " .. gold .. " (Lost " .. bet .. ")]" )
+
+				if( gold == 0 ) then
+					self:EndGame()
+				end
+				
+				self:GeneratePlayer()
+				return
+			end
+		end
+		
+		self:Print( "Dealer guessed incorrectly." )
+		
+	elseif( type == "card" ) then
+		local card = cards[math.random(1, #cards)]
+		
+		for _, row in pairs(player) do
+			if( row.card == card ) then
+				gold = math.abs( gold - bet )
+				self:Print( "Dealer guessed correctly! [" .. row.card .. " of " .. row.suit .. "] [Gold: " .. gold .. " (Lost " .. bet .. ")]" )
+
+				if( gold == 0 ) then
+					self:EndGame()
+				end
+
+				self:GeneratePlayer()
+				return
+			end
+		end
+		
+		self:Print( "Dealer guessed incorrectly." )
+	
+	end
 end
 
 function Ace3:GuessSuit(cmd)
@@ -71,7 +133,12 @@ function Ace3:GuessSuit(cmd)
 		return
 	end
 	
-	local betMoney, guessedSuit = string.split( ",", cmd )
+	local betGold, guessedSuit = string.split( " ", cmd )
+	betGold = tonumber(betGold)
+	if( not betGold or not guessedSuit ) then
+		self:Print( "Incorrect arguments." );
+		return
+	end
 	
 	local suit
 	
@@ -87,24 +154,30 @@ function Ace3:GuessSuit(cmd)
 		return
 	end
 	
-	if( betMoney > money ) then
-		self:Print( "You can't bet more money then you have." )
+	if( betGold > gold ) then
+		self:Print( "You can't bet more gold then you have." )
 		return
 	end
 	
-	bet = betMoney
-	
-	if( dealer.suit == suit ) then
-		money = money + ( bet * 0.5 )
-		self:Print( "You guessed correctly it's the " .. dealer.card .. " of " .. dealer.suit .. "! [Money: " .. money .. "]" )
-		self:GenerateDealer()
-	else
-		money = math.abs( money - bet )
-		self:Print( "Wrong, the suit was " .. dealer.card .. " of " .. dealer.suit .. " [Money: " .. money .. "]" )
-		
-		if( money == 0 ) then
-			self:EndGame()
+	bet = betGold
+
+	for _, row in pairs(dealer) do
+		if( row.suit == suit ) then
+			gold = gold + ( bet * 0.5 )
+
+			self:Print( "You guessed correctly, it was [" .. row.card .. " of " .. row.suit .. "] [Gold: " .. gold .. " (Gained " .. (bet * 0.5 ) .. ")]" )
+			self:GenerateDealer()
+			self:DealerGuess( bet * 0.5, "suit" )
+			return
 		end
+	end
+
+	gold = math.abs( gold - bet )
+	self:Print( "Wrong! [Gold: " .. gold .. " (Lost " .. bet .. ")]" )
+	self:DealerGuess( bet, "suit" )
+
+	if( gold == 0 ) then
+		self:EndGame()
 	end
 
 end
@@ -115,7 +188,12 @@ function Ace3:GuessCard(cmd)
 		return
 	end
 	
-	local betMoney, guessedCard = string.split( ",", cmd )
+	local betGold, guessedCard = string.split( " ", cmd )
+	betGold = tonumber(betGold)
+	if( not betGold or not guessedCard ) then
+		self:Print( "Incorrect arguments." );
+		return
+	end
 
 	local card
 	
@@ -131,40 +209,46 @@ function Ace3:GuessCard(cmd)
 		return
 	end
 	
-	if( betMoney > money ) then
-		self:Print( "You can't bet more money then you have." )
+	if( betGold > gold ) then
+		self:Print( "You can't bet more gold then you have." )
 		return
 	end
 	
-	bet = betMoney
+	bet = betGold
 	
-	if( dealer.card == card ) then
-		money = money + ( bet * 1.5 )
-		self:GenerateDealer()
-		self:Print( "You guessed correctly! [Money: " .. money .. "]" )
-	else
-		money = math.abs( money - bet )
-		self:Print( "Wrong, the card was " .. dealer.card .. " of " .. dealer.suit .. " [Money: " .. money .. "]" )
-		
-		if( money == 0 ) then
-			self:EndGame()
+	for _, row in pairs(dealer) do
+		if( row.card == card ) then
+			gold = gold + ( bet * 1.5 )
+
+			self:Print( "You guessed correctly, it was [" .. row.card .. " of " .. row.suit .. "] [Gold: " .. gold .. " (Gained " .. (bet * 1.5 ) .. ")]" )
+			self:GenerateDealer()
+			self:DealerGuess( bet * 1.5, "card" )
+			return
 		end
+	end
+
+	gold = math.abs( gold - bet )
+	self:Print( "Wrong! [Gold: " .. gold .. " (Lost " .. bet .. ")]" )
+	self:DealerGuess( bet, "card" )
+
+	if( gold == 0 ) then
+		self:EndGame()
 	end
 end
 
 function Ace3:EndGame()
 	self:Print( "Game Over!" )
 
-	if( money > 50 ) then
-		self:Print( "You won " .. ( money - 50 ) " money! =D." )
-	else if( money == 0 ) then
-		self:Print( "You lost all of your money =(." )
+	if( gold > 50 ) then
+		self:Print( "You won " .. ( gold - 50 ) " gold! =D." )
+	elseif( gold == 0 ) then
+		self:Print( "You lost all of your gold =(." )
 	else
-		self:Print( "You lost " .. ( 50 - money ) .. " money =(." )
+		self:Print( "You lost " .. ( 50 - gold ) .. " gold =(." )
 	end
 
 	player = {}
 	dealer = {}
 	bet = 0
-	money = 0
+	gold = 0
 end
