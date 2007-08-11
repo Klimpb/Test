@@ -51,16 +51,16 @@ elseif GetLocale() == "frFR" then
 	KEYBINDING_USAGE = "<ALT-CTRL-SHIFT-KEY>" -- fix
 	DEFAULT_CONFIRM_MESSAGE = "Are you sure you want to perform `%s'?" -- fix
 elseif GetLocale() == "koKR" then
-	MAP_ONOFF = { [false] = "|cffff0000끔|r", [true] = "|cff00ff00켬|r" }
-	USAGE = "사용법"
-	IS_CURRENTLY_SET_TO = "|cffffff7f%s|r|1은;는; 현재 상태는 |cffffff7f[|r%s|cffffff7f]|r|1으로;로; 설정되어 있습니다"
-	IS_NOW_SET_TO = "|cffffff7f%s|r|1을;를; |cffffff7f[|r%s|cffffff7f]|r 상태로 변경합니다"
-	IS_NOT_A_VALID_OPTION_FOR = "[|cffffff7f%s|r]|1은;는; |cffffff7f%s|r에서 사용불가능한 설정입니다"
-	IS_NOT_A_VALID_VALUE_FOR = "[|cffffff7f%s|r]|1은;는; |cffffff7f%s|r에서 사용불가능한 설정값입니다"
-	NO_OPTIONS_AVAILABLE = "가능한 설정이 없습니다"
-	OPTION_HANDLER_NOT_FOUND = "설정 조정값인 |cffffff7f%q|r|1을;를; 찾지 못했습니다."
-	OPTION_HANDLER_NOT_VALID = "설정 조정값이 올바르지 않습니다."
-	OPTION_IS_DISABLED = "|cffffff7f%s|r 설정은 사용할 수 없습니다."
+	MAP_ONOFF = { [false] = "|cffff0000?|r", [true] = "|cff00ff00?|r" }
+	USAGE = "???"
+	IS_CURRENTLY_SET_TO = "|cffffff7f%s|r|1?;?; ?? ??? |cffffff7f[|r%s|cffffff7f]|r|1??;?; ???? ????"
+	IS_NOW_SET_TO = "|cffffff7f%s|r|1?;?; |cffffff7f[|r%s|cffffff7f]|r ??? ?????"
+	IS_NOT_A_VALID_OPTION_FOR = "[|cffffff7f%s|r]|1?;?; |cffffff7f%s|r?? ?????? ?????"
+	IS_NOT_A_VALID_VALUE_FOR = "[|cffffff7f%s|r]|1?;?; |cffffff7f%s|r?? ?????? ??????"
+	NO_OPTIONS_AVAILABLE = "??? ??? ????"
+	OPTION_HANDLER_NOT_FOUND = "?? ???? |cffffff7f%q|r|1?;?; ?? ?????."
+	OPTION_HANDLER_NOT_VALID = "?? ???? ???? ????."
+	OPTION_IS_DISABLED = "|cffffff7f%s|r ??? ??? ? ????."
 	KEYBINDING_USAGE = "<ALT-CTRL-SHIFT-KEY>" -- fix
 	DEFAULT_CONFIRM_MESSAGE = "Are you sure you want to perform `%s'?" -- fix
 elseif GetLocale() == "zhCN" then
@@ -77,18 +77,18 @@ elseif GetLocale() == "zhCN" then
 	KEYBINDING_USAGE = "<ALT-CTRL-SHIFT-KEY>" -- fix
 	DEFAULT_CONFIRM_MESSAGE = "Are you sure you want to perform `%s'?" -- fix
 elseif GetLocale() == "zhTW" then
-	MAP_ONOFF = { [false] = "|cffff0000關閉|r", [true] = "|cff00ff00開啟|r" }
-	USAGE = "用法"
-	IS_CURRENTLY_SET_TO = "|cffffff7f%s|r目前的設定為|cffffff7f[|r%s|cffffff7f]|r"
-	IS_NOW_SET_TO = "|cffffff7f%s|r現在被設定為|cffffff7f[|r%s|cffffff7f]|r"
-	IS_NOT_A_VALID_OPTION_FOR = "對於|cffffff7f%2$s|r，[|cffffff7f%1$s|r]是一個不符合規定的選項"
-	IS_NOT_A_VALID_VALUE_FOR = "對於|cffffff7f%2$s|r，[|cffffff7f%1$s|r]是一個不符合規定的數值"
-	NO_OPTIONS_AVAILABLE = "沒有可用的選項"
-	OPTION_HANDLER_NOT_FOUND = "找不到|cffffff7f%q|r選項處理器。"
-	OPTION_HANDLER_NOT_VALID = "選項處理器不符合規定。"
-	OPTION_IS_DISABLED = "|cffffff7f%s|r已被停用。"
-	KEYBINDING_USAGE = "<Alt-Ctrl-Shift-鍵>"
-	DEFAULT_CONFIRM_MESSAGE = "是否執行「%s」?"
+	MAP_ONOFF = { [false] = "|cffff0000??|r", [true] = "|cff00ff00??|r" }
+	USAGE = "??"
+	IS_CURRENTLY_SET_TO = "|cffffff7f%s|r??????|cffffff7f[|r%s|cffffff7f]|r"
+	IS_NOW_SET_TO = "|cffffff7f%s|r??????|cffffff7f[|r%s|cffffff7f]|r"
+	IS_NOT_A_VALID_OPTION_FOR = "??|cffffff7f%2$s|r?[|cffffff7f%1$s|r]???????????"
+	IS_NOT_A_VALID_VALUE_FOR = "??|cffffff7f%2$s|r?[|cffffff7f%1$s|r]???????????"
+	NO_OPTIONS_AVAILABLE = "???????"
+	OPTION_HANDLER_NOT_FOUND = "???|cffffff7f%q|r??????"
+	OPTION_HANDLER_NOT_VALID = "???????????"
+	OPTION_IS_DISABLED = "|cffffff7f%s|r?????"
+	KEYBINDING_USAGE = "<Alt-Ctrl-Shift-?>"
+	DEFAULT_CONFIRM_MESSAGE = "?????%s??"
 elseif GetLocale() == "esES" then
 	MAP_ONOFF = { [false] = "|cffff0000Desactivado|r", [true] = "|cff00ff00Activado|r" }
 	USAGE = "Uso"
@@ -2276,7 +2276,7 @@ local function handlerFunc(self, chat, msg, options)
 	end
 	this = _G_this
 	if Dewdrop then
-		Dewdrop:Refresh()
+		Dewdrop:Refresh(1)
 	end
 end
 
