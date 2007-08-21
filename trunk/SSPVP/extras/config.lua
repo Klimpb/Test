@@ -255,7 +255,7 @@ function UI:SetColor()
 end
 
 function UI:CancelColor( previous )
-	ColorPickerFrame.texture:SetVertexColor( prevous.r, previous.g, previous.b )
+	ColorPickerFrame.texture:SetVertexColor( previous.r, previous.g, previous.b )
 	UI:SetValue( ColorPickerFrame.vars, previous )
 	
 	if( ColorPickerFrame.callbackFunc ) then
