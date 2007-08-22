@@ -324,7 +324,7 @@ end
 local HouseAuthority = {}
 local configs = {}
 local id = 0
-local methods = { "EnableScrollFrame", "GetFrame", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
+local methods = { "GetFrame", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
 
 -- Stage 0, Adding widgets, can call Create*
 -- Stage 1, Frame is finalized, you can no longer add new widgets
@@ -334,7 +334,7 @@ function HouseAuthority:RegisterFrame(data)
 	
 	id = id + 1
 	
-	local config = { id = id, allowScroll = true, stage = 0, widgets = {}, get = data.get, frame = data.frame, set = data.set, onSet = data.onSet }
+	local config = { id = id, stage = 0, widgets = {}, get = data.get, frame = data.frame, set = data.set, onSet = data.onSet }
 	config.obj = { id = id }
 	
 	for _, method in pairs(methods) do
@@ -574,21 +574,48 @@ function HouseAuthority.CreateDropdown(config, data)
 	configs[config.id] = config
 end
 
-function HouseAuthority.EnableScrollFrame(config, enable)
-	argcheck(enable, 2, "boolean")
-	assert(3, configs[config.id], string.format(L["MUST_CALL"], "EnableScrollFrame"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_ENABLE"])
-	
-	configs[config.id].allowScroll = enable
-end
-
 function HouseAuthority.GetFrame(config)
-	configs[config.id].stage = 1
+	assert(3, configs[config.id], string.format(L["MUST_CALL"], "GetFrame"))
+	local config = configs[config.id]
+	if( config.stage == 1 ) then
+		return config.scroll or config.frame
+	end
+	
+	config.stage = 1
 	
 	-- Position everything
+	local parent = config.frame
+	
+	-- Do we even need a scroll frame?
+	local height = 0
+	for _, widget in pairs(config.widgets) do
+		height = widget:GetHeight() + 10
+	end
+
+	if( height >= 280 ) then
+		parent:SetWidth(630)
+		parent:SetHeight(305)
+		
+		local scroll
+		
+	end
+	
+	local heightUsed = 0
+	for i, widget in pairs(config.widgets) do
+		widget:ClearAllPoints()
+		
+		if( i > 1 ) then
+			heightUsed = heightUsed + widget:GetHeight()
+			widget:SetPoint("TOPLEFT", config.widgets[i-1], "TOPLEFT", 10, heightUsed)
+		else
+			heightUsed = widget:GetHeight()
+			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, 0)		
+		end
+	end
 	
 	
-	return configs[config.id].scroll or configs[config.id].frame
+	configs[config.id] = config
+	return parent
 end
 
 function HouseAuthority:GetVersion() return major, minor end
