@@ -3,4 +3,5 @@
 ## Author: Shadowed
 
 DongleStub.lua
-HousingAuthority.toc
+HousingAuthority.lua
+HouseBuilder.lua
