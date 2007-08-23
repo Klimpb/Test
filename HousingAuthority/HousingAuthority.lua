@@ -131,7 +131,7 @@ local function dropdownShown(self)
 	for _, row in pairs(self.data.list) do
 		if( row[1] == value ) then
 			self:SetText(row[2])
-			self:SetWidth(self:GetFontString():GetStringWidth() + 3)
+			self:SetWidth(self:GetFontString():GetStringWidth() + 50)
 		end
 	end
 	
@@ -152,7 +152,7 @@ local function popDropdown(self)
 		self.rows = {}
 		
 		self.rowFrame = CreateFrame("Frame", nil, self)
-		self.rowFrame:SetBackdrop(backdrop)
+		self.rowFrame:SetBackdrop(dropdownBackdrop)
 		self.rowFrame:SetBackdropColor(0, 0, 0, 1)
 		self.rowFrame:SetBackdropBorderColor(0.75, 0.75, 0.75, 0.80)
 	end
@@ -166,8 +166,9 @@ local function popDropdown(self)
 		else
 			row = CreateFrame("Button", nil, self.rowFrame)
 			row:SetScript("OnClick", dropdownSelected)
-			row:SetFontObject(GameFontNormalSmall)
-			row:SetHeight(18)
+			row:SetTextFontObject(GameFontNormal)
+			row:GetFontString():SetPoint("LEFT", row, "LEFT", 4, 0)
+			row:SetHeight(25)
 			
 			if( i > 1 ) then
 				row:SetPoint( "TOPLEFT", self.rows[i-1], "TOPLEFT", 0, -10)
@@ -204,8 +205,9 @@ local function popDropdown(self)
 		end
 	end
 	
-	self.rowFrame:SetWidth(frameWidth)
-	self.rowFrame:SetHeight(#(self.data.list) + (#(self.data.list) * 10))
+	self.rowFrame:SetWidth(frameWidth + 50)
+	self.rowFrame:SetHeight(#(self.data.list) + (#(self.data.list) * 10) + 50)
+	self.rowFrame:SetPoint("TOPLEFT", self, "TOPLEFT", 0, 0)
 	self.rowFrame:Show()
 end
 
@@ -588,8 +590,9 @@ function HouseAuthority.CreateDropdown(config, data)
 	button:SetScript("OnShow", dropdownShown)
 	button:SetScript("OnClick", popDropdown)
 
-	button:SetFontObject(GameFontNormalSmall)
-	button:SetHeight(18)
+	button:SetTextFontObject(GameFontNormal)
+	button:GetFontString():SetPoint("LEFT", button, "LEFT", 4, 0)
+	button:SetHeight(25)
 
 	button:SetBackdrop(dropdownBackdrop)
 	button:SetBackdropColor(0, 0, 0, 1)
@@ -620,78 +623,20 @@ function HouseAuthority.GetFrame(config)
 	-- Do we even need a scroll frame?
 	local height = 0
 	for _, widget in pairs(config.widgets) do
-		height = widget:GetHeight() + 10
+		height = height + widget:GetHeight() + ( widget.yPos or 10 )
 	end
-	
 
 	if( height >= 280 ) then
-		scroll = CreateFrame("ScrollFrame")
-		scroll:SetWidth(630)
-		scroll:SetHeight(305)
-		scroll:EnableMouseWheel(true)
+		local scroll = CreateFrame("ScrollFrame", "HAScroll" .. config.id, OptionHouseFrames.addon, "UIPanelScrollFrameTemplate")
+		scroll:SetPoint("TOPLEFT", OptionHouseFrames.addon, "TOPLEFT", 190, -105)
+		scroll:SetPoint("BOTTOMRIGHT", OptionHouseFrames.addon, "BOTTOMRIGHT", -35, 40)
 
-		-- Actual bar for scrolling
-		scroll.bar = CreateFrame("Slider", nil, scroll)
-		scroll.bar:SetValueStep(scroll.displayNum)
-		scroll.bar:SetMinMaxValues(0, 0)
-		scroll.bar:SetValue(0)
-		scroll.bar:SetWidth(16)
-		scroll.bar:SetScript("OnValueChanged", function(self, offset)
-			self:GetParent():SetVerticalScroll(offset)
-		end)
-		scroll.bar:SetPoint("TOPLEFT", scroll, "TOPRIGHT", 6, -16)
-		scroll.bar:SetPoint("BOTTOMLEFT", scroll, "BOTTOMRIGHT", 6, -16)
-
-		-- Up/Down buttons
-		scroll.up = CreateFrame("Button", nil, scroll.bar, "UIPanelScrollUpButtonTemplate")
-		scroll.up:ClearAllPoints()
-		scroll.up:SetPoint( "BOTTOM", scroll.bar, "TOP" )
-		scroll.up:SetScript("OnClick", function(self)
-			local parent = self:GetParent()
-			parent:SetValue(parent:GetValue() - (parent:GetHeight() / 2))
-			PlaySound("UChatScrollButton")
-		end)
-
-		scroll.down = CreateFrame("Button", nil, scroll.bar, "UIPanelScrollDownButtonTemplate")
-		scroll.down:ClearAllPoints()
-		scroll.down:SetPoint( "TOP", scroll.bar, "BOTTOM" )
-		scroll.down:SetScript("OnClick", function(self)
-			local parent = self:GetParent()
-			parent:SetValue(parent:GetValue() + (parent:GetHeight() / 2))
-			PlaySound("UChatScrollButton")
-		end)
-
-		-- That square thingy that shows where the bar is
-		scroll.bar:SetThumbTexture("Interface\\Buttons\\UI-ScrollBar-Knob")
-		local thumb = scroll.bar:GetThumbTexture()
-
-		thumb:SetHeight(16)
-		thumb:SetWidth(16)
-		thumb:SetTexCoord(0.25, 0.75, 0.25, 0.75)
-
-		-- Border graphic
-		scroll.barUpTexture = scroll:CreateTexture(nil, "BACKGROUND")
-		scroll.barUpTexture:SetWidth(31)
-		scroll.barUpTexture:SetHeight(256)
-		scroll.barUpTexture:SetPoint("TOPLEFT", scroll.up, "TOPLEFT", -7, 5)
-		scroll.barUpTexture:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-ScrollBar")
-		scroll.barUpTexture:SetTexCoord(0, 0.484375, 0, 1.0)
-
-		scroll.barDownTexture = scroll:CreateTexture(nil, "BACKGROUND")
-		scroll.barDownTexture:SetWidth(31)
-		scroll.barDownTexture:SetHeight(106)
-		scroll.barDownTexture:SetPoint("BOTTOMLEFT", scroll.down, "BOTTOMLEFT", -7, -3)
-		scroll.barDownTexture:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-ScrollBar")
-		scroll.barDownTexture:SetTexCoord(0.515625, 1.0, 0, 0.4140625)
+		parent:SetParent(scroll)
+		parent:SetWidth(10)
+		parent:SetHeight(10)
 		
-		-- Now add the actual frame
-		parent:SetWidth(630)
-		parent:SetHeight(305)
 		scroll:SetScrollChild(parent)
-		
-	
 		config.scroll = scroll
-		parent = scroll
 	end
 	
 	local heightUsed = 10
@@ -710,7 +655,7 @@ function HouseAuthority.GetFrame(config)
 	end
 	
 	configs[config.id] = config
-	return parent
+	return config.scroll or config.frame
 end
 
 function HouseAuthority:CreateConfiguration(data, frameData)
