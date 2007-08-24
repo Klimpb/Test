@@ -4,13 +4,15 @@ local HouseBuild = {}
 local tables = {}
 
 function HouseBuild:Set(key, val)
-	Debug( "SET [" .. tostring(key) .. "] [" .. tostring(val) .. "]" );
 	tables[key] = val
 end
 
 function HouseBuild:Get(key)
-	Debug( "GET [" .. tostring(tables[key]) .. "]" );
 	return tables[key]
+end
+
+function HouseBuild:Check(val)
+	return tonumber(val)
 end
 
 function HouseBuild:CreateUI()
@@ -19,10 +21,20 @@ function HouseBuild:CreateUI()
 			text = "Testing List",
 			default = "foo",
 			var = "selection",
+			help = "This is some help information regarding how to use this feature in.",
 			list = {{ "foo", "Foo" },
 				{ "apple", "Apple" },
 				{ "cat", "Cat" }}
-		}
+		},
+		{	type = "input",
+			text = "Input Thing",
+			default = 50,
+			var = "val",
+			realTime = true,
+			help = "Super special input, OMGHAIMIKMA",
+			validate = "Check",
+			error = "Error, \"%s\" is not a valid input",
+		},
 	};
 	
 	local HouseAuthority = DongleStub("HousingAuthority-1.0")
