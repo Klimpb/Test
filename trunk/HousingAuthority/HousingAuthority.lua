@@ -7,12 +7,13 @@ if( not DongleStub:IsNewerVersion(major, minor) ) then return end
 
 local L = {
 	["BAD_ARGUMENT"] = "bad argument #%d for '%s' (%s expected, got %s)",
-	["BAD_ARGUMENT_TABLE"] = "bad table argument '%s' for '%s' (%s expected, got %s)",
+	["BAD_ARGUMENT_TABLE"] = "bad widget table argument '%s' for '%s' (%s expected, got %s)",
 	["MUST_CALL"] = "You must call '%s' from a registered HouseAuthority object.",
 	["SLIDER_NOTEXT"] = "You must either set text or format for sliders.",
 	["CANNOT_CREATE"] = "You cannot create any new widgets for this anymore, HAObj:GetFrame() was called.",
 	["CANNOT_ENABLE"] = "Cannot enable scroll frames anymore, HAObj:GetFrame() was called.",
 	["OH_NOT_INITIALIZED"] = "OptionHouse has not been initialized yet, you cannot call HAObj:GetFrame() until then.",
+	["INVALID_POSITION"] = "Invalid positioning passed, 'compact' or 'onebyone' required, got '%s'.",
 }
 
 local function assert(level,condition,message)
@@ -38,6 +39,82 @@ local function argcheck(value, field, ...)
 		error(L["BAD_ARGUMENT"]:format(field, name, types, type(value)), 3)
 	else
 		error(L["BAD_ARGUMENT_TABLE"]:format(field, name, types, type(value)), 3)
+	end
+end
+
+-- Widgety fun
+local function showInfoTooltip(self)
+	if( not 
+end
+
+local function positionWidgetInfo(widget, config, type, msg)
+	-- No button made, no type, exit silently
+	if( not widget.infoButton and not type ) then
+		return
+	
+	-- Removing the display
+	elseif( widget.infoButton.type and not type ) then
+		widget.infoButton.type = nil
+		widget.infoButton:Hide()
+		
+		-- Basically, OBO display doesn't need
+		-- everything repositioned and hiding is just fine
+		-- but compact will
+		if( config.positionType ~= "onebyone" ) then
+			positionWidgets(config)
+		end
+		return
+	end
+	
+	if( not widget.infoButton ) then
+		widget.infoButton = CreateFrame("Button")
+		widget.infoButton:SetScript("OnEnter", showInfoTooltip)
+		widget.infoButton:SetScript("OnLeave", hideTooltip)
+		widget.infoButton:SetTextFontObject(GameFontNormal)
+		widget.infoButton:SetHeight(18)
+		widget.infoButton:SetWidth(18)
+	end
+
+	-- Change the message, nothing else needed
+	if( widget.infoButton.type == type ) then
+		widget.infoButton.tooltip = msg
+		return
+	end
+	
+	if( type == "help" ) then
+		widget.infoButton:SetText("[?]")
+	elseif( type == "validate" ) then
+		widget.infoButton:SetText("[!]")
+	end
+
+	widget.infoButton.type = type
+	widget.infoButton.tooltip = msg
+	widget.infoButton:SetPoint("TOPLEFT", widget, "TOPLEFT", 0, -5)
+	widget.infoButton:Show()
+	
+	if( config.positionType ~= "onebyone" ) then
+		positionWidgets(config)
+	end
+end
+
+local function positionWidgets(config)
+	if( config.positionType == "onebyone" ) then
+		local heightUsed = 10
+		local height = 0
+		for i, widget in pairs(config.widgets) do
+			widget:ClearAllPoints()
+
+			if( i > 1 ) then
+				heightUsed = heightUsed + height + 5 + ( widget.yPos or 0 )
+				widget:SetPoint("TOPLEFT", parent, "TOPLEFT", widget.xPos or 5, -heightUsed)
+			else
+				widget:SetPoint("TOPLEFT", parent, "TOPLEFT", widget.xPos or 5, -10)		
+			end
+
+			height = widget:GetHeight() + ( widget.yPos or 0 )
+		end
+	elseif( config.positionType == "compact" ) then
+	
 	end
 end
 
@@ -170,12 +247,6 @@ local function inputFocusGained(self)
 	this:HighlightText()
 end
 
-local helpBackdrop = {bgFile = "Interface\\Buttons\\UI-SliderBar-Background",
-			edgeFile = "Interface\\Buttons\\UI-SliderBar-Border",
-			edgeSize = 10, tileSize = 10,
-			insets = { left = 3, right = 3, top = 6, bottom = 6 }}
-
-
 local function inputChanged(self)
 	local val
 	if( not self.data.numeric ) then
@@ -200,28 +271,18 @@ local function inputChanged(self)
 			end
 		end
 		
+		-- Validation error, show [!]
 		if( not val ) then
-			local frame = self.parent.validateFrame
-			if( not frame ) then
-				frame = CreateFrame("Frame", nil, OptionHouseFrames.addon)
-				frame:SetBackdrop(helpBackdrop)
-				frame:SetBackdropColor(0, 0, 0)
-				frame:SetBackdropBorderColor(0.90, 0.90, 0.90, 1)
-				frame:SetHeight(30)
-				frame:SetWidth(300)
-				frame:SetPoint("TOPLEFT", OptionHouseFrames.addon, "TOPLEFT", 230, -70)
-				
-				frame.text = frame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-				frame.text:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
-				frame.text:SetTextColor(1, 1, 1)
-				frame.text:SetHeight(20)
-				
-				self.parent.validateFrame = frame
-			end
-			
-			frame.text:SetText(string.format(self.data.error, self:GetText()))
-			--frame:Show()
+			positionWidgetInfo(self, config, "validate", self.data.error)
 			return
+		
+		-- Error cleared, no help, hide [!]
+		elseif( not self.data.help ) then
+			positionWidgetInfo(self, config)
+		
+		-- Error cleared, help exists, switch [!] to [?]
+		elseif( self.infoButton and self.infoButton.type == "validate" ) then
+			positionWidgetInfo(self, config, "help", self.data.help)
 		end
 		
 		
@@ -301,12 +362,18 @@ local configs = {}
 local id = 0
 
 local methods = { "GetFrame", "CreateConfiguration", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
-local widgets = { ["check"] = "CreateCheckBox", ["input"] = "CreateInput", ["dropdown"] = "CreateDropdown", ["color"] = "CreateColorPicker", ["slider"] = "CreateSlider" }
+local widgets = { ["string"] = "CreateFontString", ["check"] = "CreateCheckBox", ["input"] = "CreateInput", ["dropdown"] = "CreateDropdown", ["color"] = "CreateColorPicker", ["slider"] = "CreateSlider" }
 
 
 -- Stage 0, Adding widgets, can call Create*
 -- Stage 1, Frame is finalized, you can no longer add new widgets
 function HouseAuthority:RegisterFrame(data)
+	argcheck(data, 1, L["NO_DATA_PASSED"])
+	argcheck(data.positionType, "positionType", "string", "nil")
+	if( data.positionType and data.positionType ~= "compact" and data.positionType ~= "onebyone" ) then
+		error(string.format(L["INVALID_POSITION", data.positionType), 3)
+	end
+	
 	local type = "function"
 	if( data.handler ) then
 		type = "string"	
@@ -331,7 +398,33 @@ function HouseAuthority:RegisterFrame(data)
 	return configs[id].obj
 end
 
+function HouseAuthority.CreateFontString(data)
+	argcheck(data, 2, "table")
+	argcheck(data.text, "text", "string")
+	argcheck(data.color, "table", "nil")
+	argcheck(data.fontPath, "string", "nil")
+	argcheck(data.fontSize, "number", "nil")
+	argcheck(data.fontFlag, "string", "nil")
+	argcheck(data.font, "table", "nil")
+		
+	local label = config.frame:CreateFontString(nil, "ARTWORK")
+	if( data.font ) then
+		label:SetFontObject(data.font)	
+	elseif( data.fontPath and data.fontSize ) then
+		label:SetFont(data.fontPath, data.fontSize, data.fontFlag)
+	else
+		label:SetFontObject(GameFontNormal)
+	end
+	
+	if( data.color ) then
+		label:SetTextColor(data.color.r, data.color.g, data.color.b)
+	end
+	
+	return label
+end
+
 function HouseAuthority.CreateColorPicker(config, data)
+	argcheck(data, 2, "table")
 	argcheck(data.text, "text", "string")
 	argcheck(data.var, "var", "string", "table")
 	argcheck(data.default, "default", "table", "nil")
@@ -366,9 +459,11 @@ function HouseAuthority.CreateColorPicker(config, data)
 	text:SetText(data.text)	
 	
 	table.insert(config.widgets, button)
+	return button
 end
 
 function HouseAuthority.CreateInput(config, data)
+	argcheck(data, 2, "table")
 	argcheck(data.text, "text", "string")
 	argcheck(data.var, "var", "string", "table")
 	argcheck(data.default, "default", "number", "string", "nil")
@@ -438,9 +533,11 @@ function HouseAuthority.CreateInput(config, data)
 	text:SetText(data.text)
 
 	table.insert(config.widgets, input)
+	return input
 end
 
 function HouseAuthority.CreateSlider(config, data)
+	argcheck(data, 2, "table")
 	argcheck(data.default, "default", "number", "nil")
 	argcheck(data.help, "help", "string", "nil")
 	argcheck(data.var, "var", "string")
@@ -497,9 +594,11 @@ function HouseAuthority.CreateSlider(config, data)
 	end
 	
 	table.insert(config.widgets, slider)
+	return slider
 end
 
 function HouseAuthority.CreateCheckBox(config, data)
+	argcheck(data, 2, "table")
 	argcheck(data.default, "default", "boolean", "nil")
 	argcheck(data.help, "help", "string", "nil")
 	argcheck(data.var, "var", "string", "table")
@@ -530,9 +629,11 @@ function HouseAuthority.CreateCheckBox(config, data)
 	text:SetText(data.text)
 	
 	table.insert(config.widgets, check)
+	return check
 end
 
 function HouseAuthority.CreateDropdown(config, data)
+	argcheck(data, 2, "table")
 	argcheck(data.list, "list", "table")
 	argcheck(data.default, "default", "string", "nil")
 	argcheck(data.help, "help", "string", "nil")
@@ -558,6 +659,7 @@ function HouseAuthority.CreateDropdown(config, data)
 	end
 	
 	table.insert(config.widgets, button)
+	return button
 end
 
 function HouseAuthority.GetFrame(config)
@@ -593,20 +695,7 @@ function HouseAuthority.GetFrame(config)
 		config.scroll = scroll
 	end
 	
-	local heightUsed = 10
-	local height = 0
-	for i, widget in pairs(config.widgets) do
-		widget:ClearAllPoints()
-		
-		if( i > 1 ) then
-			heightUsed = heightUsed + height + 5 + ( widget.yPos or 0 )
-			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", widget.xPos or 5, -heightUsed)
-		else
-			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", widget.xPos or 5, -10)		
-		end
-
-		height = widget:GetHeight() + ( widget.yPos or 0 )
-	end
+	positionWidgets(config)
 	
 	return config.scroll or config.frame
 end
