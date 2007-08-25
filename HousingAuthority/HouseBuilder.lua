@@ -11,7 +11,7 @@ function HouseBuild:Get(key)
 	return tables[key]
 end
 
-function HouseBuild:Check(val)
+function HouseBuild:Check(var, val)
 	return tonumber(val)
 end
 
@@ -36,7 +36,7 @@ function HouseBuild:CreateUI()
 			validate = "Check",
 			error = "Error, \"%s\" is not a valid input",
 		},
-		{	type = "string",
+		{	type = "label",
 			text = "This is an example string",
 			color = { r = 1, g = 1, b = 1 },
 		},
@@ -48,6 +48,8 @@ function HouseBuild:CreateUI()
 		},
 		{	type = "slider",
 			format = "Background opacity: %.2f",
+			help = "K, Thks, Bai", 
+			var = "opacity",
 			default = 1.0,
 			step = 0.01,
 			minText = "0%",
@@ -57,6 +59,7 @@ function HouseBuild:CreateUI()
 		},
 		{	type = "check",
 			text = "Enable a mod",
+			help = "FOR PONY",
 			default = true,
 			var = "enable",
 		},

@@ -43,31 +43,68 @@ local function argcheck(value, field, ...)
 end
 
 -- Widgety fun
+-- We only need one tooltip, pointless to make more
+local tooltip
 local function showInfoTooltip(self)
-	if( not 
+	if( not tooltip ) then
+		tooltip = CreateFrame("GameTooltip", "HAInfoTooltip", nil, "GameTooltipTemplate")
+	end
+
+	tooltip:SetOwner(self, "ANCHOR_RIGHT" )
+	tooltip:SetText(self.tooltip, nil, nil, nil, nil, 1)
+	tooltip:Show()
 end
 
-local function positionWidgetInfo(widget, config, type, msg)
+local function hideTooltip(self)
+	if( tooltip ) then
+		tooltip:Hide()
+	end
+end
+
+local function positionWidgets(config)
+	if( config.positionType == "onebyone" ) then
+		local heightUsed = 10
+		local height = 0
+		for i, widget in pairs(config.widgets) do
+			widget:ClearAllPoints()
+
+			if( i > 1 ) then
+				heightUsed = heightUsed + height + 5 + ( widget.yPos or 0 )
+			end
+			
+			local xPos = widget.xPos
+			if( widget.infoButton and widget.infoButton.type ) then
+				xPos = ( xPos or 0 ) + 15
+				widget.infoButton:SetPoint("TOPLEFT", config.frame, "TOPLEFT", 0, -heightUsed)
+				widget.infoButton:Show()
+			end
+
+			widget:SetPoint("TOPLEFT", config.frame, "TOPLEFT", xPos or 5, -heightUsed)
+			height = widget:GetHeight() + ( widget.yPos or 0 )
+		end
+	elseif( config.positionType == "compact" ) then
+	
+	end
+end
+
+local function setupWidgetInfo(widget, config, type, msg, skipCall)
 	-- No button made, no type, exit silently
 	if( not widget.infoButton and not type ) then
 		return
 	
 	-- Removing the display
-	elseif( widget.infoButton.type and not type ) then
+	elseif( widget.infoButton and widget.infoButton.type and not type ) then
 		widget.infoButton.type = nil
 		widget.infoButton:Hide()
 		
-		-- Basically, OBO display doesn't need
-		-- everything repositioned and hiding is just fine
-		-- but compact will
-		if( config.positionType ~= "onebyone" ) then
+		if( config.positionType ~= "onebyone" and not skipCall ) then
 			positionWidgets(config)
 		end
 		return
 	end
 	
 	if( not widget.infoButton ) then
-		widget.infoButton = CreateFrame("Button")
+		widget.infoButton = CreateFrame("Button", nil, widget)
 		widget.infoButton:SetScript("OnEnter", showInfoTooltip)
 		widget.infoButton:SetScript("OnLeave", hideTooltip)
 		widget.infoButton:SetTextFontObject(GameFontNormal)
@@ -89,32 +126,9 @@ local function positionWidgetInfo(widget, config, type, msg)
 
 	widget.infoButton.type = type
 	widget.infoButton.tooltip = msg
-	widget.infoButton:SetPoint("TOPLEFT", widget, "TOPLEFT", 0, -5)
-	widget.infoButton:Show()
 	
-	if( config.positionType ~= "onebyone" ) then
+	if( not skipCall ) then
 		positionWidgets(config)
-	end
-end
-
-local function positionWidgets(config)
-	if( config.positionType == "onebyone" ) then
-		local heightUsed = 10
-		local height = 0
-		for i, widget in pairs(config.widgets) do
-			widget:ClearAllPoints()
-
-			if( i > 1 ) then
-				heightUsed = heightUsed + height + 5 + ( widget.yPos or 0 )
-				widget:SetPoint("TOPLEFT", parent, "TOPLEFT", widget.xPos or 5, -heightUsed)
-			else
-				widget:SetPoint("TOPLEFT", parent, "TOPLEFT", widget.xPos or 5, -10)		
-			end
-
-			height = widget:GetHeight() + ( widget.yPos or 0 )
-		end
-	elseif( config.positionType == "compact" ) then
-	
 	end
 end
 
@@ -273,16 +287,16 @@ local function inputChanged(self)
 		
 		-- Validation error, show [!]
 		if( not val ) then
-			positionWidgetInfo(self, config, "validate", self.data.error)
+			setupWidgetInfo(self, self.parent, "validate", string.format(self.data.error, self:GetText()))
 			return
 		
 		-- Error cleared, no help, hide [!]
 		elseif( not self.data.help ) then
-			positionWidgetInfo(self, config)
+			setupWidgetInfo(self, self.parent)
 		
 		-- Error cleared, help exists, switch [!] to [?]
 		elseif( self.infoButton and self.infoButton.type == "validate" ) then
-			positionWidgetInfo(self, config, "help", self.data.help)
+			setupWidgetInfo(self, self.parent, "help", self.data.help)
 		end
 		
 		
@@ -361,17 +375,22 @@ local HouseAuthority = {}
 local configs = {}
 local id = 0
 
-local methods = { "GetFrame", "CreateConfiguration", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
-local widgets = { ["string"] = "CreateFontString", ["check"] = "CreateCheckBox", ["input"] = "CreateInput", ["dropdown"] = "CreateDropdown", ["color"] = "CreateColorPicker", ["slider"] = "CreateSlider" }
-
+local methods = { "GetFrame", "CreateConfiguration", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
+local widgets = { ["label"] = "CreateLabel", ["check"] = "CreateCheckBox", ["input"] = "CreateInput", ["dropdown"] = "CreateDropdown", ["color"] = "CreateColorPicker", ["slider"] = "CreateSlider" }
 
 -- Stage 0, Adding widgets, can call Create*
 -- Stage 1, Frame is finalized, you can no longer add new widgets
 function HouseAuthority:RegisterFrame(data)
-	argcheck(data, 1, L["NO_DATA_PASSED"])
+	argcheck(data, 1, "table")
 	argcheck(data.positionType, "positionType", "string", "nil")
-	if( data.positionType and data.positionType ~= "compact" and data.positionType ~= "onebyone" ) then
-		error(string.format(L["INVALID_POSITION", data.positionType), 3)
+	if( data.positionType and data.positionType ~= "compact" and data.positionType ~= "onebyone" and data.positionType == "none" ) then
+		error(string.format(L["INVALID_POSITION"], data.positionType), 3)
+	end
+	
+	if( data.positionType == nil ) then
+		data.positionType = "onebyone"	
+	elseif( data.positionType == "none" ) then
+		data.positionType = nil
 	end
 	
 	local type = "function"
@@ -386,7 +405,7 @@ function HouseAuthority:RegisterFrame(data)
 	
 	id = id + 1
 	
-	local config = { id = id, stage = 0, widgets = {}, handler = data.handler, get = data.get, frame = data.frame, set = data.set, onSet = data.onSet }
+	local config = { id = id, positionType = data.positionType, stage = 0, widgets = {}, handler = data.handler, get = data.get, frame = data.frame, set = data.set, onSet = data.onSet }
 	config.obj = { id = id }
 	
 	for _, method in pairs(methods) do
@@ -398,16 +417,21 @@ function HouseAuthority:RegisterFrame(data)
 	return configs[id].obj
 end
 
-function HouseAuthority.CreateFontString(data)
+function HouseAuthority.CreateLabel(config, data)
 	argcheck(data, 2, "table")
 	argcheck(data.text, "text", "string")
-	argcheck(data.color, "table", "nil")
-	argcheck(data.fontPath, "string", "nil")
-	argcheck(data.fontSize, "number", "nil")
-	argcheck(data.fontFlag, "string", "nil")
-	argcheck(data.font, "table", "nil")
+	argcheck(data.color, "color", "table", "nil")
+	argcheck(data.fontPath, "fontPath", "string", "nil")
+	argcheck(data.fontSize, "fontSize", "number", "nil")
+	argcheck(data.fontFlag, "fontFlag", "string", "nil")
+	argcheck(data.font, "font", "table", "nil")
+	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateLabel"))
+	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 		
-	local label = config.frame:CreateFontString(nil, "ARTWORK")
+	local label = configs[config.id].frame:CreateFontString(nil, "ARTWORK")
+	label.xPos = 8
+	label.yPos = 5
+	
 	if( data.font ) then
 		label:SetFontObject(data.font)	
 	elseif( data.fontPath and data.fontSize ) then
@@ -420,13 +444,18 @@ function HouseAuthority.CreateFontString(data)
 		label:SetTextColor(data.color.r, data.color.g, data.color.b)
 	end
 	
+	label:SetText(data.text)
+	label:SetHeight(20)
+	
+	table.insert(configs[config.id].widgets, label)
 	return label
 end
 
 function HouseAuthority.CreateColorPicker(config, data)
 	argcheck(data, 2, "table")
 	argcheck(data.text, "text", "string")
-	argcheck(data.var, "var", "string", "table")
+	argcheck(data.help, "help", "string", "nil")
+	argcheck(data.var, "var", "string")
 	argcheck(data.default, "default", "table", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateColorPicker"))
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
@@ -458,6 +487,10 @@ function HouseAuthority.CreateColorPicker(config, data)
 	text:SetPoint("LEFT", button, "RIGHT", 5, 0)
 	text:SetText(data.text)	
 	
+	if( data.help ) then
+		setupWidgetInfo(button, config, "help", data.help)
+	end
+	
 	table.insert(config.widgets, button)
 	return button
 end
@@ -470,6 +503,7 @@ function HouseAuthority.CreateInput(config, data)
 	argcheck(data.realTime, "realTime", "boolean", "nil")
 	argcheck(data.numeric, "numeric", "boolean", "nil")
 	argcheck(data.error, "error", "string", "nil")
+	argcheck(data.help, "help", "string", "nil")
 	argcheck(data.width, "width", "number", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateInput"))
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
@@ -532,6 +566,10 @@ function HouseAuthority.CreateInput(config, data)
 	text:SetPoint("LEFT", input, "RIGHT", 5, 0)
 	text:SetText(data.text)
 
+	if( data.help ) then
+		setupWidgetInfo(input, config, "help", data.help)
+	end
+
 	table.insert(config.widgets, input)
 	return input
 end
@@ -593,6 +631,10 @@ function HouseAuthority.CreateSlider(config, data)
 		max:SetText(data.maxText)
 	end
 	
+	if( data.help ) then
+		setupWidgetInfo(slider, config, "help", data.help)
+	end
+
 	table.insert(config.widgets, slider)
 	return slider
 end
@@ -628,6 +670,10 @@ function HouseAuthority.CreateCheckBox(config, data)
 	text:SetPoint("LEFT", check, "RIGHT", 5, 0)
 	text:SetText(data.text)
 	
+	if( data.help ) then
+		setupWidgetInfo(check, config, "help", data.help)
+	end
+
 	table.insert(config.widgets, check)
 	return check
 end
@@ -658,6 +704,10 @@ function HouseAuthority.CreateDropdown(config, data)
 		text:SetText(data.text)
 	end
 	
+	if( data.help ) then
+		setupWidgetInfo(button, config, "help", data.help)
+	end
+
 	table.insert(config.widgets, button)
 	return button
 end
@@ -673,9 +723,6 @@ function HouseAuthority.GetFrame(config)
 	
 	config.stage = 1
 	
-	-- Position everything
-	local parent = config.frame
-	
 	-- Do we even need a scroll frame?
 	local height = 0
 	for _, widget in pairs(config.widgets) do
@@ -687,11 +734,11 @@ function HouseAuthority.GetFrame(config)
 		scroll:SetPoint("TOPLEFT", OptionHouseFrames.addon, "TOPLEFT", 190, -105)
 		scroll:SetPoint("BOTTOMRIGHT", OptionHouseFrames.addon, "BOTTOMRIGHT", -35, 40)
 
-		parent:SetParent(scroll)
-		parent:SetWidth(10)
-		parent:SetHeight(10)
+		config.frame:SetParent(scroll)
+		config.frame:SetWidth(10)
+		config.frame:SetHeight(10)
 		
-		scroll:SetScrollChild(parent)
+		scroll:SetScrollChild(config.frame)
 		config.scroll = scroll
 	end
 	
@@ -710,7 +757,7 @@ function HouseAuthority:CreateConfiguration(data, frameData)
 	end
 	
 	local handler = HouseAuthority:RegisterFrame(frameData)
-
+	
 	for id, widget in pairs(data) do
 		if( widget.type and widgets[widget.type] ) then
 			handler[widgets[widget.type]](handler, widget)
