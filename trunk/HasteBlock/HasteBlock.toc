@@ -4,8 +4,8 @@
 ## OptionalDeps: LegoBlock, OptionHouse
 ## SavedVariables: HasteBlockDB
 
-Dongle.lua
 OptionHouse.lua
+HousingAuthority.lua
 LegoBlock.lua
 localization.enUS.lua
 HasteBlock.lua
