@@ -1,0 +1,11 @@
+## Interface: 20100
+## Title: HasteBlock
+## Notes: Ranged/Spell/Melee haste indicater
+## OptionalDeps: LegoBlock, OptionHouse
+## SavedVariables: HasteBlockDB
+
+Dongle.lua
+OptionHouse.lua
+LegoBlock.lua
+localization.enUS.lua
+HasteBlock.lua
