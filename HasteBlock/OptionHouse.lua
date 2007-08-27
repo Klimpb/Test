@@ -150,59 +150,57 @@ if not g.DongleStub or g.DongleStub:IsNewerVersion(major, minor) then
 	lib = stub:Register(lib, Activate)
 end
 
---[[-------------------------------------------------------------------------
+--[[-----------------------------------------------------------------------
   Begin Library Implementation
----------------------------------------------------------------------------]]
+-------------------------------------------------------------------------]]
+  
 local major = "OptionHouse-1.0"
-local minor = tonumber(string.match("$Revision: 570 $", "(%d+)") or 1)
+local minor = tonumber(string.match("$Revision: 591 $", "(%d+)") or 1)
 
 assert(DongleStub, string.format("%s requires DongleStub.", major))
 
-if not DongleStub:IsNewerVersion(major, minor) then return end
+if( not DongleStub:IsNewerVersion(major, minor) ) then return end
 
 local L = {
 	["ERROR_NO_FRAME"] = "No frame returned for the addon \"%s\", category \"%s\", sub category \"%s\".",
 	["NO_FUNC_PASSED"] = "You must associate a function with a category.",
-	["IS_PRIVATEAPI"] = "You are trying to call a private api from a non-OptionHouse module.",
 	["BAD_ARGUMENT"] = "bad argument #%d to '%s' (%s expected, got %s)",
 	["MUST_CALL"] = "You must call '%s' from an OptionHouse addon object.",
 	["ADDON_ALREADYREG"] = "The addon '%s' is already registered with OptionHouse.",
-	["UNKNOWN_TAB"] = "No tab with the id %d exists, only %d tabs are registered.",
-	["CATEGORY_ALREADYREG"] = "A category named '%s' already exists in '%s'",
+	["UNKNOWN_TAB"] = "Cannot open tab #%d, only %d tabs are registered.",
+	["CATEGORY_ALREADYREG"] = "The category '%s' already exists in '%s'",
 	["NO_CATEGORYEXISTS"] = "No category named '%s' in '%s' exists.",
 	["NO_SUBCATEXISTS"] = "No sub-category '%s' exists in '%s' for the addon '%s'.",
-	["FRAME_DRAGGING"] = "Left Click + Drag to move.\nRight click to reset position.",
 	["NO_PARENTCAT"] = "No parent category named '%s' exists in %s'",
 	["SUBCATEGORY_ALREADYREG"] = "The sub-category named '%s' already exists in the category '%s' for '%s'",
+	["UNKNOWN_FRAMETYPE"] = "Unknown frame type requested '%s', only 'main', 'perf', 'addon', 'config' are supported.",
 	["OPTION_HOUSE"] = "Option House",
 	["ENTERED_COMBAT"] = "|cFF33FF99Option House|r: Configuration window closed due to entering combat.",
 	["SEARCH"] = "Search...",
 	["ADDON_OPTIONS"] = "Addons",
 	["VERSION"] = "Version: %s",
 	["AUTHOR"] = "Author: %s",
-	["TOTAL_CATEGORIES"] = "Categories: %d",
 	["TOTAL_SUBCATEGORIES"] = "Sub Categories: %d",
 	["TAB_MANAGEMENT"] = "Management",
 	["TAB_PERFORMANCE"] = "Performance",
-	["UNKNOWN_FRAMETYPE"] = "Unknown frame type requested '%s', only 'main', 'perf', 'addon', 'config' are supported.",
 }
 
 local function assert(level,condition,message)
-	if not condition then
+	if( not condition ) then
 		error(message,level)
 	end
 end
 
 local function argcheck(value, num, ...)
-	if type(num) ~= "number" then
+	if( type(num) ~= "number" ) then
 		error(L["BAD_ARGUMENT"]:format(2, "argcheck", "number", type(num)), 1)
 	end
 
 	for i=1,select("#", ...) do
-		if type(value) == select(i, ...) then return end
+		if( type(value) == select(i, ...) ) then return end
 	end
 
-	local types = strjoin(", ", ...)
+	local types = string.join(", ", ...)
 	local name = string.match(debugstack(2,2,0), ": in function [`<](.-)['>]")
 	error(L["BAD_ARGUMENT"]:format(num, name, types, type(value)), 3)
 end
@@ -216,6 +214,7 @@ local regFrames = {}
 local evtFrame
 local frame
 
+-- TABS
 local function resizeTab(tab)
 	local textWidth = tab:GetFontString():GetWidth()
 	
@@ -313,6 +312,8 @@ local function createTab(text, id)
 		tab:SetText(text)
 		tab:SetWidth(115)
 		tab:SetHeight(32)
+		tab:SetID(id)
+		tab:SetScript("OnClick", tabOnClick)
 		tab:GetFontString():SetPoint("CENTER", 0, 2)
 		
 		tab.highlightTexture = tab:GetHighlightTexture()
@@ -368,8 +369,6 @@ local function createTab(text, id)
 		frame.tabs[id] = tab
 	end
 
-	tab:SetID(id)
-	tab:SetScript("OnClick", tabOnClick)
 	tab:SetText(text)
 	tab:Show()
 	
@@ -388,7 +387,7 @@ local function onVerticalScroll(self, offset)
 	offset = ceil(offset)
 
 	self.bar:SetValue(offset)
-	self.offset = ceil((offset / self.displayNum))
+	self.offset = ceil(offset / self.displayNum)
 	
 	if( self.offset < 0 ) then
 		self.offset = 0
@@ -425,9 +424,12 @@ end
 
 local function updateScroll(scroll, totalRows)
 	local max = (totalRows - scroll.displayNum) * scroll.displayNum
+	
+	-- Macs are unhappy if max is less then the min
 	if( max < 0 ) then
 		max = 0
 	end
+
 	scroll.bar:SetMinMaxValues(0, max)
 
 	if( totalRows > scroll.displayNum ) then
@@ -443,6 +445,22 @@ local function updateScroll(scroll, totalRows)
 		scroll.down:Hide()
 		scroll.bar:GetThumbTexture():Hide()
 	end
+end
+
+local function onValueChanged(self, offset)
+	self:GetParent():SetVerticalScroll(offset)
+end
+
+local function scrollButtonUp(self)
+	local parent = self:GetParent()
+	parent:SetValue(parent:GetValue() - (parent:GetHeight() / 2))
+	PlaySound("UChatScrollButton")
+end
+
+local function scrollButtonDown(self)
+	local parent = self:GetParent()
+	parent:SetValue(parent:GetValue() + (parent:GetHeight() / 2))
+	PlaySound("UChatScrollButton")
 end
 
 local function createScrollFrame(frame, displayNum, onScroll)
@@ -466,9 +484,7 @@ local function createScrollFrame(frame, displayNum, onScroll)
 	frame.scroll.bar:SetMinMaxValues(0, 0)
 	frame.scroll.bar:SetValue(0)
 	frame.scroll.bar:SetWidth(16)
-	frame.scroll.bar:SetScript("OnValueChanged", function(self, offset)
-		self:GetParent():SetVerticalScroll(offset)
-	end)
+	frame.scroll.bar:SetScript("OnValueChanged", onValueChanged)
 	frame.scroll.bar:SetPoint("TOPLEFT", frame.scroll, "TOPRIGHT", 6, -16)
 	frame.scroll.bar:SetPoint("BOTTOMLEFT", frame.scroll, "BOTTOMRIGHT", 6, -16)
 
@@ -476,20 +492,12 @@ local function createScrollFrame(frame, displayNum, onScroll)
 	frame.scroll.up = CreateFrame("Button", nil, frame.scroll.bar, "UIPanelScrollUpButtonTemplate")
 	frame.scroll.up:ClearAllPoints()
 	frame.scroll.up:SetPoint( "BOTTOM", frame.scroll.bar, "TOP" )
-	frame.scroll.up:SetScript("OnClick", function(self)
-		local parent = self:GetParent()
-		parent:SetValue(parent:GetValue() - (parent:GetHeight() / 2))
-		PlaySound("UChatScrollButton")
-	end)
+	frame.scroll.up:SetScript("OnClick", scrollButtonUp)
 
 	frame.scroll.down = CreateFrame("Button", nil, frame.scroll.bar, "UIPanelScrollDownButtonTemplate")
 	frame.scroll.down:ClearAllPoints()
 	frame.scroll.down:SetPoint( "TOP", frame.scroll.bar, "BOTTOM" )
-	frame.scroll.down:SetScript("OnClick", function(self)
-		local parent = self:GetParent()
-		parent:SetValue(parent:GetValue() + (parent:GetHeight() / 2))
-		PlaySound("UChatScrollButton")
-	end)
+	frame.scroll.down:SetScript("OnClick", scrollButtonDown)
 	
 	-- That square thingy that shows where the bar is
 	frame.scroll.bar:SetThumbTexture("Interface\\Buttons\\UI-ScrollBar-Knob")
@@ -500,22 +508,22 @@ local function createScrollFrame(frame, displayNum, onScroll)
 	thumb:SetTexCoord(0.25, 0.75, 0.25, 0.75)
 
 	-- Border graphic
-	local texture = frame.scroll:CreateTexture(nil, "BACKGROUND")
-	texture:SetWidth(31)
-	texture:SetHeight(256)
-	texture:SetPoint("TOPLEFT", frame.scroll.up, "TOPLEFT", -7, 5)
-	texture:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-ScrollBar")
-	texture:SetTexCoord(0, 0.484375, 0, 1.0)
+	frame.scroll.barUpTexture = frame.scroll:CreateTexture(nil, "BACKGROUND")
+	frame.scroll.barUpTexture:SetWidth(31)
+	frame.scroll.barUpTexture:SetHeight(256)
+	frame.scroll.barUpTexture:SetPoint("TOPLEFT", frame.scroll.up, "TOPLEFT", -7, 5)
+	frame.scroll.barUpTexture:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-ScrollBar")
+	frame.scroll.barUpTexture:SetTexCoord(0, 0.484375, 0, 1.0)
 
-	local texture = frame.scroll:CreateTexture(nil, "BACKGROUND")
-	texture:SetWidth(31)
-	texture:SetHeight(106)
-	texture:SetPoint("BOTTOMLEFT", frame.scroll.down, "BOTTOMLEFT", -7, -3)
-	texture:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-ScrollBar")
-	texture:SetTexCoord(0.515625, 1.0, 0, 0.4140625)
+	frame.scroll.barDownTexture = frame.scroll:CreateTexture(nil, "BACKGROUND")
+	frame.scroll.barDownTexture:SetWidth(31)
+	frame.scroll.barDownTexture:SetHeight(106)
+	frame.scroll.barDownTexture:SetPoint("BOTTOMLEFT", frame.scroll.down, "BOTTOMLEFT", -7, -3)
+	frame.scroll.barDownTexture:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-ScrollBar")
+	frame.scroll.barDownTexture:SetTexCoord(0.515625, 1.0, 0, 0.4140625)
 end
 
--- SEARCH INPUt
+-- SEARCH INPUT
 local function focusGained(self)
 	if( self.searchText ) then
 		self.searchText = nil
@@ -590,11 +598,22 @@ local function addCategoryRow(type, name, tooltip, data, parent, addon)
 	frame.resortList = true
 end
 
+-- This removes the entire addon, we don't use this unless
+-- we're removing the last category
+local function removeAddonListing(addon)
+	local frame = regFrames.addon
+	for i=#(frame.categories), 1, -1 do
+		if( frame.categories[i].addon == addon ) then
+			table.remove(frame.categories, i)
+		end
+	end
+end
+
 -- Remove a specific category and/or sub category listing
 -- without needing to recreate the entire list
 local function removeCategoryListing(addon, name)
 	local frame = regFrames.addon
-	for i=1, #(frame.categories) do
+	for i=#(frame.categories), 1, -1 do
 		-- Remove the category requested
 		if( frame.categories[i].type == "category" and frame.categories[i].name == name and frame.categories[i].addon == addon ) then
 			table.remove(frame.categories, i)
@@ -607,13 +626,11 @@ local function removeCategoryListing(addon, name)
 end
 
 local function removeSubCategoryListing(addon, parentCat, name)
-	local categories = regFrames.addon.categories
-	for i=1, #(categories) do
-		local cat = categories[i]
+	local frame = regFrames.addon
+	for i=#(frame.categories), 1, -1 do
 		-- Remove the specific sub category
-		if( cat and cat.type == "subcat" and cat.name == name and cat.parent == parentCat and cat.addon == addon ) then
-			table.remove(categories, i)
-			i = i - 1
+		if( frame.categories[i].type == "subcat" and frame.categories[i].name == name and frame.categories[i].parent == parentCat and frame.categories[i].addon == addon ) then
+			table.remove(frame.categories, i)
 		end
 	end
 end
@@ -645,7 +662,7 @@ local function addCategoryListing(name, addon)
 	else
 		for catName, cat in pairs(addon.categories) do
 			cat.parentCat = catName
-			addCategoryRow("category", catName, cat.totalSubs > 0 and string.format(L["TOTAL_SUBCATEGORIES"], cat.totalSubs), cat, name)
+			addCategoryRow("category", catName, cat.totalSubs > 0 and string.format(L["TOTAL_SUBCATEGORIES"], cat.totalSubs), cat, name, name)
 
 			for subCatName, subCat in pairs(cat.sub) do
 				subCat.parentCat = catName
@@ -660,7 +677,7 @@ local function addCategoryListing(name, addon)
 
 	data.orderID = string.lower(name)
 
-	addCategoryRow("addon", name, (addon.version or addon.author) and tooltip, data)
+	addCategoryRow("addon", name, (addon.version or addon.author) and tooltip, data, nil, name)
 end
 
 -- Recreates the entire listing
@@ -679,7 +696,7 @@ local function displayCategoryRow(type, text, data, tooltip, highlighted)
 	-- We have to let this run completely
 	-- so we know how many rows we have total
 	frame.totalRows = frame.totalRows + 1
-	if( frame.totalRows <= frame.offset or frame.rowID >= 15 ) then
+	if( frame.totalRows <= frame.scroll.offset or frame.rowID >= 15 ) then
 		return
 	end
 	
@@ -723,7 +740,6 @@ end
 
 local function updateConfigList()
 	local frame = regFrames.addon
-	frame.offset = frame.scroll.offset
 	frame.rowID = 0
 	frame.totalRows = 0
 
@@ -789,12 +805,26 @@ local function updateConfigList()
 		
 	updateScroll(frame.scroll, frame.totalRows)
 
+	local wrapSize = 140
+	if( frame.totalRows > 15 ) then
+		wrapSize = 120
+	end
+	
 	for i=1, 15 do
 		if( frame.totalRows > 15 ) then
 			frame.buttons[i]:SetWidth(140)
 		else
 			frame.buttons[i]:SetWidth(156)
 		end
+		--[[
+		if( frame.buttons[i].type == "addon" ) then
+			frame.buttons[i]:GetFontString():SetWidth(wrapSize)
+		elseif( frame.buttons[i].type == "category" ) then
+			frame.buttons[i]:GetFontString():SetWidth(wrapSize - 20)
+		elseif( frame.buttons[i].type == "subcat" ) then
+			frame.buttons[i]:GetFontString():SetWidth(wrapSize - 70)
+		end
+		]]
 
 		-- We have less then 15 rows used
 		-- and our index is equal or past our current
@@ -862,7 +892,6 @@ local function openConfigFrame(data)
 
 			-- Remove the handler/func and save the frame for next time
 			if( category ) then
-				data.frame.time = GetTime()
 				category.handler = nil
 				category.func = nil
 				category.frame = data.frame
@@ -934,6 +963,7 @@ local function createAddonFrame(hide)
 		frame:SetAllPoints(regFrames.main)
 		
 		regFrames.addon = frame
+		OptionHouseFrames.addon = frame
 
 		frame.buttons = {}
 		frame.lines = {}
@@ -1010,6 +1040,7 @@ local function createOHFrame()
 	frame.tabs = {}
 	
 	regFrames.main = frame
+	OptionHouseFrames.main = frame
 
 	-- If we don't hide it ourself, the panel layout becomes messed up
 	frame:Hide()
@@ -1096,7 +1127,8 @@ local function createOHFrame()
 end
 
 -- PRIVATE API's
--- These are only to be used for the standalone OptionHouse modules
+-- While these aren't locked down to prevent being used
+-- You ARE using them are your own risk for future compatability
 function OptionHouse:CreateSearchInput(frame, onChange)
 	createSearchInput(frame, onChange)
 end
@@ -1151,6 +1183,7 @@ end
 function OptionHouse.RegisterFrame(self, type, frame)
 	if( type ~= "addon" and type ~= "manage" and type ~= "perf" and type ~= "main" ) then return end
 	regFrames[type] = frame
+	OptionHouseFrames[type] = frame
 end
 
 -- PUBLIC API's
@@ -1174,38 +1207,41 @@ function OptionHouse:Open(addonName, parentCat, childCat)
 		ShowUIPanel(frame)
 		return
 	end
-
+	
 	-- Cleanest method for getting the func/handler/ect
 	-- to auto open to a page
-	for name, addon in pairs(addons) do
-		if( name == addonName ) then
-			OptionHouseOptionsFrame.selectedAddon = addonName
-			for catName, cat in pairs(addon.categories) do
-				if( catName == parentCat ) then
-					OptionHouseOptionsFrame.selectedCategory = catName
-					-- Searching for a sub cat
-					if( subCat and cat.totalSubs > 0 ) then
-						for subCatName, subCat in pairs(cat.sub) do
-							-- Found sub cat, open it
-							if( subCatName == childCat ) then
-								OptionHouseOptionsFrame.selectedSubCat = subCatName
-								openConfigFrame(subCat)
-								break
+	for _, addon in pairs(regFrames.addon.categories) do
+		if( addon.type == "addon" and addon.name == addonName ) then
+			regFrames.addon.selectedAddon = addonName
+				
+			if( addon.totalCats == 1 and addon.totalSubs == 0 ) then
+				openConfigFrame(addon.data)
+				break
+			else
+				for _, cat in pairs(regFrames.addon.categories) do
+					if( cat.parent == addon.name and cat.type == "category" and cat.name == parentCat ) then
+						regFrames.addon.selectedCategory = cat.name
+						
+						if( cat.totalSubs == 0 ) then
+							openConfigFrame(cat.data)
+							break
+						else
+							for _, subCat in pairs(regFrames.addon.categories) do
+								if( subCat.name == childCat and subCat.parent == cat.name and subCat.addon == addon.name ) then
+									regFrames.addon.selectedSubCat = subCat.name
+									openConfigFrame(subCat.data)
+									break
+								end
 							end
 						end
-
-					-- Searching for a category not a sub cat
-					elseif( not subCat ) then
-						openConfigFrame(cat)
 					end
-					break
 				end
 			end
+			
 			break
 		end
 	end
-
-	-- Now expand anything that was selected
+	
 	updateConfigList()
 	ShowUIPanel(frame)
 end
@@ -1234,7 +1270,7 @@ function OptionHouse:RegisterAddOn(name, title, author, version)
 		addons[name].obj[method] = OptionHouse[method]
 	end
 
-	if( OptionHouseOptionsFrame ) then
+	if( regFrames.addon ) then
 		addCategoryListing(name, addons[name])
 		updateConfigList()
 	end
@@ -1248,14 +1284,14 @@ function OptionHouse.RegisterCategory(addon, name, handler, func, noCache)
 	argcheck(func, 4, "string", "function", "nil")
 	argcheck(noCache, 5, "boolean", "number", "nil")
 	assert(3, handler or func, L["NO_FUNC_PASSED"])
-	assert(3, addons[addon.name], string.format(L["MUST_CALL"], addon.name))
+	assert(3, addons[addon.name], string.format(L["MUST_CALL"], "RegisterCategory"))
 	assert(3, addons[addon.name].categories, string.format(L["CATEGORY_ALREADYREG"], name, addon.name))
 
 	-- Category numbers are required so we know when to skip it because only one category/sub cat exists
 	addons[addon.name].totalCats = addons[addon.name].totalCats + 1
 	addons[addon.name].categories[name] = {func = func, handler = handler, noCache = noCache, sub = {}, orderID = addons[addon.name].totalCats, totalSubs = 0}
 
-	if( OptionHouseOptionsFrame ) then
+	if( regFrames.addon ) then
 		addCategoryListing(addon.name, addons[addon.name])
 		updateConfigList()
 	end
@@ -1268,7 +1304,7 @@ function OptionHouse.RegisterSubCategory(addon, parentCat, name, handler, func, 
 	argcheck(func, 5, "string", "function", "nil")
 	argcheck(noCache, 6, "boolean", "number", "nil")
 	assert(3, handler or func, L["NO_FUNC_PASSED"])
-	assert(3, addons[addon.name], string.format(L["MUST_CALL"], addon.name))
+	assert(3, addons[addon.name], string.format(L["MUST_CALL"], "RegisterSubCategory"))
 	assert(3, addons[addon.name].categories[parentCat], string.format(L["NO_PARENTCAT"], parentCat, addon.name))
 	assert(3, not addons[addon.name].categories[parentCat].sub[name], string.format(L["SUBCATEGORY_ALREADYREG"], name, parentCat, addon.name))
 
@@ -1276,7 +1312,7 @@ function OptionHouse.RegisterSubCategory(addon, parentCat, name, handler, func, 
 	addons[addon.name].categories[parentCat].totalSubs = addons[addon.name].categories[parentCat].totalSubs + 1
 	addons[addon.name].categories[parentCat].sub[name] = {handler = handler, func = func, noCache = noCache, orderID = addons[addon.name].categories[parentCat].totalSubs}
 
-	if( OptionHouseOptionsFrame ) then
+	if( regFrames.addon ) then
 		addCategoryListing(addon.name, addons[addon.name])
 		updateConfigList()
 	end
@@ -1284,14 +1320,20 @@ end
 
 function OptionHouse.RemoveCategory(addon, name)
 	argcheck(name, 2, "string")
-	assert(3, addons[addon.name], string.format(L["MUST_CALL"], addon.name))
-	assert(3, not addons[addon.name].categories[name], string.format(L["NO_CATEGORYEXISTS"], name, addon.name))
+	assert(3, addons[addon.name], string.format(L["MUST_CALL"], "RemoveCategory"))
+	assert(3, addons[addon.name].categories[name], string.format(L["NO_CATEGORYEXISTS"], name, addon.name))
 
 	addons[addon.name].totalCats = addons[addon.name].totalCats - 1
+	addons[addon.name].totalSubs = addons[addon.name].totalSubs - addons[addon.name].categories[name].totalSubs
 	addons[addon.name].categories[name] = nil
-
-	if( OptionHouseOptionsFrame ) then
-		removeCategoryListing(addon.name, name)
+		
+	if( regFrames.addon ) then
+		if( addons[addon.name].totalCats == 0 ) then
+			removeAddonListing(addon.name)
+		else
+			removeCategoryListing(addon.name, name)
+		end
+		
 		updateConfigList()
 	end
 end
@@ -1299,7 +1341,7 @@ end
 function OptionHouse.RemoveSubCategory(addon, parentCat, name)
 	argcheck(parentCat, 2, "string")
 	argcheck(name, 2, "string")
-	assert(3, addons[addon.name], string.format(L["MUST_CALL"], addon.name))
+	assert(3, addons[addon.name], string.format(L["MUST_CALL"], "RemoveSubCategory"))
 	assert(3, addons[addon.name].categories[parentCat], string.format(L["NO_PARENTCAT"], name, addon.name))
 	assert(3, addons[addon.name].categories[parentCat].sub[name], string.format(L["NO_SUBCATEXISTS"], name, parentCat, addon.name))
 
@@ -1307,14 +1349,21 @@ function OptionHouse.RemoveSubCategory(addon, parentCat, name)
 	addons[addon.name].categories[parentCat].totalSubs = addons[addon.name].categories[parentCat].totalSubs - 1
 	addons[addon.name].categories[parentCat].sub[name] = nil
 
-	if( OptionHouseOptionsFrame ) then
-		removeSubCategoryListing(addon.name, parentCat, name)
+	if( regFrames.addon ) then
+		-- If this means we only have no more sub categories
+		-- and only one category we need to change how it works
+		if( addons[addon.name].totalSubs == 0 and addons[addon.name].totalCats == 1 ) then
+			removeAddonListing(addon.name)
+			addCategoryListing(addon.name, addons[addon.name])
+		else
+			removeSubCategoryListing(addon.name, parentCat, name)
+		end
+
 		updateConfigList()
 	end
 end
 
 function OptionHouse:GetVersion() return major, minor end
-
 
 local function Activate(self, old)
 	if( old ) then
@@ -1352,11 +1401,13 @@ local function Activate(self, old)
 			GameMenuFrame:SetHeight(GameMenuFrame:GetHeight() + 25)
 		end
 	end
+	
+	OptionHouseFrames = OptionHouseFrames or {}
 
 	self.addons = addons
 	self.evtFrame = evtFrame
 	self.tabfunctions = tabfunctions
-
+		
 	-- Upgrade functions to point towards the latest revision
 	for name, addon in pairs(addons) do
 		for _, method in pairs(methods) do
@@ -1366,7 +1417,13 @@ local function Activate(self, old)
 
 	SLASH_OPTHOUSE1 = "/opthouse"
 	SLASH_OPTHOUSE2 = "/oh"
-	SlashCmdList["OPTHOUSE"] = OptionHouse.Open
+	SlashCmdList["OPTHOUSE"] = function(...)
+		if( select(1, ...) == "" ) then
+			OptionHouse:Open()
+		else
+			OptionHouse:Open(...)
+		end
+	end
 end
 
 OptionHouse = DongleStub:Register(OptionHouse, Activate)

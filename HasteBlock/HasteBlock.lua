@@ -1,5 +1,8 @@
 HasteBlock = {}
 
+local LB
+local OH
+
 local L = HasteBlockLocals
 local display = ""
 
@@ -24,9 +27,9 @@ function HasteBlock:OnLoad()
 	self.db = setmetatable(HasteBlockDB, {__index=function(t,k) return self.defaults[k] end})
 	
 	LB = DongleStub("LegoBlock-Beta0"):New("HasteBlock", "----" )
-	OptionHouse = DongleStub("OptionHouse-1.0")
+	OH = DongleStub("OptionHouse-1.0")
 
-	local OHObj = OptionHouse:RegisterAddOn("HasteBlock", "Haste Block", "Amarand", "r" .. (tonumber(string.match("$Revision$", "(%d+)")) or 1))
+	local OHObj = OH:RegisterAddOn("HasteBlock", "Haste Block", "Amarand", "r" .. (tonumber(string.match("$Revision$", "(%d+)")) or 1))
 	OHObj:RegisterCategory(L["General"], self, "CreateUI")	
 end
 
@@ -95,7 +98,7 @@ end
 function HasteBlock:CalculateHaste(id, text, speed, origSpeed)
 	-- Spell Haste: 20.5%
 	if( not speed ) then
-		display = display .. text .. string.format("%.2f", speed) .. "\n"
+		display = display .. text .. string.format("%.2f", GetCombatRatingBonus(id)) .. "\n"
 	
 	-- Main Hand: 1.82 (2.6 -30%)
 	elseif( self.db.showOriginal and self.db.showHaste ) then
