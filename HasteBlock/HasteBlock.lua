@@ -17,7 +17,7 @@ function HasteBlock:OnLoad()
 	if( not HasteBlockDB ) then HasteBlockDB = {} end
 	
 	self.defaults = {
-		showRanged = false,
+		showRanged = true,
 		showMain = true,
 		showOff = true,
 		showSpell = true,
