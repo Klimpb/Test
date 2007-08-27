@@ -150,23 +150,28 @@ end
 local function getValue(config, data)
 	local handler = data.handler or config.handler
 	local get = data.get or config.get
+	local val
 	
 	if( get and handler ) then
 		if( type(data.var) == "table" ) then
-			return handler[get](handler, unpack(data.var)) or data.default
+			val = handler[get](handler, unpack(data.var))
 		else
-			return handler[get](handler, data.var) or data.default
+			val = handler[get](handler, data.var)
 		end
 		
 	elseif( get ) then
 		if( type(data.var) == "table" ) then
-			return get(unpack(data.var)) or data.default
+			val = get(unpack(data.var))
 		else
-			return get(data.var) or data.default
+			val = get(data.var)
 		end
 	end
 	
-	return nil
+	if( val == nil ) then
+		return data.default
+	end
+	
+	return val
 end
 
 local function setValue(config, data, value)
