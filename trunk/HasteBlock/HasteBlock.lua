@@ -35,6 +35,7 @@ end
 
 function HasteBlock:Set(var, val)
 	self.db[var] = val
+        self:SpeedChanged()
 end
 
 function HasteBlock:Get(var)
@@ -46,12 +47,17 @@ function HasteBlock:CreateUI()
 		{	type = "check",
 			text = L["Show original attack speed"],
 			default = true,
-			var = "showOringal",
+			var = "showOriginal",
 		},
 		{	type = "check",
 			text = L["Show haste percentage"],
 			default = true,
 			var = "showHaste",
+		},
+		{	type = "check",
+			text = L["Show mainhand attack speed"],
+			default = true,
+			var = "showMain",
 		},
 		{	type = "check",
 			text = L["Show offhand attack speed"],
@@ -82,12 +88,11 @@ function HasteBlock:ScanItem(slot)
 	end
 	
 	for i=1, self.tooltip:NumLines() do
-		local line = getglobal("HBTooltipTextRight" .. i);
+		local line = getglobal("HBTooltipTextRight" .. i):GetText();
 		if( line ) then
-			line = line:GetText()
-			local speed = string.match(WEAPON_SPEED, WEAPON_SPEED .. "(.+)")
+			local speed = string.match(line, WEAPON_SPEED .. "(.+)")
 			if( speed ) then
-				return string.trim(speed)
+				return tonumber(string.trim(speed))
 			end
 		end
 	end
@@ -98,19 +103,21 @@ end
 function HasteBlock:CalculateHaste(id, text, speed, origSpeed)
 	-- Spell Haste: 20.5%
 	if( not speed ) then
-		display = display .. text .. string.format("%.2f", GetCombatRatingBonus(id)) .. "\n"
-	
+		local bonus = GetCombatRatingBonus(id)
+                if( bonus ~= 0 ) then
+                        display = display .. text .. string.format("%.2f", bonus) .. "\n"
+                end
 	-- Main Hand: 1.82 (2.6 -30%)
-	elseif( self.db.showOriginal and self.db.showHaste ) then
-		display = display .. text .. string.format("%.2f (%.2f -%.2f-)", speed, origSpeed, GetCombatRatingBonus(id)) .. "\n"
-	
+	elseif( self.db.showOriginal and self.db.showHaste and origSpeed ~= speed ) then
+		display = display .. text .. string.format("%.2f (%.2f -%.0f%%)", speed, origSpeed, (1-speed/origSpeed)*100) .. "\n"
 	-- Main Hand: 1.82 (-30%)
-	elseif( self.db.showHaste ) then
-		display = display .. text .. string.format("%.2f (-%.2f%)", speed, GetCombatRatingBonus(id)) .. "\n"
-	
+	elseif( self.db.showHaste and origSpeed ~= speed ) then
+		display = display .. text .. string.format("%.2f (-%.0f%%)", speed, (1-speed/origSpeed)*100) .. "\n"
 	-- Main Hand: 1.82 (2.6)
-	elseif( self.db.showOriginal ) then
+	elseif( self.db.showOriginal and origSpeed ~= speed ) then
 		display = display .. text .. string.format("%.2f (%.2f)", speed, origSpeed) .. "\n"
+        else
+		display = display .. text .. string.format("%.2f", speed) .. "\n"
 	end
 end
 
@@ -119,10 +126,10 @@ function HasteBlock:SpeedChanged()
 	if( self.db.showRanged ) then
 		self:CalculateHaste(CR_HASTE_RANGED, L["Ranged Speed:"], (UnitRangedDamage("player")), ranged)
 	end
-	
+
 	local main, off = UnitAttackSpeed("player")
 	if( self.db.showMain and mainHand ) then
-		self:CalculateHaste(CR_HASTE_MELEE, L["Main Speed:"], main, mainHand)
+		self:CalculateHaste(CR_HASTE_MELEE, L["Mainhand Speed:"], main, mainHand)
 	end
 
 	if( self.db.showOff and offHand ) then
@@ -142,18 +149,45 @@ function HasteBlock:SpeedChanged()
 	end
 end
 
+local mhID = CharacterMainHandSlot:GetID()
+local ohID = CharacterSecondaryHandSlot:GetID()
+local rangedID = CharacterRangedSlot:GetID()
+local mhlink, ohlink, rangedlink
+
 local frame = CreateFrame("Frame")
-frame:SetScript("OnEvent", function(self, event, addon)
-	if( event == "ADDON_LOADED" and addon == "HasteBlock" ) then
-		HasteBlock.OnLoad(HasteBlock)
-		self:UnregisterEvent("ADDON_LOADED")
-	elseif( event == "" ) then
-		mainHand = HasteBlock.ScanItem(HasteBlock, CharacterMainHandSlot:GetID())
-		offHand = HasteBlock.ScanItem(HasteBlock, CharacterSecondaryHandSlot:GetID())
-		ranged = HasteBlock.ScanItem(HasteBlock, CharacterRangedSlot:GetID())		
-	elseif( event ~= "ADDON_LOADED" ) then
-		HasteBlock.SpeedChanged(HasteBlock)
-	end
+frame:SetScript("OnEvent", function(self, event, arg1)
+        if( event == "ADDON_LOADED" and arg1 == "HasteBlock" ) then
+                HasteBlock.OnLoad(HasteBlock)
+                self:UnregisterEvent("ADDON_LOADED")
+
+        elseif( event == "UNIT_INVENTORY_CHANGED" and arg1 == "player" ) then
+                local newmh, newoh, newranged = GetInventoryItemLink("player", mhID), GetInventoryItemLink("player", ohID), GetInventoryItemLink("player", rangedID)
+                if newmh ~= mhlink then
+                        mainHand = HasteBlock:ScanItem(mhID)
+                        mhlink = newmh
+                end
+                if newoh ~= ohlink then
+                        offHand = HasteBlock:ScanItem(ohID)
+                        ohlink = newoh
+                end
+                if newranged ~= rangedlink then
+                        ranged = HasteBlock:ScanItem(rangedID)
+                        rangedlink = newranged
+                end
+                HasteBlock:SpeedChanged()
+
+        elseif( event == "PLAYER_LOGIN" ) then
+                mhlink, ohlink, rangedlink = GetInventoryItemLink("player", mhID), GetInventoryItemLink("player", ohID), GetInventoryItemLink("player", rangedID)
+                mainHand = HasteBlock:ScanItem(mhID)
+                offHand = HasteBlock:ScanItem(ohID)
+                ranged = HasteBlock:ScanItem(rangedID)
+                HasteBlock:SpeedChanged()
+
+        elseif( event == "UNIT_ATTACK_SPEED" ) then
+                HasteBlock:SpeedChanged()
+        end
 end)
-frame:RegisterEvent("UNIT_ATTACK_SPEED")
 frame:RegisterEvent("ADDON_LOADED")
+frame:RegisterEvent("PLAYER_LOGIN")
+frame:RegisterEvent("UNIT_ATTACK_SPEED")
+frame:RegisterEvent("UNIT_INVENTORY_CHANGED")
