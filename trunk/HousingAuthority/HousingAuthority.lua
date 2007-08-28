@@ -168,7 +168,8 @@ local function getValue(config, data)
 		end
 	end
 	
-	if( val == nil ) then
+	if( val == nil and data.default ~= nil ) then
+		setValue(config, data, data.default)
 		return data.default
 	end
 	
