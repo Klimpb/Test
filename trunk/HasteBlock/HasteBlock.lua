@@ -143,7 +143,7 @@ end
 function HasteBlock:CalculateHaste(id, text, speed, origSpeed)
 	-- Spell Haste: 20.5%
 	if( id == CR_HASTE_SPELL ) then
-		local speed = (1 - speed / origSpeed) * 100)
+		local speed = (1 - speed / origSpeed) * 100
 		if( speed > 0.0 ) then
 			display = display .. text .. string.format(" %.2f%%", speed) .. "\n"
 		end
