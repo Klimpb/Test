@@ -15,7 +15,7 @@ function HasteBlock:OnLoad()
 	self.tooltip:SetOwner(this, "ANCHOR_NONE")
 
 	if( not HasteBlockDB ) then HasteBlockDB = {} end
-	
+
 	self.defaults = {
 		showRanged = true,
 		showMain = true,
@@ -25,7 +25,7 @@ function HasteBlock:OnLoad()
 		showHaste = true,
 	}
 	self.db = setmetatable(HasteBlockDB, {__index=function(t,k) return self.defaults[k] end})
-	
+
 	LB = DongleStub("LegoBlock-Beta0"):New("HasteBlock", "----" )
 	OH = DongleStub("OptionHouse-1.0")
 
@@ -35,7 +35,7 @@ end
 
 function HasteBlock:Set(var, val)
 	self.db[var] = val
-        self:SpeedChanged()
+	self:SpeedChanged()
 end
 
 function HasteBlock:Get(var)
@@ -45,34 +45,34 @@ end
 function HasteBlock:CreateUI()
 	local config = {
 		{	type = "check",
-			text = L["Show original attack speed"],
-			default = true,
-			var = "showOriginal",
+		text = L["Show original attack speed"],
+		default = true,
+		var = "showOriginal",
+	},
+	{	type = "check",
+	text = L["Show haste percentage"],
+	default = true,
+	var = "showHaste",
+},
+{	type = "check",
+text = L["Show mainhand attack speed"],
+default = true,
+var = "showMain",
 		},
 		{	type = "check",
-			text = L["Show haste percentage"],
-			default = true,
-			var = "showHaste",
-		},
-		{	type = "check",
-			text = L["Show mainhand attack speed"],
-			default = true,
-			var = "showMain",
-		},
-		{	type = "check",
-			text = L["Show offhand attack speed"],
-			default = true,
-			var = "showOff",
-		},
-		{	type = "check",
-			text = L["Show ranged attack speed"],
-			default = true,
-			var = "showRanged",
-		},
-		{	type = "check",
-			text = L["Show spell haste percentage"],
-			default = true,
-			var = "showSpell",
+		text = L["Show offhand attack speed"],
+		default = true,
+		var = "showOff",
+	},
+	{	type = "check",
+	text = L["Show ranged attack speed"],
+	default = true,
+	var = "showRanged",
+},
+{	type = "check",
+text = L["Show spell haste percentage"],
+default = true,
+var = "showSpell",
 		},
 	}
 
@@ -86,7 +86,7 @@ function HasteBlock:ScanItem(slot)
 	if( self.tooltip:NumLines() == 0 ) then
 		return nil
 	end
-	
+
 	for i=1, self.tooltip:NumLines() do
 		local line = getglobal("HBTooltipTextRight" .. i):GetText();
 		if( line ) then
@@ -96,7 +96,7 @@ function HasteBlock:ScanItem(slot)
 			end
 		end
 	end
-	
+
 	return nil
 end
 
@@ -104,19 +104,19 @@ function HasteBlock:CalculateHaste(id, text, speed, origSpeed)
 	-- Spell Haste: 20.5%
 	if( not speed ) then
 		local bonus = GetCombatRatingBonus(id)
-                if( bonus ~= 0 ) then
-                        display = display .. text .. string.format("%.2f", bonus) .. "\n"
-                end
-	-- Main Hand: 1.82 (2.6 -30%)
+		if( bonus ~= 0 ) then
+			display = display .. text .. string.format("%.2f", bonus) .. "\n"
+		end
+		-- Main Hand: 1.82 (2.6 -30%)
 	elseif( self.db.showOriginal and self.db.showHaste and origSpeed ~= speed ) then
 		display = display .. text .. string.format("%.2f (%.2f -%.0f%%)", speed, origSpeed, (1-speed/origSpeed)*100) .. "\n"
-	-- Main Hand: 1.82 (-30%)
+		-- Main Hand: 1.82 (-30%)
 	elseif( self.db.showHaste and origSpeed ~= speed ) then
 		display = display .. text .. string.format("%.2f (-%.0f%%)", speed, (1-speed/origSpeed)*100) .. "\n"
-	-- Main Hand: 1.82 (2.6)
+		-- Main Hand: 1.82 (2.6)
 	elseif( self.db.showOriginal and origSpeed ~= speed ) then
 		display = display .. text .. string.format("%.2f (%.2f)", speed, origSpeed) .. "\n"
-        else
+	else
 		display = display .. text .. string.format("%.2f", speed) .. "\n"
 	end
 end
@@ -135,11 +135,11 @@ function HasteBlock:SpeedChanged()
 	if( self.db.showOff and offHand ) then
 		self:CalculateHaste(CR_HASTE_MELEE, L["Offhand Speed:"], off, offHand)
 	end
-	
+
 	if( self.db.showSpell ) then
 		self:CalculateHaste(CR_HASTE_SPELL, L["Spell Haste:"])
 	end
-	
+
 	if( display ~= "" ) then
 		LB:SetText(string.trim(display))
 		LB.Text:SetWidth(LB:GetWidth())
@@ -156,36 +156,36 @@ local mhlink, ohlink, rangedlink
 
 local frame = CreateFrame("Frame")
 frame:SetScript("OnEvent", function(self, event, arg1)
-        if( event == "ADDON_LOADED" and arg1 == "HasteBlock" ) then
-                HasteBlock.OnLoad(HasteBlock)
-                self:UnregisterEvent("ADDON_LOADED")
+	if( event == "ADDON_LOADED" and arg1 == "HasteBlock" ) then
+		HasteBlock.OnLoad(HasteBlock)
+		self:UnregisterEvent("ADDON_LOADED")
 
-        elseif( event == "UNIT_INVENTORY_CHANGED" and arg1 == "player" ) then
-                local newmh, newoh, newranged = GetInventoryItemLink("player", mhID), GetInventoryItemLink("player", ohID), GetInventoryItemLink("player", rangedID)
-                if newmh ~= mhlink then
-                        mainHand = HasteBlock:ScanItem(mhID)
-                        mhlink = newmh
-                end
-                if newoh ~= ohlink then
-                        offHand = HasteBlock:ScanItem(ohID)
-                        ohlink = newoh
-                end
-                if newranged ~= rangedlink then
-                        ranged = HasteBlock:ScanItem(rangedID)
-                        rangedlink = newranged
-                end
-                HasteBlock:SpeedChanged()
+	elseif( event == "UNIT_INVENTORY_CHANGED" and arg1 == "player" ) then
+		local newmh, newoh, newranged = GetInventoryItemLink("player", mhID), GetInventoryItemLink("player", ohID), GetInventoryItemLink("player", rangedID)
+		if newmh ~= mhlink then
+			mainHand = HasteBlock:ScanItem(mhID)
+			mhlink = newmh
+		end
+		if newoh ~= ohlink then
+			offHand = HasteBlock:ScanItem(ohID)
+			ohlink = newoh
+		end
+		if newranged ~= rangedlink then
+			ranged = HasteBlock:ScanItem(rangedID)
+			rangedlink = newranged
+		end
+		HasteBlock:SpeedChanged()
 
-        elseif( event == "PLAYER_LOGIN" ) then
-                mhlink, ohlink, rangedlink = GetInventoryItemLink("player", mhID), GetInventoryItemLink("player", ohID), GetInventoryItemLink("player", rangedID)
-                mainHand = HasteBlock:ScanItem(mhID)
-                offHand = HasteBlock:ScanItem(ohID)
-                ranged = HasteBlock:ScanItem(rangedID)
-                HasteBlock:SpeedChanged()
+	elseif( event == "PLAYER_LOGIN" ) then
+		mhlink, ohlink, rangedlink = GetInventoryItemLink("player", mhID), GetInventoryItemLink("player", ohID), GetInventoryItemLink("player", rangedID)
+		mainHand = HasteBlock:ScanItem(mhID)
+		offHand = HasteBlock:ScanItem(ohID)
+		ranged = HasteBlock:ScanItem(rangedID)
+		HasteBlock:SpeedChanged()
 
-        elseif( event == "UNIT_ATTACK_SPEED" ) then
-                HasteBlock:SpeedChanged()
-        end
+	elseif( event == "UNIT_ATTACK_SPEED" ) then
+		HasteBlock:SpeedChanged()
+	end
 end)
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_LOGIN")
