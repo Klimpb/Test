@@ -26,7 +26,13 @@ function HasteBlock:OnLoad()
 	}
 	self.db = setmetatable(HasteBlockDB, {__index=function(t,k) return self.defaults[k] end})
 
+	if not self.db.lego then
+		self.db.lego = {}
+	end
+
 	LB = DongleStub("LegoBlock-Beta0"):New("HasteBlock", "----" )
+	LB:SetDB(self.db.lego)
+
 	OH = DongleStub("OptionHouse-1.0")
 
 	local OHObj = OH:RegisterAddOn("HasteBlock", "Haste Block", "Amarand", "r" .. (tonumber(string.match("$Revision$", "(%d+)")) or 1))
