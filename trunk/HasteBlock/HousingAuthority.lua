@@ -1,5 +1,5 @@
 local major = "HousingAuthority-1.0"
-local minor = tonumber(string.match("$Revision$", "(%d+)") or 1)
+local minor = tonumber(string.match("$Revision: 126 $", "(%d+)") or 1)
 
 assert(DongleStub, string.format("%s requires DongleStub.", major))
 
@@ -14,6 +14,7 @@ local L = {
 	["CANNOT_ENABLE"] = "Cannot enable scroll frames anymore, HAObj:GetFrame() was called.",
 	["OH_NOT_INITIALIZED"] = "OptionHouse has not been initialized yet, you cannot call HAObj:GetFrame() until then.",
 	["INVALID_POSITION"] = "Invalid positioning passed, 'compact' or 'onebyone' required, got '%s'.",
+	["INVALID_WIDGETTYPE"] = "Invalid type '%s' passed, %s expected'.",
 }
 
 local function assert(level,condition,message)
@@ -181,31 +182,31 @@ local function setValue(config, data, value)
 	
 	if( set and handler ) then
 		if( type(data.var) == "table" ) then
-			return handler[set](handler, unpack(data.var), value)
+			handler[set](handler, value, unpack(data.var))
 		else
-			return handler[set](handler, data.var, value)
+			handler[set](handler, value, data.var)
 		end
 		
 	elseif( set ) then
 		if( type(data.var) == "table" ) then
-			return set(unpack(data.var), value)
+			set(value, unpack(data.var))
 		else
-			return set(data.var, value)
+			set(value, data.var)
 		end
 	end
 
 	if( onSet and handler ) then
 		if( type(data.var) == "table" ) then
-			return handler[onSet](handler, unpack(data.var), value)
+			handler[onSet](handler, value, unpack(data.var))
 		else
-			return handler[onSet](handler, data.var, value)
+			handler[onSet](handler, value, data.var)
 		end
 		
 	elseif( onSet ) then
 		if( type(data.var) == "table" ) then
-			return onSet(unpack(data.var), value)
+			onSet(value, unpack(data.var))
 		else
-			return onSet(data.var, value)
+			onSet(value, data.var)
 		end
 	end
 end
@@ -460,7 +461,7 @@ function HouseAuthority.CreateColorPicker(config, data)
 	argcheck(data, 2, "table")
 	argcheck(data.text, "text", "string")
 	argcheck(data.help, "help", "string", "nil")
-	argcheck(data.var, "var", "string")
+	argcheck(data.var, "var", "string", "table")
 	argcheck(data.default, "default", "table", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateColorPicker"))
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
@@ -583,7 +584,7 @@ function HouseAuthority.CreateSlider(config, data)
 	argcheck(data, 2, "table")
 	argcheck(data.default, "default", "number", "nil")
 	argcheck(data.help, "help", "string", "nil")
-	argcheck(data.var, "var", "string")
+	argcheck(data.var, "var", "string", "table")
 	argcheck(data.text, "text", "string", "nil")
 	argcheck(data.format, "format", "string", "nil")
 	argcheck(data.min, "min", "number", "nil")
@@ -772,7 +773,7 @@ function HouseAuthority:CreateConfiguration(data, frameData)
 				table.insert(validTypes, type)
 			end
 			
-			error(string.format(L["INVALID_WIDGETTYPE"], widget.type or "nil", string.join(", ", validTypes)), 3)
+			error(string.format(L["INVALID_WIDGETTYPE"], widget.type or "nil", table.concat(validTypes, ", ")), 3)
 		end
 	end
 	
