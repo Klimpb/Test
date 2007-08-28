@@ -22,27 +22,8 @@ function HasteBlock:OnLoad()
 	self.tooltip = CreateFrame("GameTooltip", "HBTooltip", UIParent, "GameTooltipTemplate")
 	self.tooltip:SetOwner(this, "ANCHOR_NONE")
 	
-	if( not HasteBlockDB ) then HasteBlockDB = { lego = {} } end
-	
-	self.defaults = {
-		showRanged = true,
-		showMain = true,
-		showOff = true,
-		showSpell = true,
-		showOriginal = true,
-		showHaste = true,
-		lego = {
-			bgAlpha = 1.0,
-			borderAlpha = 1.0,
-			showText = true,
-			hidden = false,
-		}
-	}
-	
-	local meta = {__index=function(t, k) return self.defaults[k] end}
-
-	self.db = setmetatable(HasteBlockDB, meta)
-	self.db.lego = setmetatable(HasteBlockDB.lego, meta)
+	if( not HasteBlockDB ) then HasteBlockDB = { lego = { bgAlpha = 1.0, borderAlpha = 1.0 } } end
+	self.db = HasteBlockDB
 
 	LB = DongleStub("LegoBlock-Beta0"):New("HasteBlock", "----", nil, HasteBlockDB.lego )
 	
