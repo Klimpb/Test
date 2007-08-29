@@ -1,5 +1,5 @@
 local major = "HousingAuthority-1.0"
-local minor = tonumber(string.match("$Revision: 126 $", "(%d+)") or 1)
+local minor = tonumber(string.match("$Revision: 136 $", "(%d+)") or 1)
 
 assert(DongleStub, string.format("%s requires DongleStub.", major))
 
@@ -148,32 +148,6 @@ local function validateFunctions(config, data)
 	argcheck(data.onSet, "onSet", type, "nil")
 end
 
-local function getValue(config, data)
-	local handler = data.handler or config.handler
-	local get = data.get or config.get
-	local val
-	
-	if( get and handler ) then
-		if( type(data.var) == "table" ) then
-			val = handler[get](handler, unpack(data.var))
-		else
-			val = handler[get](handler, data.var)
-		end
-		
-	elseif( get ) then
-		if( type(data.var) == "table" ) then
-			val = get(unpack(data.var))
-		else
-			val = get(data.var)
-		end
-	end
-	
-	if( val == nil ) then
-		return data.default
-	end
-	
-	return val
-end
 
 local function setValue(config, data, value)
 	local handler = data.handler or config.handler
@@ -211,6 +185,33 @@ local function setValue(config, data, value)
 	end
 end
 
+local function getValue(config, data)
+	local handler = data.handler or config.handler
+	local get = data.get or config.get
+	local val
+	
+	if( get and handler ) then
+		if( type(data.var) == "table" ) then
+			val = handler[get](handler, unpack(data.var))
+		else
+			val = handler[get](handler, data.var)
+		end
+		
+	elseif( get ) then
+		if( type(data.var) == "table" ) then
+			val = get(unpack(data.var))
+		else
+			val = get(data.var)
+		end
+	end
+	
+	if( val == nil and data.default ~= nil ) then
+		setValue(config, data, data.default)
+		return data.default
+	end
+	
+	return val
+end
 
 -- CHECK BOXES
 local function checkShown(self)
@@ -759,7 +760,7 @@ function HouseAuthority:CreateConfiguration(data, frameData)
 
 	frameData = frameData or {}
 	if( not frameData.frame ) then
-		frameData.frame = CreateFrame("Frame")
+		frameData.frame = CreateFrame("Frame", nil, OptionHouseFrames.addon)
 	end
 	
 	local handler = HouseAuthority:RegisterFrame(frameData)
