@@ -171,14 +171,20 @@ function HasteBlock:CalculateHaste(id, text, speed, origSpeed)
 	end
 	
 	local line
+	local showSpeed
+	if( self.db.showModified ) then
+		showSpeed = origSpeed
+	elseif( self.db.showOriginal ) then
+		showSpeed = speed	
+	end
 		
 	-- Mainhand: 1.82 (-30.0%)
 	if( usedFormats == 2 and self.db.showHaste ) then
-		line = string.format("%s %.2f (-%.1f%%)", text, (1 - speed / origSpeed) * 100)
+		line = string.format("%s %.2f (-%.1f%%)", text, showSpeed, (1 - speed / origSpeed) * 100)
 	
 	-- Mainhand: 1.82 (-30%)
 	elseif( usedFormats == 2 ) then
-		line = string.format("%s %.2f (%.2f -%.1f%%)", text, speed, (1 - speed / origSpeed) * 100)
+		line = string.format("%s %.2f (-%.1f%%)", text, showSpeed, (1 - speed / origSpeed) * 100)
 	
 	-- Mainhand: 1.82 (2.6 -30%)
 	elseif( usedFormats == 3 ) then
@@ -186,7 +192,7 @@ function HasteBlock:CalculateHaste(id, text, speed, origSpeed)
 	
 	-- Mainhand: 1.82
 	elseif( self.db.showModified or self.db.showOriginal ) then
-		line = string.format("%s %.2f", text, speed)
+		line = string.format("%s %.2f", text, showSpeed)
 	
 	-- Mainhand: -30%
 	else
