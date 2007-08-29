@@ -16,6 +16,7 @@ local L = {
 	["INVALID_POSITION"] = "Invalid positioning passed, 'compact' or 'onebyone' required, got '%s'.",
 	["INVALID_WIDGETTYPE"] = "Invalid type '%s' passed, %s expected'.",
 	["CANNOT_CALLGROUP"] = "You must set the groups setting before any other widgets are added.",
+	["WIDGETS_MISSINGGROUP"] = "When using groups, all widgets must be grouped. %d out of %d are missing a group.",
 }
 
 local function assert(level,condition,message)
@@ -63,25 +64,11 @@ local function hideTooltip(self)
 	end
 end
 
-local function positionWidgets(config)
-	-- First time it's been called, sort out groups
-	if( config.stage == 1 ) then
-		-- Now figure out how many groups we have/need
-		local groups = {}
-		local totalGroups = 0
-		for _, data in pairs(config.widgets) do
-			if( data.group and not groups[data.group] ) then
-				groups[data.group] = true
-				totalGroups = totalGroups + 1
-			end
-		end
-	end
-	
-
-	if( config.positionType == "onebyone" ) then
-		local heightUsed = 10
+local function positionWidgets(columns, parent, widgets)
+	local heightUsed = 10
+	if( columns == 1 ) then
 		local height = 0
-		for i, widget in pairs(config.widgets) do
+		for i, widget in pairs(widgets) do
 			widget:ClearAllPoints()
 
 			if( i > 1 ) then
@@ -91,16 +78,37 @@ local function positionWidgets(config)
 			local xPos = widget.xPos
 			if( widget.infoButton and widget.infoButton.type ) then
 				xPos = ( xPos or 0 ) + 15
-				widget.infoButton:SetPoint("TOPLEFT", config.frame, "TOPLEFT", 0, -heightUsed)
+				widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, -heightUsed)
 				widget.infoButton:Show()
 			end
 
-			widget:SetPoint("TOPLEFT", config.frame, "TOPLEFT", xPos or 5, -heightUsed)
+			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", xPos or 5, -heightUsed)
 			height = widget:GetHeight() + ( widget.yPos or 0 )
 		end
-	elseif( config.positionType == "compact" ) then
-	
+	else
+		local height = 0
+		local spacing = math.ceil(300 / columns)
+		
+		for i, widget in pairs(widgets) do
+			-- New row
+			if( mod(i, columns) == 1 and i > 1 ) then
+				heightUsed = heightUsed + height
+				height = 0
+			end
+			
+			-- Position
+			widget:ClearAllPoints()
+			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing, -heightUsed)			
+			
+			-- Find the heightest widget out of this group
+			local widgetHeight = widget:GetHeigt() + ( widget.yPos or 0 )
+			if( widgetHeight > height ) then
+				height = widgetHeight
+			end
+		end
 	end
+	
+	return heightUsed
 end
 
 local function setupWidgetInfo(widget, config, type, msg, skipCall)
@@ -113,9 +121,9 @@ local function setupWidgetInfo(widget, config, type, msg, skipCall)
 		widget.infoButton.type = nil
 		widget.infoButton:Hide()
 		
-		if( config.positionType ~= "onebyone" and not skipCall ) then
-			positionWidgets(config)
-		end
+		--if( config.positionType ~= "onebyone" and not skipCall ) then
+		--	positionWidgets(config.columns, config.frame, config.widgets)
+		--end
 		return
 	end
 	
@@ -123,7 +131,7 @@ local function setupWidgetInfo(widget, config, type, msg, skipCall)
 		widget.infoButton = CreateFrame("Button", nil, widget)
 		widget.infoButton:SetScript("OnEnter", showInfoTooltip)
 		widget.infoButton:SetScript("OnLeave", hideTooltip)
-		widget.infoButton:SetTextFontObject(GameFontNormal)
+		widget.infoButton:SetTextFontObject(GameFontNormalSmall)
 		widget.infoButton:SetHeight(18)
 		widget.infoButton:SetWidth(18)
 	end
@@ -135,17 +143,17 @@ local function setupWidgetInfo(widget, config, type, msg, skipCall)
 	end
 	
 	if( type == "help" ) then
-		widget.infoButton:SetText("[?]")
+		widget.infoButton:SetText(GREEN_FONT_COLOR_CODE .. "[?]" .. FONT_COLOR_CODE_CLOSE)
 	elseif( type == "validate" ) then
-		widget.infoButton:SetText("[!]")
+		widget.infoButton:SetText(RED_FONT_COLOR_CODE .. "[!]" .. FONT_COLOR_CODE_CLOSE)
 	end
 
 	widget.infoButton.type = type
 	widget.infoButton.tooltip = msg
 	
-	if( not skipCall ) then
-		positionWidgets(config)
-	end
+	--if( not skipCall ) then
+	--	positionWidgets(config.columns, config.frame, config.widgets)
+	--end
 end
 
 -- SET/GET CONFIGURATION VALUES
@@ -280,7 +288,7 @@ local function inputClearFocus(self)
 end
 
 local function inputFocusGained(self)
-	this:HighlightText()
+	self:HighlightText()
 end
 
 local function inputChanged(self)
@@ -379,8 +387,11 @@ end
 
 local function initDropdown()
 	activeDropdown = activeDropdown or this:GetParent()
+	local tbl = { func = dropdownClicked }
 	for _, row in pairs(activeDropdown.data.list) do
-		UIDropDownMenu_AddButton({ value = row[1], text = row[2], func = dropdownClicked })
+		tbl.value = row[1]
+		tbl.text = row[2]
+		UIDropDownMenu_AddButton(tbl)
 	end
 end
 
@@ -418,9 +429,9 @@ local function createGroup(config, data)
 	
 	group.title = group:CreateFontString(nil, "BACKGROUND", "GameFontHighlight")
 	group.title:SetPoint("BOTTOMLEFT", group, "TOPLEFT", 9, 0)
-	group.title:SetText(data.text)
+	--group.title:SetText(data.text)
 	
-	config.groups[data.text] = group
+	return grop
 end
 
 -- Housing Authority
@@ -435,15 +446,10 @@ local methods = { "GetFrame", "CreateConfiguration", "CreateGroup", "CreateLabel
 -- Stage 2, Frame is finished, positionWidgets has been called/frame returned
 function HouseAuthority:RegisterFrame(data)
 	argcheck(data, 1, "table")
-	argcheck(data.positionType, "positionType", "string", "nil")
-	if( data.positionType and data.positionType ~= "compact" and data.positionType ~= "onebyone" and data.positionType == "none" ) then
-		error(string.format(L["INVALID_POSITION"], data.positionType), 3)
-	end
+	argcheck(data.columns, "columns", "number", "nil")
 	
-	if( data.positionType == nil ) then
-		data.positionType = "onebyone"	
-	elseif( data.positionType == "none" ) then
-		data.positionType = nil
+	if( not data.columns ) then
+		data.columns = 1
 	end
 	
 	local type = "function"
@@ -458,7 +464,7 @@ function HouseAuthority:RegisterFrame(data)
 	
 	id = id + 1
 	
-	local config = { id = id, positionType = data.positionType, stage = 0, widgets = {}, handler = data.handler, get = data.get, frame = data.frame, set = data.set, onSet = data.onSet }
+	local config = { id = id, columns = data.columns, stage = 0, widgets = {}, handler = data.handler, get = data.get, frame = data.frame, set = data.set, onSet = data.onSet }
 	config.obj = { id = id }
 	
 	for _, method in pairs(methods) do
@@ -474,7 +480,6 @@ end
 -- we have to create all of the groups when GetFrame is called
 function HouseAuthority.CreateGroup(config, data)
 	argcheck(data, 2, "table")
-	argcheck(data.text, "text", "string")
 	argcheck(data.background, "background", "table")
 	argcheck(data.border, "border", "table")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateGroup"))
@@ -549,9 +554,11 @@ function HouseAuthority.CreateColorPicker(config, data)
 	button.border:SetPoint("CENTER", 0, 0)
 	button.border:SetTexture(1, 1, 1)
 	
-	local text = button:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	text:SetPoint("LEFT", button, "RIGHT", 5, 0)
-	text:SetText(data.text)	
+	if( data.text ) then
+		local text = button:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		text:SetPoint("LEFT", button, "RIGHT", 5, 0)
+		text:SetText(data.text)	
+	end
 	
 	if( data.help ) then
 		setupWidgetInfo(button, config, "help", data.help)
@@ -628,9 +635,11 @@ function HouseAuthority.CreateInput(config, data)
 	middle:SetPoint("RIGHT", right, "LEFT")
 	middle:SetTexCoord(0.0625, 0.9375, 0, 0.625)
 	
-	local text = config.frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	text:SetPoint("LEFT", input, "RIGHT", 5, 0)
-	text:SetText(data.text)
+	if( data.text ) then
+		local text = config.frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		text:SetPoint("LEFT", input, "RIGHT", 5, 0)
+		text:SetText(data.text)
+	end
 
 	if( data.help ) then
 		setupWidgetInfo(input, config, "help", data.help)
@@ -678,6 +687,10 @@ function HouseAuthority.CreateSlider(config, data)
 	
 	slider.text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	slider.text:SetPoint("BOTTOM", slider, "TOP", 0, 0)
+	
+	if( not data.text ) then
+		slider.text:Hide()
+	end
 	
 	local min = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	min:SetPoint("TOPLEFT", slider, "BOTTOMLEFT", 2, 3)
@@ -732,9 +745,11 @@ function HouseAuthority.CreateCheckBox(config, data)
 	check:SetDisabledCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check-Disabled")
 	check:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
 
-	local text = config.frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	text:SetPoint("LEFT", check, "RIGHT", 5, 0)
-	text:SetText(data.text)
+	if( data.text ) then
+		local text = config.frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		text:SetPoint("LEFT", check, "RIGHT", 5, 0)
+		text:SetText(data.text)
+	end
 	
 	if( data.help ) then
 		setupWidgetInfo(check, config, "help", data.help)
@@ -808,7 +823,44 @@ function HouseAuthority.GetFrame(config)
 		config.scroll = scroll
 	end	
 	
-	positionWidgets(config)
+	-- Now figure out how many groups we have/need
+	config.groups = {}
+	local totalGroups = 0
+	local groupedWidgets = 0
+
+	for _, data in pairs(config.widgets) do
+		if( data.group ) then
+			if( not config.groups[data.group] ) then
+				config.groups[data.group] = {}
+				totalGroups = totalGroups + 1
+			end
+
+			table.insert(config.groups[data.group], data)
+			groupedWidgets = groupedWidgets + 1
+		end
+	end
+
+	-- Grouping is "disabled" so postion it directly to the frame
+	if( totalGroups == 0 ) then
+		positionWidgets(config.columns, config.frame, config.widgets)
+	else
+		assert(3, groupedWidgets == #(config.widgets), string.format(L["WIDGETS_MISSINGGROUP"], groupedWidgets, #(config.widgets)))
+		
+		-- Create all the groups, then position the objects to the widget
+		local frames = {}
+		for text, widgets(config.groups) do
+			local frame = createGroup(config, config.groupData)
+			local height = positionWidgets(config.columns, config.frame, config.widgets)
+			
+			frame.title:SetText(text)
+			frame:SetWidth(300)
+			frame:SetHeight(height + 10)
+			table.insert(frames, frame)
+		end
+		
+		-- Now position all of the groups
+		positionWidgets(1, config.frame, frames)
+	end
 	
 	config.stage = 2
 	
