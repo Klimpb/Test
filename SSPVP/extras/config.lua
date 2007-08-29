@@ -529,9 +529,9 @@ function UI:LoadFrame(category, subCat)
 	-- Create base frame
 	local frame
 	if( subFrame ) then
-		frame = CreateFrame("Frame", "SSConf" .. catFrame .. subFrame)
+		frame = CreateFrame("Frame", "SSConf" .. catFrame .. subFrame, OptionHouseFrames.addon)
 	else
-		frame = CreateFrame("Frame", "SSConf" .. catFrame)
+		frame = CreateFrame("Frame", "SSConf" .. catFrame, OptionHouseFrames.addon)
 	end
 	
 	
