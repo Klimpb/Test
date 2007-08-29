@@ -18,4 +18,14 @@ HasteBlockLocals = {
 	["Background Opacity: %d%%"] = "Background Opacity: %d%%",
 	["Border Opacity: %d%%"] = "Border Opacity: %d%%",
 	["sec cast"] = "sec cast",
+	
+	-- For figuring out original cast time
+	SPELLS = {
+		["Wrath"] = 1.5,
+		["Fireball"] = 1.5,
+		["Holy Light"] = 2.5,
+		["Lesser Heal"] = 1.5,
+		["Immolate"] = 2.0,
+		["Healing Wave"] = 1.5,
+	},
 }

@@ -17,6 +17,7 @@ local rangedLink
 local baseSpell = 0
 local currentSpell = 0
 local spellID
+local usedFormats = 0
 
 local isInCombat
 
@@ -28,7 +29,9 @@ function HasteBlock:OnLoad()
 	self.db = HasteBlockDB
 
 	LB = DongleStub("LegoBlock-Beta0"):New("HasteBlock", "---", nil, HasteBlockDB.lego )
-	
+	LB.Text:ClearAllPoints();
+	LB.Text:SetPoint("LEFT", LB, "RIGHT", 0, 0)
+		
 	local r, g, b = LB:GetBackdropColor()
 	LB:SetBackdropColor(r, g, b, self.db.lego.bgAlpha)
 	
@@ -39,6 +42,20 @@ function HasteBlock:OnLoad()
 
 	local OHObj = OH:RegisterAddOn("HasteBlock", "Haste Block", "Amarand", "r" .. (tonumber(string.match("$Revision$", "(%d+)")) or 1))
 	OHObj:RegisterCategory(L["General"], self, "CreateUI")	
+	
+	self:CheckUsed()
+end
+
+function HasteBlock:CheckUsed(skipSpeed)
+	usedFormats = 0
+	
+	if( self.db.showModified ) then usedFormats = usedFormats + 1 end
+	if( self.db.showOriginal ) then usedFormats = usedFormats + 1 end
+	if( self.db.showHaste ) then usedFormats = usedFormats + 1 end	
+	
+	if( not skipSpeed ) then
+		self:SpeedChanged()
+	end
 end
 
 function HasteBlock:ToggleBlock(val)
@@ -82,18 +99,18 @@ function HasteBlock:CreateUI()
 	local config = {}
 	-- Mana class (Spell Haste)
 	if( UnitPowerType("player") == 0 ) then
-		table.insert(config, {type = "check", text = L["Show spell haste percentage"], default = true, onSet = "SpeedChanged", var = "showSpell"})
-		table.insert(config, {type = "check", text = L["Show original attack speed"], default = true, onSet = "SpeedChanged", var = "showOriginal"})
-		table.insert(config, {type = "check", text = L["Show haste percentage"], default = true, onSet = "SpeedChanged", var = "showHaste"})
-		table.insert(config, {type = "check", text = L["Show mainhand attack speed"], default = true, onSet = "SpeedChanged", var = "showMain"})
+		table.insert(config, {type = "check", text = L["Show spell haste percentage"], default = true, onSet = "CheckUsed", var = "showSpell"})
+		table.insert(config, {type = "check", text = L["Show original attack speed"], default = true, onSet = "CheckUsed", var = "showOriginal"})
+		table.insert(config, {type = "check", text = L["Show haste percentage"], default = true, onSet = "CheckUsed", var = "showHaste"})
+		table.insert(config, {type = "check", text = L["Show mainhand attack speed"], default = true, onSet = "CheckUsed", var = "showMain"})
 		
 	-- Melee/Ranged (Other haste)
 	else
-		table.insert(config, {type = "check", text = L["Show original attack speed"], default = true, onSet = "SpeedChanged", var = "showOriginal"})
-		table.insert(config, {type = "check", text = L["Show haste percentage"], default = true, onSet = "SpeedChanged", var = "showHaste"})
-		table.insert(config, {type = "check", text = L["Show mainhand attack speed"], default = true, onSet = "SpeedChanged", var = "showMain"})
-		table.insert(config, {type = "check", text = L["Show offhand attack speed"], default = true, onSet = "SpeedChanged", var = "showOff"})
-		table.insert(config, {type = "check", text = L["Show ranged attack speed"], default = true, onSet = "SpeedChanged", var = "showRanged"})
+		table.insert(config, {type = "check", text = L["Show original attack speed"], default = true, onSet = "CheckUsed", var = "showOriginal"})
+		table.insert(config, {type = "check", text = L["Show haste percentage"], default = true, onSet = "CheckUsed", var = "showHaste"})
+		table.insert(config, {type = "check", text = L["Show mainhand attack speed"], default = true, onSet = "CheckUsed", var = "showMain"})
+		table.insert(config, {type = "check", text = L["Show offhand attack speed"], default = true, onSet = "CheckUsed", var = "showOff"})
+		table.insert(config, {type = "check", text = L["Show ranged attack speed"], default = true, onSet = "CheckUsed", var = "showRanged"})
 	end
 	
 	table.insert(config, {type = "label", color = { r = 1, g = 1, b = 1 }, text = L["LegoBlock Settings"]})
@@ -153,35 +170,31 @@ function HasteBlock:CalculateHaste(id, text, speed, origSpeed)
 		return
 	end
 	
-	local line, spell
+	local line
+		
+	-- Mainhand: 1.82 (-30.0%)
+	if( usedFormats == 2 and self.db.showHaste ) then
+		line = string.format("%s %.2f (-%.1f%%)", text, (1 - speed / origSpeed) * 100)
 	
-	-- Spell Haste: 20.5%
-	if( id == CR_HASTE_SPELL ) then
-		spell = (1 - speed / origSpeed) * 100
-		line = text .. string.format(" %.2f%%", speed) .. "\n"
-		
-	-- Main Hand: 1.82 (2.6 -30%)
-	elseif( self.db.showOriginal and self.db.showHaste ) then
-		line = text .. string.format(" %.2f (%.2f -%.0f%%)", speed, origSpeed, (1 - speed / origSpeed) * 100) .. "\n"
-		
-	-- Main Hand: 1.82 (-30%)
-	elseif( self.db.showHaste ) then
-		line = text .. string.format(" %.2f (-%.0f%%)", speed, (1 - speed / origSpeed) * 100) .. "\n"
+	-- Mainhand: 1.82 (-30%)
+	elseif( usedFormats == 2 ) then
+		line = string.format("%s %.2f (%.2f -%.1f%%)", text, speed, (1 - speed / origSpeed) * 100)
 	
-	-- Main Hand: 1.82 (2.6)
-	elseif( self.db.showOriginal ) then
-		line = text .. string.format(" %.2f (%.2f)", speed, origSpeed) .. "\n"
-	elseif( speed ) then
-		line = text .. string.format(" %.2f", speed) .. "\n"
-	end
-		
-	if( ( id == CR_HASTE_SPELL and spell > 0 ) or ( id ~= CR_HASTE_SPELL and speed ~= origSpeed ) ) then
-		display = display .. line
-		return
+	-- Mainhand: 1.82 (2.6 -30%)
+	elseif( usedFormats == 3 ) then
+		line = string.format("%s %.2f (%.2f -%.1f%%)", text, speed, origSpeed, (1 - speed / origSpeed) * 100)
+	
+	-- Mainhand: 1.82
+	elseif( self.db.showModified or self.db.showOriginal ) then
+		line = string.format("%s %.2f", text, speed)
+	
+	-- Mainhand: -30%
+	else
+		line = string.format("%s -%.2f%%", text, speed)
 	end
 	
-	if( isInCombat or self.db.lego.alwaysShow ) then
-		display = display .. line
+	if( ( isInCombat or self.db.lego.alwaysShow ) or ( not isInCombat and speed ~= origSpeed ) ) then
+		display = display .. line .. "\n"
 	end
 end
 
@@ -206,7 +219,12 @@ function HasteBlock:SpeedChanged()
 
 	-- Spells
 	if( self.db.showSpell ) then
-		self:CalculateHaste(CR_HASTE_SPELL, L["Spell:"], baseSpell, currentSpell)
+		local spell = (1 - baseSpell / currentSpell) * 100
+		
+		if( ( isInCombat or self.db.lego.alwaysShow ) or ( not isInCombat and spell > 0 ) ) then
+			spell = (1 - speed / origSpeed) * 100
+			display = display .. string.format("%s -%.2f%%", L["Spell:"], speed) .. "\n"			
+		end
 	end
 
 	if( display ~= "" and not self.db.lego.hidden ) then
@@ -264,8 +282,7 @@ frame:SetScript("OnEvent", function(self, event, arg1)
 				total = total + select(4, GetSpellTabInfo(i))
 			end
 			
-			-- Find the longest casting spell to make sure we
-			-- can actually get the correct haste info
+			-- Find the longest cast time
 			for i=1, total do
 				local speed = HasteBlock:ScanSpell(i)
 				if( speed and speed > baseSpell ) then
