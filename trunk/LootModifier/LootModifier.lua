@@ -156,7 +156,7 @@ function LootMod:Initialize()
 end
 
 function LootMod:CreateUI()
-	local frame = CreateFrame("Frame")
+	local frame = CreateFrame("Frame", nil, OptionHouseFrames.addon)
 	frame:SetScript("OnShow", function()
 		LootMod.uiLocked:SetChecked( LootMod.db.profile.locked )
 		LootMod.uiType:SetChecked( LootMod.db.profile.showType )
