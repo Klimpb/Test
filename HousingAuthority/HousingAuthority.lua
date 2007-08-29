@@ -15,6 +15,7 @@ local L = {
 	["OH_NOT_INITIALIZED"] = "OptionHouse has not been initialized yet, you cannot call HAObj:GetFrame() until then.",
 	["INVALID_POSITION"] = "Invalid positioning passed, 'compact' or 'onebyone' required, got '%s'.",
 	["INVALID_WIDGETTYPE"] = "Invalid type '%s' passed, %s expected'.",
+	["CANNOT_CALLGROUP"] = "You must set the groups setting before any other widgets are added.",
 }
 
 local function assert(level,condition,message)
@@ -63,6 +64,20 @@ local function hideTooltip(self)
 end
 
 local function positionWidgets(config)
+	-- First time it's been called, sort out groups
+	if( config.stage == 1 ) then
+		-- Now figure out how many groups we have/need
+		local groups = {}
+		local totalGroups = 0
+		for _, data in pairs(config.widgets) do
+			if( data.group and not groups[data.group] ) then
+				groups[data.group] = true
+				totalGroups = totalGroups + 1
+			end
+		end
+	end
+	
+
 	if( config.positionType == "onebyone" ) then
 		local heightUsed = 10
 		local height = 0
@@ -376,17 +391,48 @@ local function dropdownShown(self)
 	UIDropDownMenu_SetSelectedValue(self, getValue(self.parent, self.data))
 end
 
+-- GROUP FRAME
+local groupBackdrop = {
+	--bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", --options frame background
+	bgFile = "Interface\\ChatFrame\\ChatFrameBackground", -- kc_linkview frame background
+	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+	tile = true, tileSize = 16, edgeSize = 16,
+	insets = { left = 5, right = 5, top = 5, bottom = 5 }
+}
+
+local function createGroup(config, data)
+	local group = CreateFrame("Frame", nil, parent)
+	group:SetBackdrop(groupBackdrop)
+	
+	if( data.background ) then
+		group:SetBackdropColor(data.background.r, data.background.g, data.background.b)
+	else
+		group:SetBackdropColor(0.094117, 0.094117, 0.094117)	
+	end
+	
+	if( data.border ) then
+		group:SetBackdropBorderColor(data.border.r, data.border.g, data.border.b)
+	else
+		group:SetBackdropBorderColor(0.4, 0.4, 0.4)
+	end
+	
+	group.title = group:CreateFontString(nil, "BACKGROUND", "GameFontHighlight")
+	group.title:SetPoint("BOTTOMLEFT", group, "TOPLEFT", 9, 0)
+	group.title:SetText(data.text)
+	
+	config.groups[data.text] = group
+end
 
 -- Housing Authority
 local HouseAuthority = {}
 local configs = {}
 local id = 0
 
-local methods = { "GetFrame", "CreateConfiguration", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
-local widgets = { ["label"] = "CreateLabel", ["check"] = "CreateCheckBox", ["input"] = "CreateInput", ["dropdown"] = "CreateDropdown", ["color"] = "CreateColorPicker", ["slider"] = "CreateSlider" }
+local methods = { "GetFrame", "CreateConfiguration", "CreateGroup", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
 
 -- Stage 0, Adding widgets, can call Create*
--- Stage 1, Frame is finalized, you can no longer add new widgets
+-- Stage 1, Frame is being finished up (first GetFrame() call)
+-- Stage 2, Frame is finished, positionWidgets has been called/frame returned
 function HouseAuthority:RegisterFrame(data)
 	argcheck(data, 1, "table")
 	argcheck(data.positionType, "positionType", "string", "nil")
@@ -422,6 +468,19 @@ function HouseAuthority:RegisterFrame(data)
 	configs[id] = config
 
 	return configs[id].obj
+end
+
+-- In order to allow even people who call HAObj:CreateGroup manually to use them
+-- we have to create all of the groups when GetFrame is called
+function HouseAuthority.CreateGroup(config, data)
+	argcheck(data, 2, "table")
+	argcheck(data.text, "text", "string")
+	argcheck(data.background, "background", "table")
+	argcheck(data.border, "border", "table")
+	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateGroup"))
+	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
+	
+	configs[config.id].groupData = data
 end
 
 function HouseAuthority.CreateLabel(config, data)
@@ -724,7 +783,7 @@ function HouseAuthority.GetFrame(config)
 	assert(3, OptionHouseFrames.addon, L["OH_NOT_INITIALIZED"])
 	
 	local config = configs[config.id]
-	if( config.stage == 1 ) then
+	if( config.stage == 2 ) then
 		return config.scroll or config.frame
 	end
 	
@@ -747,9 +806,11 @@ function HouseAuthority.GetFrame(config)
 		
 		scroll:SetScrollChild(config.frame)
 		config.scroll = scroll
-	end
+	end	
 	
 	positionWidgets(config)
+	
+	config.stage = 2
 	
 	return config.scroll or config.frame
 end
@@ -764,17 +825,16 @@ function HouseAuthority:CreateConfiguration(data, frameData)
 	end
 	
 	local handler = HouseAuthority:RegisterFrame(frameData)
+	local widgets = {["label"] = "CreateLabel", ["check"] = "CreateCheckBox",
+			["input"] = "CreateInput", ["dropdown"] = "CreateDropdown",
+			["color"] = "CreateColorPicker", ["slider"] = "CreateSlider",
+			["group"] = "CreateGroup"}
 	
 	for id, widget in pairs(data) do
 		if( widget.type and widgets[widget.type] ) then
 			handler[widgets[widget.type]](handler, widget)
 		else
-			local validTypes = {}
-			for type, _ in pairs(widgets) do
-				table.insert(validTypes, type)
-			end
-			
-			error(string.format(L["INVALID_WIDGETTYPE"], widget.type or "nil", table.concat(validTypes, ", ")), 3)
+			error(string.format(L["INVALID_WIDGETTYPE"], widget.type or "nil", "label, check, input, dropdown, color, slider, group"), 3)
 		end
 	end
 	
