@@ -229,7 +229,7 @@ function HasteBlock:SpeedChanged()
 		
 		if( ( isInCombat or self.db.lego.alwaysShow ) or ( not isInCombat and spell > 0 ) ) then
 			spell = (1 - speed / origSpeed) * 100
-			display = display .. string.format("%s -%.2f%%", L["Spell:"], speed) .. "\n"			
+			display = display .. string.format("%s -%.2f%%", L["Spell:"], spell) .. "\n"			
 		end
 	end
 
