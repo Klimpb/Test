@@ -144,6 +144,15 @@ function HasteBlock:ScanItem(slot)
 end
 
 function HasteBlock:CalculateHaste(id, text, speed, origSpeed)	
+	-- Catch unequipped weapons
+	if( not speed or not origSpeed ) then
+		if( isInCombat ) then
+			display = display .. text .. " ----\n"
+		end
+
+		return
+	end
+	
 	local line, spell
 	
 	-- Spell Haste: 20.5%
@@ -180,23 +189,23 @@ function HasteBlock:SpeedChanged()
 	display = ""
 	
 	-- Ranged weapon
-	if( self.db.showRanged and ranged ) then
+	if( self.db.showRanged ) then
 		self:CalculateHaste(CR_HASTE_RANGED, L["Ranged:"], (UnitRangedDamage("player")), ranged)
 	end
 	
 	-- Mainhand
 	local main, off = UnitAttackSpeed("player")
-	if( self.db.showMain and mainHand ) then
+	if( self.db.showMain ) then
 		self:CalculateHaste(CR_HASTE_MELEE, L["Mainhand:"], main, mainHand)
 	end
 	
 	-- Offhand
-	if( self.db.showOff and offHand ) then
+	if( self.db.showOff ) then
 		self:CalculateHaste(CR_HASTE_MELEE, L["Offhand:"], off, offHand)
 	end
 
 	-- Spells
-	if( self.db.showSpell and baseSpell ) then
+	if( self.db.showSpell ) then
 		self:CalculateHaste(CR_HASTE_SPELL, L["Spell:"], baseSpell, currentSpell)
 	end
 
