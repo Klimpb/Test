@@ -146,7 +146,7 @@ function Honest:BlizzardCombatTextEvent(event, ...)
 end
 
 function Honest:CreateUI()
-	local frame = CreateFrame("Frame")
+	local frame = CreateFrame("Frame", nil, OptionHouseFrames.addon)
 	frame:SetScript("OnShow", function()
 		Honest.actualCheck:SetChecked( Honest.db.profile.showActual )	
 		Honest.estimateCheck:SetChecked( Honest.db.profile.showEstimated )	
