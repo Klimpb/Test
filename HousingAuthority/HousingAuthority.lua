@@ -67,7 +67,7 @@ end
 local function positionWidgets(columns, parent, widgets, positionGroup)
 	local heightUsed = 10
 	if( positionGroup ) then
-		heightUsed = 15
+		heightUsed = 8 + (widgets[1].yPos or 0)
 	end
 	
 	if( columns == 1 ) then
@@ -85,7 +85,7 @@ local function positionWidgets(columns, parent, widgets, positionGroup)
 				if( not positionGroup ) then
 					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, -heightUsed)
 				else
-					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, -heightUsed)
+					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", 6, -heightUsed)
 				end
 				
 				widget.infoButton:Show()
@@ -97,22 +97,53 @@ local function positionWidgets(columns, parent, widgets, positionGroup)
 		end
 	else
 		local height = 0
-		local spacing = math.ceil(300 / columns)
+		local spacePerRow = math.ceil(300 / columns)
+		local resetOn = -1
+		local reset
+		
+		if( mod(#(widgets), columns) == 1 ) then
+			resetOn = #(widgets)
+		end
 		
 		for i, widget in pairs(widgets) do
+			local row = mod(i, columns)
+			
 			-- New row
-			if( mod(i, columns) == 1 and i > 1 ) then
+			if( row == 1 and reset or i == resetOn ) then
 				heightUsed = heightUsed + height
 				height = 0
+				reset = nil
+			
+			-- New row, next 1 we see is the next row
+			elseif( row == 1 and not reset ) then
+				reset = true
+			end
+			
+			local spacing = 0
+			if( row ~= 1 ) then
+				spacing = ( spacePerRow * ( row + 2 ) )
+			end
+
+			local xPos = widget.xPos or 0
+			if( widget.infoButton and widget.infoButton.type ) then
+				xPos = ( xPos or 0 ) + 15
+				
+				if( not positionGroup ) then
+					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing, -heightUsed)
+				else
+					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing + 6, -heightUsed)
+				end
+				
+				widget.infoButton:Show()
 			end
 			
 			-- Position
 			widget:ClearAllPoints()
-			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing, -heightUsed)			
+			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing + xPos, -heightUsed)			
 			widget:Show()
 			
 			-- Find the heightest widget out of this group
-			local widgetHeight = widget:GetHeigt() + ( widget.yPos or 0 )
+			local widgetHeight = widget:GetHeight() + ( widget.yPos or 0 ) + 5
 			if( widgetHeight > height ) then
 				height = widgetHeight
 			end
@@ -131,10 +162,6 @@ local function setupWidgetInfo(widget, config, type, msg, skipCall)
 	elseif( widget.infoButton and widget.infoButton.type and not type ) then
 		widget.infoButton.type = nil
 		widget.infoButton:Hide()
-		
-		--if( config.positionType ~= "onebyone" and not skipCall ) then
-		--	positionWidgets(config.columns, config.frame, config.widgets)
-		--end
 		return
 	end
 	
@@ -161,10 +188,6 @@ local function setupWidgetInfo(widget, config, type, msg, skipCall)
 
 	widget.infoButton.type = type
 	widget.infoButton.tooltip = msg
-	
-	--if( not skipCall ) then
-	--	positionWidgets(config.columns, config.frame, config.widgets)
-	--end
 end
 
 -- SET/GET CONFIGURATION VALUES
@@ -452,7 +475,7 @@ local methods = { "GetFrame", "CreateConfiguration", "CreateGroup", "CreateLabel
 
 -- Stage 0, Adding widgets, can call Create*
 -- Stage 1, Frame is being finished up (first GetFrame() call)
--- Stage 2, Frame is finished, positionWidgets has been called/frame returned
+-- Stage 2, Frame is finished, positioning has been called/frame returned
 function HouseAuthority:RegisterFrame(data)
 	argcheck(data, 1, "table")
 	argcheck(data.columns, "columns", "number", "nil")
@@ -507,6 +530,8 @@ function HouseAuthority.CreateLabel(config, data)
 	argcheck(data.font, "font", "table", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateLabel"))
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
+	
+	data.type = "label"
 		
 	local label = configs[config.id].frame:CreateFontString(nil, "ARTWORK")
 	label.parent = config
@@ -546,10 +571,13 @@ function HouseAuthority.CreateColorPicker(config, data)
 
 	config = configs[config.id]
 	
+	data.type = "color"
+	
 	local button = CreateFrame("Button", nil, config.frame)
 	button.parent = config
 	button.data = data
 	button.xPos = 10
+	button.yPos = 2
 	
 	button:SetHeight(18)
 	button:SetWidth(18)
@@ -596,6 +624,7 @@ function HouseAuthority.CreateInput(config, data)
 	validateFunctions(configs[config.id], data)	
 
 	config = configs[config.id]
+	data.type = "input"
 	
 	local input = CreateFrame("EditBox", nil, config.frame)
 	input.parent = config
@@ -681,11 +710,13 @@ function HouseAuthority.CreateSlider(config, data)
 	
 	config = configs[config.id]
 	
+	data.type = "slider"
+	
 	local slider = CreateFrame("Slider", nil, config.frame)
 	slider.parent = config
 	slider.data = data
 	slider.xPos = 10
-	slider.yPos = 15
+	slider.yPos = 10
 
 	slider:SetScript("OnShow", sliderShown)
 	slider:SetScript("OnValueChanged", sliderValueChanged)
@@ -742,6 +773,8 @@ function HouseAuthority.CreateCheckBox(config, data)
 	validateFunctions(configs[config.id], data)
 
 	config = configs[config.id]
+	
+	data.type = "check"
 
 	local check = CreateFrame("CheckButton", nil, config.frame)
 	check.parent = config
@@ -783,9 +816,11 @@ function HouseAuthority.CreateDropdown(config, data)
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	validateFunctions(configs[config.id], data)
-
+	
 	config = configs[config.id]
 	config.dropNum = ( config.dropNum or 0 ) + 1
+	
+	data.type = "dropdown"
 
 	local button = CreateFrame("Frame", "HADropdownID" .. config.id .. "Num" .. config.dropNum, config.frame, "UIDropDownMenuTemplate")
 	button.parent = config
@@ -834,6 +869,10 @@ function HouseAuthority.GetFrame(config)
 			table.insert(config.groups[widget.data.group], widget)
 			groupedWidgets = groupedWidgets + 1
 		end
+		
+		if( config.columns > 1 and widget.data.type == "slider" ) then
+			widget.yPos = widget.yPos + 5
+		end
 	end
 	
 	-- Grouping is "disabled" so postion it directly to the frame
@@ -849,7 +888,7 @@ function HouseAuthority.GetFrame(config)
 			local frame = createGroup(config, config.groupData)
 			
 			-- Reparent/framelevel/position/blah the widgets
-			for _, widget in pairs(widgets) do
+			for i, widget in pairs(widgets) do
 				widget:SetParent(frame)
 				widget:SetFrameLevel(frame:GetFrameLevel() + 2 )
 				widget.xPos = ( widget.xPos or 0 ) + 5
@@ -859,15 +898,17 @@ function HouseAuthority.GetFrame(config)
 			local height = positionWidgets(config.columns, frame, widgets, true)
 			
 			-- Give some frame info
-			frame.yPos = 10
+			frame.yPos = 5
 			frame.title:SetText(text)
 			frame:SetWidth(600)
 			frame:SetHeight(height + 30)
 			table.insert(frames, frame)
+			
+			totalHeight = totalHeight + height + 35
 		end
 		
 		-- Now position all of the groups
-		totalHeight = positionWidgets(1, config.frame, frames)
+		positionWidgets(1, config.frame, frames)
 	end
 
 	-- Do we even need a scroll frame?

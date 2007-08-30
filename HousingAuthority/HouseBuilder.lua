@@ -28,6 +28,23 @@ function HouseBuild:CreateUI()
 				{ "cat", "Cat" }}
 		},
 		{	group = "Main Group",
+			type = "dropdown",
+			text = "Testing List",
+			default = "foo",
+			var = "selection",
+			help = "This is some help information regarding how to use this feature in.",
+			list = {{ "foo", "Foo" },
+				{ "apple", "Apple" },
+				{ "cat", "Cat" }}
+		},
+		{	group = "Main Group",
+			type = "color",
+			text = "Colorize your stuff",
+			default = { r = 1, g = 1, b = 1 },
+			var = "background",
+			help = "Background color",
+		},
+		{	group = "Main Group",
 			type = "input",
 			text = "Input Thing",
 			default = 50,
@@ -58,6 +75,30 @@ function HouseBuild:CreateUI()
 			max = 2.0,
 		},
 		{	group = "Secondary Group",
+			type = "slider",
+			format = "Background opacity: %.2f",
+			help = "K, Thks, Bai", 
+			var = "opacity",
+			default = 1.0,
+			step = 0.01,
+			minText = "0%",
+			maxText = "200%",
+			min = 0.0,
+			max = 2.0,
+		},
+		{	group = "Secondary Group",
+			type = "slider",
+			format = "Background opacity: %.2f",
+			help = "K, Thks, Bai", 
+			var = "opacity",
+			default = 1.0,
+			step = 0.01,
+			minText = "0%",
+			maxText = "200%",
+			min = 0.0,
+			max = 2.0,
+		},
+		{	group = "Secondary Group",
 			type = "check",
 			text = "Enable a mod",
 			help = "FOR PONY",
@@ -68,7 +109,7 @@ function HouseBuild:CreateUI()
 	
 	local HouseAuthority = DongleStub("HousingAuthority-1.0")
 	
-	return HouseAuthority:CreateConfiguration(config, { handler = self, set = "Set", get = "Get" } )
+	return HouseAuthority:CreateConfiguration(config, { handler = self, set = "Set", get = "Get", columns = 2 } )
 end
 
 function HouseBuild:Load()
