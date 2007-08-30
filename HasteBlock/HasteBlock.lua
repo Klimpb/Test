@@ -101,6 +101,10 @@ function HasteBlock:CreateUI()
 		table.insert(config, {type = "check", text = L["Show haste percentage"], default = true, onSet = "CheckUsed", var = "showHaste"})
 		table.insert(config, {type = "check", text = L["Show mainhand attack speed"], default = true, onSet = "CheckUsed", var = "showMain"})
 		
+		if( select(2, UnitClass("player")) == "HUNTER" ) then
+			table.insert(config, {type = "check", text = L["Show ranged attack speed"], default = true, onSet = "CheckUsed", var = "showRanged"})
+		end
+		
 	-- Melee/Ranged (Other haste)
 	else
 		table.insert(config, {type = "check", text = L["Show current attack speed"], default = true, onSet = "CheckUsed", var = "showModified"})
@@ -226,7 +230,6 @@ function HasteBlock:SpeedChanged()
 		local spell = (1 - baseSpell / currentSpell) * 100
 		
 		if( ( isInCombat or self.db.lego.alwaysShow ) or ( not isInCombat and spell > 0 ) ) then
-			spell = (1 - speed / origSpeed) * 100
 			display = display .. string.format("%s -%.2f%%", L["Spell:"], spell) .. "\n"			
 		end
 	end
