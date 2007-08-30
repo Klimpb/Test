@@ -29,8 +29,6 @@ function HasteBlock:OnLoad()
 	self.db = HasteBlockDB
 
 	LB = DongleStub("LegoBlock-Beta0"):New("HasteBlock", "---", nil, HasteBlockDB.lego )
-	LB.Text:ClearAllPoints();
-	LB.Text:SetPoint("LEFT", LB, "RIGHT", 0, 0)
 		
 	local r, g, b = LB:GetBackdropColor()
 	LB:SetBackdropColor(r, g, b, self.db.lego.bgAlpha)
@@ -46,16 +44,14 @@ function HasteBlock:OnLoad()
 	self:CheckUsed()
 end
 
-function HasteBlock:CheckUsed(skipSpeed)
+function HasteBlock:CheckUsed()
 	usedFormats = 0
 	
 	if( self.db.showModified ) then usedFormats = usedFormats + 1 end
 	if( self.db.showOriginal ) then usedFormats = usedFormats + 1 end
 	if( self.db.showHaste ) then usedFormats = usedFormats + 1 end	
 	
-	if( not skipSpeed ) then
-		self:SpeedChanged()
-	end
+	self:SpeedChanged()
 end
 
 function HasteBlock:ToggleBlock(val)
@@ -100,12 +96,14 @@ function HasteBlock:CreateUI()
 	-- Mana class (Spell Haste)
 	if( UnitPowerType("player") == 0 ) then
 		table.insert(config, {type = "check", text = L["Show spell haste percentage"], default = true, onSet = "CheckUsed", var = "showSpell"})
+		table.insert(config, {type = "check", text = L["Show current attack speed"], default = true, onSet = "CheckUsed", var = "showModified"})
 		table.insert(config, {type = "check", text = L["Show original attack speed"], default = true, onSet = "CheckUsed", var = "showOriginal"})
 		table.insert(config, {type = "check", text = L["Show haste percentage"], default = true, onSet = "CheckUsed", var = "showHaste"})
 		table.insert(config, {type = "check", text = L["Show mainhand attack speed"], default = true, onSet = "CheckUsed", var = "showMain"})
 		
 	-- Melee/Ranged (Other haste)
 	else
+		table.insert(config, {type = "check", text = L["Show current attack speed"], default = true, onSet = "CheckUsed", var = "showModified"})
 		table.insert(config, {type = "check", text = L["Show original attack speed"], default = true, onSet = "CheckUsed", var = "showOriginal"})
 		table.insert(config, {type = "check", text = L["Show haste percentage"], default = true, onSet = "CheckUsed", var = "showHaste"})
 		table.insert(config, {type = "check", text = L["Show mainhand attack speed"], default = true, onSet = "CheckUsed", var = "showMain"})
@@ -182,9 +180,9 @@ function HasteBlock:CalculateHaste(id, text, speed, origSpeed)
 	if( usedFormats == 2 and self.db.showHaste ) then
 		line = string.format("%s %.2f (-%.1f%%)", text, showSpeed, (1 - speed / origSpeed) * 100)
 	
-	-- Mainhand: 1.82 (-30%)
+	-- Mainhand: 1.82 (2.6)
 	elseif( usedFormats == 2 ) then
-		line = string.format("%s %.2f (-%.1f%%)", text, showSpeed, (1 - speed / origSpeed) * 100)
+		line = string.format("%s %.2f (%.2f)", text, showSpeed, origSpeed)
 	
 	-- Mainhand: 1.82 (2.6 -30%)
 	elseif( usedFormats == 3 ) then
@@ -196,7 +194,7 @@ function HasteBlock:CalculateHaste(id, text, speed, origSpeed)
 	
 	-- Mainhand: -30%
 	else
-		line = string.format("%s -%.2f%%", text, speed)
+		line = string.format("%s -%.2f%%", text, (1 - speed / origSpeed) * 100)
 	end
 	
 	if( ( isInCombat or self.db.lego.alwaysShow ) or ( not isInCombat and speed ~= origSpeed ) ) then
