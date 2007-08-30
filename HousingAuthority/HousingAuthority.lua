@@ -64,8 +64,12 @@ local function hideTooltip(self)
 	end
 end
 
-local function positionWidgets(columns, parent, widgets)
+local function positionWidgets(columns, parent, widgets, positionGroup)
 	local heightUsed = 10
+	if( positionGroup ) then
+		heightUsed = 15
+	end
+	
 	if( columns == 1 ) then
 		local height = 0
 		for i, widget in pairs(widgets) do
@@ -78,11 +82,17 @@ local function positionWidgets(columns, parent, widgets)
 			local xPos = widget.xPos
 			if( widget.infoButton and widget.infoButton.type ) then
 				xPos = ( xPos or 0 ) + 15
-				widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, -heightUsed)
+				if( not positionGroup ) then
+					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, -heightUsed)
+				else
+					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", 10, -heightUsed)
+				end
+				
 				widget.infoButton:Show()
 			end
 
 			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", xPos or 5, -heightUsed)
+			widget:Show()
 			height = widget:GetHeight() + ( widget.yPos or 0 )
 		end
 	else
@@ -99,6 +109,7 @@ local function positionWidgets(columns, parent, widgets)
 			-- Position
 			widget:ClearAllPoints()
 			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing, -heightUsed)			
+			widget:Show()
 			
 			-- Find the heightest widget out of this group
 			local widgetHeight = widget:GetHeigt() + ( widget.yPos or 0 )
@@ -387,11 +398,8 @@ end
 
 local function initDropdown()
 	activeDropdown = activeDropdown or this:GetParent()
-	local tbl = { func = dropdownClicked }
 	for _, row in pairs(activeDropdown.data.list) do
-		tbl.value = row[1]
-		tbl.text = row[2]
-		UIDropDownMenu_AddButton(tbl)
+		UIDropDownMenu_AddButton({ value = row[1], text = row[2], func = dropdownClicked })
 	end
 end
 
@@ -412,16 +420,17 @@ local groupBackdrop = {
 }
 
 local function createGroup(config, data)
-	local group = CreateFrame("Frame", nil, parent)
+	local group = CreateFrame("Frame", nil, config.frame)
+	group:SetWidth(300)
 	group:SetBackdrop(groupBackdrop)
 	
-	if( data.background ) then
+	if( data and data.background ) then
 		group:SetBackdropColor(data.background.r, data.background.g, data.background.b)
 	else
 		group:SetBackdropColor(0.094117, 0.094117, 0.094117)	
 	end
 	
-	if( data.border ) then
+	if( ddata and ata.border ) then
 		group:SetBackdropBorderColor(data.border.r, data.border.g, data.border.b)
 	else
 		group:SetBackdropBorderColor(0.4, 0.4, 0.4)
@@ -431,7 +440,7 @@ local function createGroup(config, data)
 	group.title:SetPoint("BOTTOMLEFT", group, "TOPLEFT", 9, 0)
 	--group.title:SetText(data.text)
 	
-	return grop
+	return group
 end
 
 -- Housing Authority
@@ -500,6 +509,8 @@ function HouseAuthority.CreateLabel(config, data)
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 		
 	local label = configs[config.id].frame:CreateFontString(nil, "ARTWORK")
+	label.parent = config
+	label.data = data
 	label.xPos = 8
 	label.yPos = 5
 	
@@ -553,6 +564,7 @@ function HouseAuthority.CreateColorPicker(config, data)
 	button.border:SetWidth(16)
 	button.border:SetPoint("CENTER", 0, 0)
 	button.border:SetTexture(1, 1, 1)
+	button:Hide()
 	
 	if( data.text ) then
 		local text = button:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
@@ -611,7 +623,7 @@ function HouseAuthority.CreateInput(config, data)
 	input:SetHeight(20)
 	input:SetWidth(120 or data.width)
 	input:SetFontObject(ChatFontNormal)
-	
+	input:Hide()
 	
 	local left = input:CreateTexture(nil, "BACKGROUND")
 	left:SetTexture("Interface\\Common\\Common-Input-Border")
@@ -636,7 +648,7 @@ function HouseAuthority.CreateInput(config, data)
 	middle:SetTexCoord(0.0625, 0.9375, 0, 0.625)
 	
 	if( data.text ) then
-		local text = config.frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		local text = input:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		text:SetPoint("LEFT", input, "RIGHT", 5, 0)
 		text:SetText(data.text)
 	end
@@ -684,11 +696,12 @@ function HouseAuthority.CreateSlider(config, data)
 	slider:SetOrientation("HORIZONTAL")
 	slider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
 	slider:SetBackdrop(sliderBackdrop)
+	slider:Hide()
 	
 	slider.text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	slider.text:SetPoint("BOTTOM", slider, "TOP", 0, 0)
 	
-	if( not data.text ) then
+	if( not data.text and not data.format ) then
 		slider.text:Hide()
 	end
 	
@@ -744,9 +757,10 @@ function HouseAuthority.CreateCheckBox(config, data)
 	check:SetHighlightTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
 	check:SetDisabledCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check-Disabled")
 	check:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
-
+	check:Hide()
+	
 	if( data.text ) then
-		local text = config.frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		local text = check:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		text:SetPoint("LEFT", check, "RIGHT", 5, 0)
 		text:SetText(data.text)
 	end
@@ -778,9 +792,10 @@ function HouseAuthority.CreateDropdown(config, data)
 	button.data = data
 	button.xPos = -10
 	button:SetScript("OnShow", dropdownShown)
+	button:Hide()
 	
 	if( data.text ) then
-		local text = config.frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		local text = button:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		text:SetPoint("LEFT", "HADropdownID" .. config.id .. "Num" .. config.dropNum .. "Button", "RIGHT", 10, 0)
 		text:SetText(data.text)
 	end
@@ -803,14 +818,60 @@ function HouseAuthority.GetFrame(config)
 	end
 	
 	config.stage = 1
-	
-	-- Do we even need a scroll frame?
-	local height = 0
+		
+	-- Now figure out how many groups we have/need
+	config.groups = {}
+	local totalGroups = 0
+	local groupedWidgets = 0
+
 	for _, widget in pairs(config.widgets) do
-		height = height + widget:GetHeight() + ( widget.yPos or 10 )
+		if( widget.data.group ) then
+			if( not config.groups[widget.data.group] ) then
+				config.groups[widget.data.group] = {}
+				totalGroups = totalGroups + 1
+			end
+			
+			table.insert(config.groups[widget.data.group], widget)
+			groupedWidgets = groupedWidgets + 1
+		end
+	end
+	
+	-- Grouping is "disabled" so postion it directly to the frame
+	local totalHeight = 0
+	if( totalGroups == 0 ) then
+		totalHeight = positionWidgets(config.columns, config.frame, config.widgets)
+	else
+		assert(3, groupedWidgets == #(config.widgets), string.format(L["WIDGETS_MISSINGGROUP"], groupedWidgets, #(config.widgets)))
+		
+		-- Create all the groups, then position the objects to the widget
+		local frames = {}
+		for text, widgets in pairs(config.groups) do
+			local frame = createGroup(config, config.groupData)
+			
+			-- Reparent/framelevel/position/blah the widgets
+			for _, widget in pairs(widgets) do
+				widget:SetParent(frame)
+				widget:SetFrameLevel(frame:GetFrameLevel() + 2 )
+				widget.xPos = ( widget.xPos or 0 ) + 5
+			end
+
+			-- Now reposition them
+			local height = positionWidgets(config.columns, frame, widgets, true)
+			
+			-- Give some frame info
+			frame.yPos = 10
+			frame.title:SetText(text)
+			frame:SetWidth(600)
+			frame:SetHeight(height + 30)
+			table.insert(frames, frame)
+		end
+		
+		-- Now position all of the groups
+		totalHeight = positionWidgets(1, config.frame, frames)
 	end
 
-	if( height >= 280 ) then
+	-- Do we even need a scroll frame?
+	if( totalHeight >= 280 ) then
 		local scroll = CreateFrame("ScrollFrame", "HAScroll" .. config.id, OptionHouseFrames.addon, "UIPanelScrollFrameTemplate")
 		scroll:SetPoint("TOPLEFT", OptionHouseFrames.addon, "TOPLEFT", 190, -105)
 		scroll:SetPoint("BOTTOMRIGHT", OptionHouseFrames.addon, "BOTTOMRIGHT", -35, 40)
@@ -822,45 +883,6 @@ function HouseAuthority.GetFrame(config)
 		scroll:SetScrollChild(config.frame)
 		config.scroll = scroll
 	end	
-	
-	-- Now figure out how many groups we have/need
-	config.groups = {}
-	local totalGroups = 0
-	local groupedWidgets = 0
-
-	for _, data in pairs(config.widgets) do
-		if( data.group ) then
-			if( not config.groups[data.group] ) then
-				config.groups[data.group] = {}
-				totalGroups = totalGroups + 1
-			end
-
-			table.insert(config.groups[data.group], data)
-			groupedWidgets = groupedWidgets + 1
-		end
-	end
-
-	-- Grouping is "disabled" so postion it directly to the frame
-	if( totalGroups == 0 ) then
-		positionWidgets(config.columns, config.frame, config.widgets)
-	else
-		assert(3, groupedWidgets == #(config.widgets), string.format(L["WIDGETS_MISSINGGROUP"], groupedWidgets, #(config.widgets)))
-		
-		-- Create all the groups, then position the objects to the widget
-		local frames = {}
-		for text, widgets(config.groups) do
-			local frame = createGroup(config, config.groupData)
-			local height = positionWidgets(config.columns, config.frame, config.widgets)
-			
-			frame.title:SetText(text)
-			frame:SetWidth(300)
-			frame:SetHeight(height + 10)
-			table.insert(frames, frame)
-		end
-		
-		-- Now position all of the groups
-		positionWidgets(1, config.frame, frames)
-	end
 	
 	config.stage = 2
 	
