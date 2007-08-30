@@ -38,7 +38,7 @@ function HasteBlock:OnLoad()
 
 	OH = DongleStub("OptionHouse-1.0")
 
-	local OHObj = OH:RegisterAddOn("HasteBlock", "Haste Block", "Amarand", "r" .. (tonumber(string.match("$Revision$", "(%d+)")) or 1))
+	local OHObj = OH:RegisterAddOn("HasteBlock", "Haste Block", "Amarand / Kergoth", "r" .. (tonumber(string.match("$Revision$", "(%d+)")) or 1))
 	OHObj:RegisterCategory(L["General"], self, "CreateUI")	
 	
 	self:CheckUsed()
@@ -227,7 +227,7 @@ function HasteBlock:SpeedChanged()
 
 	-- Spells
 	if( self.db.showSpell ) then
-		local spell = (1 - baseSpell / currentSpell) * 100
+		local spell = (1 - currentSpell / baseSpell) * 100
 		
 		if( ( isInCombat or self.db.lego.alwaysShow ) or ( not isInCombat and spell > 0 ) ) then
 			display = display .. string.format("%s -%.2f%%", L["Spell:"], spell) .. "\n"			
