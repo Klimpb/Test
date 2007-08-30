@@ -4,6 +4,7 @@ HasteBlockLocals = {
 	["Offhand:"] = "Offhand:",
 	["Spell:"] = "Spell:",
 	["Show haste percentage"] = "Show haste percentage",
+	["Show current attack speed"] = "Show current attack speed",
 	["Show original attack speed"] = "Show original attack speed",
 	["Show offhand attack speed"] = "Show offhand attack speed",
 	["Show mainhand attack speed"] = "Show mainhand attack speed",
