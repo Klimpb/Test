@@ -171,9 +171,9 @@ function HasteBlock:CalculateHaste(id, text, speed, origSpeed)
 	local line
 	local showSpeed
 	if( self.db.showModified ) then
-		showSpeed = origSpeed
-	elseif( self.db.showOriginal ) then
 		showSpeed = speed	
+	elseif( self.db.showOriginal ) then
+		showSpeed = origSpeed
 	end
 		
 	-- Mainhand: 1.82 (-30.0%)
