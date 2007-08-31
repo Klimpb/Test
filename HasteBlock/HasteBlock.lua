@@ -79,8 +79,6 @@ function HasteBlock:Set(val, ...)
 	else
 		self.db[select(1, ...)][select(2, ...)] = val
 	end
-
-	self:SpeedChanged()
 end
 
 function HasteBlock:Get(...)
@@ -116,7 +114,7 @@ function HasteBlock:CreateUI()
 	end
 	
 	table.insert(config, {type = "label", color = { r = 1, g = 1, b = 1 }, text = L["LegoBlock Settings"]})
-	table.insert(config, {type = "check", text = L["Always show block when no haste is active"], onSet = "SpeedChanged", default = true, var = {"lego", "alwaysShow"}})
+	table.insert(config, {type = "check", text = L["Always show block when no haste is active"], onSet = "CheckUsed", default = true, var = {"lego", "alwaysShow"}})
 	table.insert(config, {type = "check", text = L["Hide Haste LegoBlock"], default = false, onSet = "ToggleBlock", var = { "lego", "hidden" }})
 	--table.insert(config, {type = "check", text = L["Show header text"], default = true, var = { "lego", "showText" }})
 	--table.insert(config, {type = "slider", format = L["Scale: %d%%"], var = { "lego", "scale" }, default = 1.0, min = 0.0, max = 2.0})
