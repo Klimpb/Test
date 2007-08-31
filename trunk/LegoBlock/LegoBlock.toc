@@ -1,0 +1,6 @@
+## Interface: 20100
+## Version: LegoBlock-Beta0
+## Title: LegoBlock
+
+DongleStub.lua
+LegoBlock.lua
