@@ -1,7 +1,8 @@
 ## Interface: 20100
 ## Title: Housing Authority
 ## Author: Shadowed
+## OptionalDeps: LibStub
 
-DongleStub.lua
+LibStub.lua
 HousingAuthority.lua
 HouseBuilder.lua

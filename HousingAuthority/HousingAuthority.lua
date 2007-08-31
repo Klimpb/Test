@@ -1,9 +1,10 @@
 local major = "HousingAuthority-1.0"
 local minor = tonumber(string.match("$Revision$", "(%d+)") or 1)
 
-assert(DongleStub, string.format("%s requires DongleStub.", major))
+assert(LibStub, string.format("%s requires LibStub.", major))
 
-if( not DongleStub:IsNewerVersion(major, minor) ) then return end
+local _, crtMinor = LibStub:GetLibrary(major, true)
+if( crtMinor and crtMinor <= minor ) then return end
 
 local L = {
 	["BAD_ARGUMENT"] = "bad argument #%d for '%s' (%s expected, got %s)",
@@ -101,6 +102,8 @@ local function positionWidgets(columns, parent, widgets, positionGroup)
 		local resetOn = -1
 		local reset
 		
+		-- If we have an uneven number of widgets
+		-- then we need to create an extra row
 		if( mod(#(widgets), columns) == 1 ) then
 			resetOn = #(widgets)
 		end
@@ -119,6 +122,12 @@ local function positionWidgets(columns, parent, widgets, positionGroup)
 				reset = true
 			end
 			
+			-- 2 columns, 6 widget
+			-- 1 = 0 spacing
+			-- 2 = 100 * 4
+			-- 4 = new row, 0 spacing
+			-- 5 = 100 * 4
+			-- 6 = last row, new row, 0 spacing
 			local spacing = 0
 			if( row ~= 1 ) then
 				spacing = ( spacePerRow * ( row + 2 ) )
@@ -142,7 +151,7 @@ local function positionWidgets(columns, parent, widgets, positionGroup)
 			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing + xPos, -heightUsed)			
 			widget:Show()
 			
-			-- Find the heightest widget out of this group
+			-- Find the heightest widget out of this group and use that
 			local widgetHeight = widget:GetHeight() + ( widget.yPos or 0 ) + 5
 			if( widgetHeight > height ) then
 				height = widgetHeight
@@ -165,6 +174,7 @@ local function setupWidgetInfo(widget, config, type, msg, skipCall)
 		return
 	end
 	
+	-- Create (Obviously!) the button
 	if( not widget.infoButton ) then
 		widget.infoButton = CreateFrame("Button", nil, widget)
 		widget.infoButton:SetScript("OnEnter", showInfoTooltip)
@@ -205,7 +215,8 @@ local function validateFunctions(config, data)
 	argcheck(data.onSet, "onSet", type, "nil")
 end
 
-
+-- If the set we call errors, the onSet will not be called
+-- so don't error damnits
 local function setValue(config, data, value)
 	local handler = data.handler or config.handler
 	local set = data.set or config.set
@@ -384,11 +395,16 @@ local function colorPickerLeft(self)
 	self.border:SetVertexColor(HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
 end
 
+local rgb = { r = 0, g = 0, b = 0 }
 local function setColorValue()
 	local self = activeButton
 	local r, g, b = ColorPickerFrame:GetColorRGB()
 	
-	setValue(self.parent, self.data, {r = r, g = g, b = b})
+	rgb.r = r
+	rgb.g = g
+	rgb.b = b
+	
+	setValue(self.parent, self.data, rgb)
 	self:GetNormalTexture():SetVertexColor(r, g, b)
 end
 
@@ -419,10 +435,14 @@ local function dropdownClicked(self)
 	activeDropdown = nil
 end
 
+local buttonTbl = { func = dropdownClicked }
 local function initDropdown()
 	activeDropdown = activeDropdown or this:GetParent()
 	for _, row in pairs(activeDropdown.data.list) do
-		UIDropDownMenu_AddButton({ value = row[1], text = row[2], func = dropdownClicked })
+		buttonTbl.value = row[1]
+		buttonTbl.text = row[2]
+
+		UIDropDownMenu_AddButton(buttonTbl)
 	end
 end
 
@@ -493,6 +513,10 @@ function HouseAuthority:RegisterFrame(data)
 	argcheck(data.set, "set", type, "nil")
 	argcheck(data.get, "get", type, "nil")
 	argcheck(data.onSet, "onSet", type, "nil")
+	
+	if( not data.frame ) then
+		data.frame = CreateFrame("Frame", nil, OptionHouseFrames.addon)	
+	end
 	
 	id = id + 1
 	
@@ -933,11 +957,6 @@ end
 function HouseAuthority:CreateConfiguration(data, frameData)
 	argcheck(data, 1, "table")
 	argcheck(frameData, 2, "table", "nil")
-
-	frameData = frameData or {}
-	if( not frameData.frame ) then
-		frameData.frame = CreateFrame("Frame", nil, OptionHouseFrames.addon)
-	end
 	
 	local handler = HouseAuthority:RegisterFrame(frameData)
 	local widgets = {["label"] = "CreateLabel", ["check"] = "CreateCheckBox",
@@ -958,6 +977,27 @@ end
 
 function HouseAuthority:GetVersion() return major, minor end
 
+local function checkVersion()
+	local new, old = LibStub:NewLibrary(major, minor)
+
+	-- We're upgrading
+	if( old ) then
+		id = old.id or id
+		configs = old.configs or configs
+	
+		for id, config in pairs(configs) do
+			for _, method in pairs(methods) do
+				configs[id].obj[method] = HouseAuthority[method]
+			end
+		end
+	end
+	
+	self.id = id
+	self.configs = configs
+	self.libs[major] = HouseAuthority
+end
+
+--[[
 local function Activate(self, old)
 	if( old ) then
 		id = old.id or id
@@ -973,5 +1013,6 @@ local function Activate(self, old)
 	self.id = id
 	self.configs = configs
 end
+]]
 
-HouseAuthority = DongleStub:Register(HouseAuthority, Activate)
+checkVersion()
