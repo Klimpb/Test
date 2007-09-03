@@ -107,13 +107,13 @@ function HouseBuild:CreateUI()
 		},
 	};
 	
-	local HouseAuthority = DongleStub("HousingAuthority-1.0")
+	local HouseAuthority = LibStub:GetLibrary("HousingAuthority-1.0")
 	
 	return HouseAuthority:CreateConfiguration(config, { handler = self, set = "Set", get = "Get", columns = 2 } )
 end
 
 function HouseBuild:Load()
-	local OptionHouse = DongleStub("OptionHouse-1.0")
+	local OptionHouse = LibStub:GetLibrary("OptionHouse-1.1")
 	local OHObj = OptionHouse:RegisterAddOn("HouseBuilder")
 	
 	OHObj:RegisterCategory("Test", self, "CreateUI")

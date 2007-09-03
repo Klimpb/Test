@@ -1,10 +1,10 @@
-local major = "HousingAuthority-1.0"
+local major = "HousingAuthority-1.1"
 local minor = tonumber(string.match("$Revision$", "(%d+)") or 1)
 
 assert(LibStub, string.format("%s requires LibStub.", major))
 
-local _, crtMinor = LibStub:GetLibrary(major, true)
-if( crtMinor and crtMinor <= minor ) then return end
+local HouseAuthority, oldInstance = LibStub:NewLibrary(major, minor)
+if( not HouseAuthority ) then return end
 
 local L = {
 	["BAD_ARGUMENT"] = "bad argument #%d for '%s' (%s expected, got %s)",
@@ -212,7 +212,7 @@ local function validateFunctions(config, data)
 	argcheck(data.set or config.set, "set", type)
 	argcheck(data.get or config.get, "get", type)
 	argcheck(data.validate, "validate", type, "nil")
-	argcheck(data.onSet, "onSet", type, "nil")
+	argcheck(data.onSet or config.onSet, "onSet", type, "nil")
 end
 
 -- If the set we call errors, the onSet will not be called
@@ -221,7 +221,7 @@ local function setValue(config, data, value)
 	local handler = data.handler or config.handler
 	local set = data.set or config.set
 	local onSet = data.onSet or config.onSet
-	
+		
 	if( set and handler ) then
 		if( type(data.var) == "table" ) then
 			handler[set](handler, value, unpack(data.var))
@@ -487,7 +487,6 @@ local function createGroup(config, data)
 end
 
 -- Housing Authority
-local HouseAuthority = {}
 local configs = {}
 local id = 0
 
@@ -978,30 +977,9 @@ end
 function HouseAuthority:GetVersion() return major, minor end
 
 local function checkVersion()
-	local new, old = LibStub:NewLibrary(major, minor)
-
-	-- We're upgrading
-	if( old ) then
-		id = old.id or id
-		configs = old.configs or configs
-	
-		for id, config in pairs(configs) do
-			for _, method in pairs(methods) do
-				configs[id].obj[method] = HouseAuthority[method]
-			end
-		end
-	end
-	
-	self.id = id
-	self.configs = configs
-	self.libs[major] = HouseAuthority
-end
-
---[[
-local function Activate(self, old)
-	if( old ) then
-		id = old.id or id
-		configs = old.configs or configs
+	if( oldInstance ) then
+		id = oldInstance.id or id
+		configs = oldInstance.configs or configs
 	end
 
 	for id, config in pairs(configs) do
@@ -1010,9 +988,8 @@ local function Activate(self, old)
 		end
 	end
 	
-	self.id = id
-	self.configs = configs
+	HouseAuthority.id = id
+	HouseAuthority.configs = configs
 end
-]]
 
 checkVersion()
