@@ -428,17 +428,22 @@ local function openColorPicker(self)
 end
 
 -- DROPDOWNS
-local activeDropdown
-local function dropdownClicked(self)
-	UIDropDownMenu_SetSelectedValue(activeDropdown, this.value)
-	setValue(activeDropdown.parent, activeDropdown.data, this.value)
-	activeDropdown = nil
+local function dropdownClicked()
+	UIDropDownMenu_SetSelectedValue(this.owner, this.value)
+	setValue(this.owner.parent, this.owner.data, this.value)
 end
 
 local buttonTbl = { func = dropdownClicked }
 local function initDropdown()
-	activeDropdown = activeDropdown or this:GetParent()
-	for _, row in pairs(activeDropdown.data.list) do
+	local frame
+	if( string.match(this:GetName(), "Button$") ) then
+		frame = getglobal(string.gsub(this:GetName(), "Button$", ""))
+	else
+		frame = this
+	end
+
+	buttonTbl.owner = frame
+	for _, row in pairs(frame.data.list) do
 		buttonTbl.value = row[1]
 		buttonTbl.text = row[2]
 
@@ -473,7 +478,7 @@ local function createGroup(config, data)
 		group:SetBackdropColor(0.094117, 0.094117, 0.094117)	
 	end
 	
-	if( ddata and ata.border ) then
+	if( data and data.border ) then
 		group:SetBackdropBorderColor(data.border.r, data.border.g, data.border.b)
 	else
 		group:SetBackdropBorderColor(0.4, 0.4, 0.4)
