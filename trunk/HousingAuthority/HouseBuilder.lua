@@ -15,18 +15,12 @@ function HouseBuild:Check(var, val)
 	return tonumber(val)
 end
 
+function HouseBuild:ButtonClicked(key)
+	DEFAULT_CHAT_FRAME:AddMessage( "Button with a key of " .. key .. " was pressed" )
+end
+
 function HouseBuild:CreateUI()
 	local config = {
-		{	group = "Main Group",
-			type = "dropdown",
-			text = "Testing List",
-			default = "foo",
-			var = "selection",
-			help = "This is some help information regarding how to use this feature in.",
-			list = {{ "foo", "Foo" },
-				{ "apple", "Apple" },
-				{ "cat", "Cat" }}
-		},
 		{	group = "Main Group",
 			type = "dropdown",
 			text = "Testing List",
@@ -55,37 +49,6 @@ function HouseBuild:CreateUI()
 			validate = "Check",
 			error = "Error, \"%s\" is not a valid input",
 		},
-		{	group = "Main Group",
-			type = "color",
-			text = "Colorize your stuff",
-			default = { r = 1, g = 1, b = 1 },
-			var = "background",
-			help = "Background color",
-		},
-		{	group = "Secondary Group",
-			type = "slider",
-			format = "Background opacity: %.2f",
-			help = "K, Thks, Bai", 
-			var = "opacity",
-			default = 1.0,
-			step = 0.01,
-			minText = "0%",
-			maxText = "200%",
-			min = 0.0,
-			max = 2.0,
-		},
-		{	group = "Secondary Group",
-			type = "slider",
-			format = "Background opacity: %.2f",
-			help = "K, Thks, Bai", 
-			var = "opacity",
-			default = 1.0,
-			step = 0.01,
-			minText = "0%",
-			maxText = "200%",
-			min = 0.0,
-			max = 2.0,
-		},
 		{	group = "Secondary Group",
 			type = "slider",
 			format = "Background opacity: %.2f",
@@ -105,9 +68,15 @@ function HouseBuild:CreateUI()
 			default = true,
 			var = "enable",
 		},
+		{	group = "Secondary Group",
+			type = "button",
+			text = "Enable something",
+			var = "foo",
+			set = "ButtonClicked",
+		},
 	};
 	
-	local HouseAuthority = LibStub:GetLibrary("HousingAuthority-1.0")
+	local HouseAuthority = LibStub:GetLibrary("HousingAuthority-1.1")
 	
 	return HouseAuthority:CreateConfiguration(config, { handler = self, set = "Set", get = "Get", columns = 2 } )
 end
