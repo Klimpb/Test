@@ -36,7 +36,7 @@ function HasteBlock:OnLoad()
 	r, g, b = LB:GetBackdropBorderColor()
 	LB:SetBackdropBorderColor(r, g, b, self.db.lego.borderAlpha)
 
-	OH = DongleStub("OptionHouse-1.1")
+	OH = LibStub:GetLibrary("OptionHouse-1.1")
 
 	local OHObj = OH:RegisterAddOn("HasteBlock", "Haste Block", "Amarand / Kergoth", "r" .. (tonumber(string.match("$Revision$", "(%d+)")) or 1))
 	OHObj:RegisterCategory(L["General"], self, "CreateUI")	
@@ -121,7 +121,7 @@ function HasteBlock:CreateUI()
 	table.insert(config, {type = "slider", format = L["Background Opacity: %d%%"], var = { "lego", "bgAlpha" }, onSet = "OpacityChanged", default = 1.0})
 	table.insert(config, {type = "slider", format = L["Border Opacity: %d%%"], var = { "lego", "borderAlpha" }, onSet = "OpacityChanged", default = 1.0})
 
-	return DongleStub("HousingAuthority-1.1"):CreateConfiguration(config, {handler = self, set = "Set", get = "Get"})
+	return LibStub:GetLibrary("HousingAuthority-1.1"):CreateConfiguration(config, {handler = self, set = "Set", get = "Get"})
 end
 
 function HasteBlock:ScanSpell(id)
