@@ -1,9 +1,64 @@
-local major = "HousingAuthority-1.0"
-local minor = tonumber(string.match("$Revision: 136 $", "(%d+)") or 1)
+-- $Id: LibStub.lua 48018 2007-09-03 01:50:17Z mikk $
+-- LibStub is a simple versioning stub meant for use in Libraries.  http://www.wowace.com/wiki/LibStub for more info
+-- LibStub is hereby placed in the Public Domain
+-- Credits: Kaelten, Cladhaire, ckknight, Mikk, Ammo, Nevcairiel, joshborke
+local LIBSTUB_MAJOR, LIBSTUB_MINOR = "LibStub", 2  -- NEVER MAKE THIS AN SVN REVISION! IT NEEDS TO BE USABLE IN ALL REPOS!
+local LibStub = _G[LIBSTUB_MAJOR]
 
-assert(DongleStub, string.format("%s requires DongleStub.", major))
+-- Check to see is this version of the stub is obsolete
+if not LibStub or LibStub.minor < LIBSTUB_MINOR then
+	LibStub = LibStub or {libs = {}, minors = {} }
+	_G[LIBSTUB_MAJOR] = LibStub
+	LibStub.minor = LIBSTUB_MINOR
+	
+	-- LibStub:NewLibrary(major, minor)
+	-- major (string) - the major version of the library
+	-- minor (string or number ) - the minor version of the library
+	-- 
+	-- returns nil if a newer or same version of the lib is already present
+	-- returns empty library object or old library object if upgrade is needed
+	function LibStub:NewLibrary(major, minor)
+		assert(type(major) == "string", "Bad argument #2 to `NewLibrary' (string expected)")
+		minor = assert(tonumber(strmatch(minor, "%d+")), "Minor version must either be a number or contain a number.")
+		
+		local oldminor = self.minors[major]
+		if oldminor and oldminor >= minor then return nil end
+		self.minors[major], self.libs[major] = minor, self.libs[major] or {}
+		return self.libs[major], oldminor
+	end
+	
+	-- LibStub:GetLibrary(major, [silent])
+	-- major (string) - the major version of the library
+	-- silent (boolean) - if true, library is optional, silently return nil if its not found
+	--
+	-- throws an error if the library can not be found (except silent is set)
+	-- returns the library object if found
+	function LibStub:GetLibrary(major, silent)
+		if not self.libs[major] and not silent then
+			error(("Cannot find a library instance of %q."):format(tostring(major)), 2)
+		end
+		return self.libs[major], self.minors[major]
+	end
+	
+	-- LibStub:IterateLibraries()
+	-- 
+	-- Returns an iterator for the currently registered libraries
+	function LibStub:IterateLibraries() 
+		return pairs(self.libs) 
+	end
+	
+	setmetatable(LibStub, { __call = LibStub.GetLibrary })
+end
 
-if( not DongleStub:IsNewerVersion(major, minor) ) then return end
+--[[-------------------------------------------------------------------------
+  Begin Library Implementation
+---------------------------------------------------------------------------]]
+local major = "HousingAuthority-1.1"
+local minor = tonumber(string.match("$Revision: 156 $", "(%d+)") or 1)
+
+assert(LibStub, string.format("%s requires LibStub.", major))
+local HouseAuthority, oldInstance = LibStub:NewLibrary(major, minor)
+if( not HouseAuthority ) then return end
 
 local L = {
 	["BAD_ARGUMENT"] = "bad argument #%d for '%s' (%s expected, got %s)",
@@ -15,7 +70,13 @@ local L = {
 	["OH_NOT_INITIALIZED"] = "OptionHouse has not been initialized yet, you cannot call HAObj:GetFrame() until then.",
 	["INVALID_POSITION"] = "Invalid positioning passed, 'compact' or 'onebyone' required, got '%s'.",
 	["INVALID_WIDGETTYPE"] = "Invalid type '%s' passed, %s expected'.",
+	["CANNOT_CALLGROUP"] = "You must set the groups setting before any other widgets are added.",
+	["WIDGETS_MISSINGGROUP"] = "When using groups, all widgets must be grouped. %d out of %d are missing a group.",
+	["OPTIONHOUSE_REQUIRED"] = "Cannot find OptionHouse-1.1, make sure it loads before HousingAuthority.",
 }
+
+local OptionHouse = LibStub:GetLibrary("OptionHouse-1.1", true)
+if( not OptionHouse ) then error(L["OPTIONHOUSE_REQUIRED"], 3) end
 
 local function assert(level,condition,message)
 	if( not condition ) then
@@ -62,11 +123,15 @@ local function hideTooltip(self)
 	end
 end
 
-local function positionWidgets(config)
-	if( config.positionType == "onebyone" ) then
-		local heightUsed = 10
+local function positionWidgets(columns, parent, widgets, positionGroup)
+	local heightUsed = 10
+	if( positionGroup ) then
+		heightUsed = 8 + (widgets[1].yPos or 0)
+	end
+	
+	if( columns == 1 ) then
 		local height = 0
-		for i, widget in pairs(config.widgets) do
+		for i, widget in pairs(widgets) do
 			widget:ClearAllPoints()
 
 			if( i > 1 ) then
@@ -76,16 +141,83 @@ local function positionWidgets(config)
 			local xPos = widget.xPos
 			if( widget.infoButton and widget.infoButton.type ) then
 				xPos = ( xPos or 0 ) + 15
-				widget.infoButton:SetPoint("TOPLEFT", config.frame, "TOPLEFT", 0, -heightUsed)
+				if( not positionGroup ) then
+					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, -heightUsed)
+				else
+					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", 6, -heightUsed)
+				end
+				
 				widget.infoButton:Show()
 			end
 
-			widget:SetPoint("TOPLEFT", config.frame, "TOPLEFT", xPos or 5, -heightUsed)
+			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", xPos or 5, -heightUsed)
+			widget:Show()
 			height = widget:GetHeight() + ( widget.yPos or 0 )
 		end
-	elseif( config.positionType == "compact" ) then
-	
+	else
+		local height = 0
+		local spacePerRow = math.ceil(300 / columns)
+		local resetOn = -1
+		local reset
+		
+		-- If we have an uneven number of widgets
+		-- then we need to create an extra row
+		if( mod(#(widgets), columns) == 1 ) then
+			resetOn = #(widgets)
+		end
+		
+		for i, widget in pairs(widgets) do
+			local row = mod(i, columns)
+			
+			-- New row
+			if( row == 1 and reset or i == resetOn ) then
+				heightUsed = heightUsed + height
+				height = 0
+				reset = nil
+			
+			-- New row, next 1 we see is the next row
+			elseif( row == 1 and not reset ) then
+				reset = true
+			end
+			
+			-- 2 columns, 6 widget
+			-- 1 = 0 spacing
+			-- 2 = 100 * 4
+			-- 4 = new row, 0 spacing
+			-- 5 = 100 * 4
+			-- 6 = last row, new row, 0 spacing
+			local spacing = 0
+			if( row ~= 1 ) then
+				spacing = ( spacePerRow * ( row + 2 ) )
+			end
+
+			local xPos = widget.xPos or 0
+			if( widget.infoButton and widget.infoButton.type ) then
+				xPos = ( xPos or 0 ) + 15
+				
+				if( not positionGroup ) then
+					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing, -heightUsed)
+				else
+					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing + 6, -heightUsed)
+				end
+				
+				widget.infoButton:Show()
+			end
+			
+			-- Position
+			widget:ClearAllPoints()
+			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing + xPos, -heightUsed)			
+			widget:Show()
+			
+			-- Find the heightest widget out of this group and use that
+			local widgetHeight = widget:GetHeight() + ( widget.yPos or 0 ) + 5
+			if( widgetHeight > height ) then
+				height = widgetHeight
+			end
+		end
 	end
+	
+	return heightUsed
 end
 
 local function setupWidgetInfo(widget, config, type, msg, skipCall)
@@ -97,18 +229,15 @@ local function setupWidgetInfo(widget, config, type, msg, skipCall)
 	elseif( widget.infoButton and widget.infoButton.type and not type ) then
 		widget.infoButton.type = nil
 		widget.infoButton:Hide()
-		
-		if( config.positionType ~= "onebyone" and not skipCall ) then
-			positionWidgets(config)
-		end
 		return
 	end
 	
+	-- Create (Obviously!) the button
 	if( not widget.infoButton ) then
 		widget.infoButton = CreateFrame("Button", nil, widget)
 		widget.infoButton:SetScript("OnEnter", showInfoTooltip)
 		widget.infoButton:SetScript("OnLeave", hideTooltip)
-		widget.infoButton:SetTextFontObject(GameFontNormal)
+		widget.infoButton:SetTextFontObject(GameFontNormalSmall)
 		widget.infoButton:SetHeight(18)
 		widget.infoButton:SetWidth(18)
 	end
@@ -120,17 +249,13 @@ local function setupWidgetInfo(widget, config, type, msg, skipCall)
 	end
 	
 	if( type == "help" ) then
-		widget.infoButton:SetText("[?]")
+		widget.infoButton:SetText(GREEN_FONT_COLOR_CODE .. "[?]" .. FONT_COLOR_CODE_CLOSE)
 	elseif( type == "validate" ) then
-		widget.infoButton:SetText("[!]")
+		widget.infoButton:SetText(RED_FONT_COLOR_CODE .. "[!]" .. FONT_COLOR_CODE_CLOSE)
 	end
 
 	widget.infoButton.type = type
 	widget.infoButton.tooltip = msg
-	
-	if( not skipCall ) then
-		positionWidgets(config)
-	end
 end
 
 -- SET/GET CONFIGURATION VALUES
@@ -145,15 +270,16 @@ local function validateFunctions(config, data)
 	argcheck(data.set or config.set, "set", type)
 	argcheck(data.get or config.get, "get", type)
 	argcheck(data.validate, "validate", type, "nil")
-	argcheck(data.onSet, "onSet", type, "nil")
+	argcheck(data.onSet or config.onSet, "onSet", type, "nil")
 end
 
-
+-- If the set we call errors, the onSet will not be called
+-- so don't error damnits
 local function setValue(config, data, value)
 	local handler = data.handler or config.handler
 	local set = data.set or config.set
 	local onSet = data.onSet or config.onSet
-	
+		
 	if( set and handler ) then
 		if( type(data.var) == "table" ) then
 			handler[set](handler, value, unpack(data.var))
@@ -265,7 +391,7 @@ local function inputClearFocus(self)
 end
 
 local function inputFocusGained(self)
-	this:HighlightText()
+	self:HighlightText()
 end
 
 local function inputChanged(self)
@@ -327,11 +453,16 @@ local function colorPickerLeft(self)
 	self.border:SetVertexColor(HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
 end
 
+local rgb = { r = 0, g = 0, b = 0 }
 local function setColorValue()
 	local self = activeButton
 	local r, g, b = ColorPickerFrame:GetColorRGB()
 	
-	setValue(self.parent, self.data, {r = r, g = g, b = b})
+	rgb.r = r
+	rgb.g = g
+	rgb.b = b
+	
+	setValue(self.parent, self.data, rgb)
 	self:GetNormalTexture():SetVertexColor(r, g, b)
 end
 
@@ -355,17 +486,26 @@ local function openColorPicker(self)
 end
 
 -- DROPDOWNS
-local activeDropdown
-local function dropdownClicked(self)
-	UIDropDownMenu_SetSelectedValue(activeDropdown, this.value)
-	setValue(activeDropdown.parent, activeDropdown.data, this.value)
-	activeDropdown = nil
+local function dropdownClicked()
+	UIDropDownMenu_SetSelectedValue(this.owner, this.value)
+	setValue(this.owner.parent, this.owner.data, this.value)
 end
 
+local buttonTbl = { func = dropdownClicked }
 local function initDropdown()
-	activeDropdown = activeDropdown or this:GetParent()
-	for _, row in pairs(activeDropdown.data.list) do
-		UIDropDownMenu_AddButton({ value = row[1], text = row[2], func = dropdownClicked })
+	local frame
+	if( string.match(this:GetName(), "Button$") ) then
+		frame = getglobal(string.gsub(this:GetName(), "Button$", ""))
+	else
+		frame = this
+	end
+
+	buttonTbl.owner = frame
+	for _, row in pairs(frame.data.list) do
+		buttonTbl.value = row[1]
+		buttonTbl.text = row[2]
+
+		UIDropDownMenu_AddButton(buttonTbl)
 	end
 end
 
@@ -376,28 +516,54 @@ local function dropdownShown(self)
 	UIDropDownMenu_SetSelectedValue(self, getValue(self.parent, self.data))
 end
 
+-- GROUP FRAME
+local groupBackdrop = {
+	--bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", --options frame background
+	bgFile = "Interface\\ChatFrame\\ChatFrameBackground", -- kc_linkview frame background
+	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+	tile = true, tileSize = 16, edgeSize = 16,
+	insets = { left = 5, right = 5, top = 5, bottom = 5 }
+}
+
+local function createGroup(config, data)
+	local group = CreateFrame("Frame", nil, config.frame)
+	group:SetWidth(300)
+	group:SetBackdrop(groupBackdrop)
+	
+	if( data and data.background ) then
+		group:SetBackdropColor(data.background.r, data.background.g, data.background.b)
+	else
+		group:SetBackdropColor(0.094117, 0.094117, 0.094117)	
+	end
+	
+	if( data and data.border ) then
+		group:SetBackdropBorderColor(data.border.r, data.border.g, data.border.b)
+	else
+		group:SetBackdropBorderColor(0.4, 0.4, 0.4)
+	end
+	
+	group.title = group:CreateFontString(nil, "BACKGROUND", "GameFontHighlight")
+	group.title:SetPoint("BOTTOMLEFT", group, "TOPLEFT", 9, 0)
+	--group.title:SetText(data.text)
+	
+	return group
+end
 
 -- Housing Authority
-local HouseAuthority = {}
 local configs = {}
 local id = 0
 
-local methods = { "GetFrame", "CreateConfiguration", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
-local widgets = { ["label"] = "CreateLabel", ["check"] = "CreateCheckBox", ["input"] = "CreateInput", ["dropdown"] = "CreateDropdown", ["color"] = "CreateColorPicker", ["slider"] = "CreateSlider" }
+local methods = { "GetFrame", "CreateConfiguration", "CreateButton", "CreateGroup", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
 
 -- Stage 0, Adding widgets, can call Create*
--- Stage 1, Frame is finalized, you can no longer add new widgets
+-- Stage 1, Frame is being finished up (first GetFrame() call)
+-- Stage 2, Frame is finished, positioning has been called/frame returned
 function HouseAuthority:RegisterFrame(data)
 	argcheck(data, 1, "table")
-	argcheck(data.positionType, "positionType", "string", "nil")
-	if( data.positionType and data.positionType ~= "compact" and data.positionType ~= "onebyone" and data.positionType == "none" ) then
-		error(string.format(L["INVALID_POSITION"], data.positionType), 3)
-	end
+	argcheck(data.columns, "columns", "number", "nil")
 	
-	if( data.positionType == nil ) then
-		data.positionType = "onebyone"	
-	elseif( data.positionType == "none" ) then
-		data.positionType = nil
+	if( not data.columns ) then
+		data.columns = 1
 	end
 	
 	local type = "function"
@@ -410,9 +576,13 @@ function HouseAuthority:RegisterFrame(data)
 	argcheck(data.get, "get", type, "nil")
 	argcheck(data.onSet, "onSet", type, "nil")
 	
+	if( not data.frame ) then
+		data.frame = CreateFrame("Frame", nil, OptionHouse:GetFrame("addon"))	
+	end
+	
 	id = id + 1
 	
-	local config = { id = id, positionType = data.positionType, stage = 0, widgets = {}, handler = data.handler, get = data.get, frame = data.frame, set = data.set, onSet = data.onSet }
+	local config = { id = id, columns = data.columns, stage = 0, widgets = {}, handler = data.handler, get = data.get, frame = data.frame, set = data.set, onSet = data.onSet }
 	config.obj = { id = id }
 	
 	for _, method in pairs(methods) do
@@ -422,6 +592,70 @@ function HouseAuthority:RegisterFrame(data)
 	configs[id] = config
 
 	return configs[id].obj
+end
+
+local function buttonClicked(self)
+	local handler = self.data.handler or self.parent.handler
+	if( type(self.data.var) == "table" ) then
+		if( handler ) then
+			handler[self.data.set](handler, unpack(self.data.var))
+		else
+			self.data.set(unpack(self.data.var))
+		end
+	elseif( self.data.var ) then
+		if( handler ) then
+			handler[self.data.set](handler, self.data.var)		
+		else
+			self.data.set(self.data.var)
+		end
+	elseif( handler ) then
+		handler[self.data.set](handler)
+	else
+		self.data.set()
+	end
+end
+
+function HouseAuthority.CreateButton(config, data)
+	argcheck(data, 2, "table")
+	argcheck(data.var, "var", "string", "number", "table", "nil")
+	argcheck(data.template, "template", "string", "nil")
+	argcheck(data.width, "width", "number", "nil")
+	argcheck(data.text, "text", "string", "nil")
+	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateLabel"))
+	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
+
+	-- Make sure the function stuff passed is good
+	local config = configs[config.id]
+	local type = "function"
+	if( config.handler or data.handler ) then
+		type = "string"
+	end
+		
+	argcheck(data.handler or config.handler, "handler", "table", "nil")
+	argcheck(data.set, "set", type)
+	
+	local button = CreateFrame("Button", nil, OptionHouse:GetFrame("addon"), data.template or "GameMenuButtonTemplate")
+	button.parent = config
+	button.data = data
+	button:SetScript("OnClick", buttonClicked)
+	button:SetText(data.text)
+	button:SetHeight(22)
+	button:SetWidth( button:GetFontString():GetStringWidth() + 25 )
+	
+	table.insert(config.widgets, button)
+	return button
+end
+
+-- In order to allow even people who call HAObj:CreateGroup manually to use them
+-- we have to create all of the groups when GetFrame is called
+function HouseAuthority.CreateGroup(config, data)
+	argcheck(data, 2, "table")
+	argcheck(data.background, "background", "table")
+	argcheck(data.border, "border", "table")
+	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateGroup"))
+	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
+	
+	configs[config.id].groupData = data
 end
 
 function HouseAuthority.CreateLabel(config, data)
@@ -434,8 +668,12 @@ function HouseAuthority.CreateLabel(config, data)
 	argcheck(data.font, "font", "table", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateLabel"))
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
+	
+	data.type = "label"
 		
 	local label = configs[config.id].frame:CreateFontString(nil, "ARTWORK")
+	label.parent = config
+	label.data = data
 	label.xPos = 8
 	label.yPos = 5
 	
@@ -462,7 +700,7 @@ function HouseAuthority.CreateColorPicker(config, data)
 	argcheck(data, 2, "table")
 	argcheck(data.text, "text", "string")
 	argcheck(data.help, "help", "string", "nil")
-	argcheck(data.var, "var", "string", "table")
+	argcheck(data.var, "var", "string", "number", "table")
 	argcheck(data.default, "default", "table", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateColorPicker"))
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
@@ -471,10 +709,13 @@ function HouseAuthority.CreateColorPicker(config, data)
 
 	config = configs[config.id]
 	
+	data.type = "color"
+	
 	local button = CreateFrame("Button", nil, config.frame)
 	button.parent = config
 	button.data = data
 	button.xPos = 10
+	button.yPos = 2
 	
 	button:SetHeight(18)
 	button:SetWidth(18)
@@ -489,10 +730,13 @@ function HouseAuthority.CreateColorPicker(config, data)
 	button.border:SetWidth(16)
 	button.border:SetPoint("CENTER", 0, 0)
 	button.border:SetTexture(1, 1, 1)
+	button:Hide()
 	
-	local text = button:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	text:SetPoint("LEFT", button, "RIGHT", 5, 0)
-	text:SetText(data.text)	
+	if( data.text ) then
+		local text = button:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		text:SetPoint("LEFT", button, "RIGHT", 5, 0)
+		text:SetText(data.text)	
+	end
 	
 	if( data.help ) then
 		setupWidgetInfo(button, config, "help", data.help)
@@ -505,7 +749,7 @@ end
 function HouseAuthority.CreateInput(config, data)
 	argcheck(data, 2, "table")
 	argcheck(data.text, "text", "string")
-	argcheck(data.var, "var", "string", "table")
+	argcheck(data.var, "var", "string", "number", "table")
 	argcheck(data.default, "default", "number", "string", "nil")
 	argcheck(data.realTime, "realTime", "boolean", "nil")
 	argcheck(data.numeric, "numeric", "boolean", "nil")
@@ -518,6 +762,7 @@ function HouseAuthority.CreateInput(config, data)
 	validateFunctions(configs[config.id], data)	
 
 	config = configs[config.id]
+	data.type = "input"
 	
 	local input = CreateFrame("EditBox", nil, config.frame)
 	input.parent = config
@@ -545,7 +790,7 @@ function HouseAuthority.CreateInput(config, data)
 	input:SetHeight(20)
 	input:SetWidth(120 or data.width)
 	input:SetFontObject(ChatFontNormal)
-	
+	input:Hide()
 	
 	local left = input:CreateTexture(nil, "BACKGROUND")
 	left:SetTexture("Interface\\Common\\Common-Input-Border")
@@ -569,9 +814,11 @@ function HouseAuthority.CreateInput(config, data)
 	middle:SetPoint("RIGHT", right, "LEFT")
 	middle:SetTexCoord(0.0625, 0.9375, 0, 0.625)
 	
-	local text = config.frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	text:SetPoint("LEFT", input, "RIGHT", 5, 0)
-	text:SetText(data.text)
+	if( data.text ) then
+		local text = input:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		text:SetPoint("LEFT", input, "RIGHT", 5, 0)
+		text:SetText(data.text)
+	end
 
 	if( data.help ) then
 		setupWidgetInfo(input, config, "help", data.help)
@@ -585,7 +832,7 @@ function HouseAuthority.CreateSlider(config, data)
 	argcheck(data, 2, "table")
 	argcheck(data.default, "default", "number", "nil")
 	argcheck(data.help, "help", "string", "nil")
-	argcheck(data.var, "var", "string", "table")
+	argcheck(data.var, "var", "string", "number", "table")
 	argcheck(data.text, "text", "string", "nil")
 	argcheck(data.format, "format", "string", "nil")
 	argcheck(data.min, "min", "number", "nil")
@@ -601,11 +848,13 @@ function HouseAuthority.CreateSlider(config, data)
 	
 	config = configs[config.id]
 	
+	data.type = "slider"
+	
 	local slider = CreateFrame("Slider", nil, config.frame)
 	slider.parent = config
 	slider.data = data
 	slider.xPos = 10
-	slider.yPos = 15
+	slider.yPos = 10
 
 	slider:SetScript("OnShow", sliderShown)
 	slider:SetScript("OnValueChanged", sliderValueChanged)
@@ -616,9 +865,14 @@ function HouseAuthority.CreateSlider(config, data)
 	slider:SetOrientation("HORIZONTAL")
 	slider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
 	slider:SetBackdrop(sliderBackdrop)
+	slider:Hide()
 	
 	slider.text = slider:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 	slider.text:SetPoint("BOTTOM", slider, "TOP", 0, 0)
+	
+	if( not data.text and not data.format ) then
+		slider.text:Hide()
+	end
 	
 	local min = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	min:SetPoint("TOPLEFT", slider, "BOTTOMLEFT", 2, 3)
@@ -650,13 +904,15 @@ function HouseAuthority.CreateCheckBox(config, data)
 	argcheck(data, 2, "table")
 	argcheck(data.default, "default", "boolean", "nil")
 	argcheck(data.help, "help", "string", "nil")
-	argcheck(data.var, "var", "string", "table")
+	argcheck(data.var, "var", "string", "number", "table")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateCheckBox"))
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	validateFunctions(configs[config.id], data)
 
 	config = configs[config.id]
+	
+	data.type = "check"
 
 	local check = CreateFrame("CheckButton", nil, config.frame)
 	check.parent = config
@@ -672,10 +928,13 @@ function HouseAuthority.CreateCheckBox(config, data)
 	check:SetHighlightTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
 	check:SetDisabledCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check-Disabled")
 	check:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
-
-	local text = config.frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-	text:SetPoint("LEFT", check, "RIGHT", 5, 0)
-	text:SetText(data.text)
+	check:Hide()
+	
+	if( data.text ) then
+		local text = check:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		text:SetPoint("LEFT", check, "RIGHT", 5, 0)
+		text:SetText(data.text)
+	end
 	
 	if( data.help ) then
 		setupWidgetInfo(check, config, "help", data.help)
@@ -690,23 +949,26 @@ function HouseAuthority.CreateDropdown(config, data)
 	argcheck(data.list, "list", "table")
 	argcheck(data.default, "default", "string", "nil")
 	argcheck(data.help, "help", "string", "nil")
-	argcheck(data.var, "var", "string", "table")
+	argcheck(data.var, "var", "string", "number", "table")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateDropdown"))
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	validateFunctions(configs[config.id], data)
-
+	
 	config = configs[config.id]
 	config.dropNum = ( config.dropNum or 0 ) + 1
+	
+	data.type = "dropdown"
 
 	local button = CreateFrame("Frame", "HADropdownID" .. config.id .. "Num" .. config.dropNum, config.frame, "UIDropDownMenuTemplate")
 	button.parent = config
 	button.data = data
 	button.xPos = -10
 	button:SetScript("OnShow", dropdownShown)
+	button:Hide()
 	
 	if( data.text ) then
-		local text = config.frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		local text = button:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
 		text:SetPoint("LEFT", "HADropdownID" .. config.id .. "Num" .. config.dropNum .. "Button", "RIGHT", 10, 0)
 		text:SetText(data.text)
 	end
@@ -721,25 +983,77 @@ end
 
 function HouseAuthority.GetFrame(config)
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "GetFrame"))
-	assert(3, OptionHouseFrames.addon, L["OH_NOT_INITIALIZED"])
+	assert(3, OptionHouse:GetFrame("addon"), L["OH_NOT_INITIALIZED"])
 	
 	local config = configs[config.id]
-	if( config.stage == 1 ) then
+	if( config.stage == 2 ) then
 		return config.scroll or config.frame
 	end
 	
 	config.stage = 1
-	
-	-- Do we even need a scroll frame?
-	local height = 0
+		
+	-- Now figure out how many groups we have/need
+	config.groups = {}
+	local totalGroups = 0
+	local groupedWidgets = 0
+
 	for _, widget in pairs(config.widgets) do
-		height = height + widget:GetHeight() + ( widget.yPos or 10 )
+		if( widget.data.group ) then
+			if( not config.groups[widget.data.group] ) then
+				config.groups[widget.data.group] = {}
+				totalGroups = totalGroups + 1
+			end
+			
+			table.insert(config.groups[widget.data.group], widget)
+			groupedWidgets = groupedWidgets + 1
+		end
+		
+		if( config.columns > 1 and widget.data.type == "slider" ) then
+			widget.yPos = widget.yPos + 5
+		end
+	end
+	
+	-- Grouping is "disabled" so postion it directly to the frame
+	local totalHeight = 0
+	if( totalGroups == 0 ) then
+		totalHeight = positionWidgets(config.columns, config.frame, config.widgets)
+	else
+		assert(3, groupedWidgets == #(config.widgets), string.format(L["WIDGETS_MISSINGGROUP"], groupedWidgets, #(config.widgets)))
+		
+		-- Create all the groups, then position the objects to the widget
+		local frames = {}
+		for text, widgets in pairs(config.groups) do
+			local frame = createGroup(config, config.groupData)
+			
+			-- Reparent/framelevel/position/blah the widgets
+			for i, widget in pairs(widgets) do
+				widget:SetParent(frame)
+				widget:SetFrameLevel(frame:GetFrameLevel() + 2 )
+				widget.xPos = ( widget.xPos or 0 ) + 5
+			end
+
+			-- Now reposition them
+			local height = positionWidgets(config.columns, frame, widgets, true)
+			
+			-- Give some frame info
+			frame.yPos = 5
+			frame.title:SetText(text)
+			frame:SetWidth(600)
+			frame:SetHeight(height + 30)
+			table.insert(frames, frame)
+			
+			totalHeight = totalHeight + height + 35
+		end
+		
+		-- Now position all of the groups
+		positionWidgets(1, config.frame, frames)
 	end
 
-	if( height >= 280 ) then
-		local scroll = CreateFrame("ScrollFrame", "HAScroll" .. config.id, OptionHouseFrames.addon, "UIPanelScrollFrameTemplate")
-		scroll:SetPoint("TOPLEFT", OptionHouseFrames.addon, "TOPLEFT", 190, -105)
-		scroll:SetPoint("BOTTOMRIGHT", OptionHouseFrames.addon, "BOTTOMRIGHT", -35, 40)
+	-- Do we even need a scroll frame?
+	if( totalHeight >= 280 ) then
+		local scroll = CreateFrame("ScrollFrame", "HAScroll" .. config.id, OptionHouse:GetFrame("addon"), "UIPanelScrollFrameTemplate")
+		scroll:SetPoint("TOPLEFT", OptionHouse:GetFrame("addon"), "TOPLEFT", 190, -105)
+		scroll:SetPoint("BOTTOMRIGHT", OptionHouse:GetFrame("addon"), "BOTTOMRIGHT", -35, 40)
 
 		config.frame:SetParent(scroll)
 		config.frame:SetWidth(10)
@@ -747,9 +1061,9 @@ function HouseAuthority.GetFrame(config)
 		
 		scroll:SetScrollChild(config.frame)
 		config.scroll = scroll
-	end
+	end	
 	
-	positionWidgets(config)
+	config.stage = 2
 	
 	return config.scroll or config.frame
 end
@@ -757,24 +1071,18 @@ end
 function HouseAuthority:CreateConfiguration(data, frameData)
 	argcheck(data, 1, "table")
 	argcheck(frameData, 2, "table", "nil")
-
-	frameData = frameData or {}
-	if( not frameData.frame ) then
-		frameData.frame = CreateFrame("Frame", nil, OptionHouseFrames.addon)
-	end
 	
 	local handler = HouseAuthority:RegisterFrame(frameData)
+	local widgets = {["label"] = "CreateLabel", ["check"] = "CreateCheckBox",
+			["input"] = "CreateInput", ["dropdown"] = "CreateDropdown",
+			["color"] = "CreateColorPicker", ["slider"] = "CreateSlider",
+			["group"] = "CreateGroup", ["button"] = "CreateButton",}
 	
 	for id, widget in pairs(data) do
 		if( widget.type and widgets[widget.type] ) then
 			handler[widgets[widget.type]](handler, widget)
 		else
-			local validTypes = {}
-			for type, _ in pairs(widgets) do
-				table.insert(validTypes, type)
-			end
-			
-			error(string.format(L["INVALID_WIDGETTYPE"], widget.type or "nil", table.concat(validTypes, ", ")), 3)
+			error(string.format(L["INVALID_WIDGETTYPE"], widget.type or "nil", "label, check, input, dropdown, color, slider, group, button"), 3)
 		end
 	end
 	
@@ -783,10 +1091,10 @@ end
 
 function HouseAuthority:GetVersion() return major, minor end
 
-local function Activate(self, old)
-	if( old ) then
-		id = old.id or id
-		configs = old.configs or configs
+local function checkVersion()
+	if( oldInstance ) then
+		id = oldInstance.id or id
+		configs = oldInstance.configs or configs
 	end
 
 	for id, config in pairs(configs) do
@@ -795,8 +1103,8 @@ local function Activate(self, old)
 		end
 	end
 	
-	self.id = id
-	self.configs = configs
+	HouseAuthority.id = id
+	HouseAuthority.configs = configs
 end
 
-HouseAuthority = DongleStub:Register(HouseAuthority, Activate)
+checkVersion()
