@@ -1,0 +1,6 @@
+## Interface: 20100
+## Title: Special Events
+
+LibStub.lua
+EventTester.lua
+SpecialEvents.lua
