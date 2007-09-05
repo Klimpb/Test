@@ -2,7 +2,6 @@ local major = "HousingAuthority-1.1"
 local minor = tonumber(string.match("$Revision$", "(%d+)") or 1)
 
 assert(LibStub, string.format("%s requires LibStub.", major))
-
 local HouseAuthority, oldInstance = LibStub:NewLibrary(major, minor)
 if( not HouseAuthority ) then return end
 
@@ -18,7 +17,11 @@ local L = {
 	["INVALID_WIDGETTYPE"] = "Invalid type '%s' passed, %s expected'.",
 	["CANNOT_CALLGROUP"] = "You must set the groups setting before any other widgets are added.",
 	["WIDGETS_MISSINGGROUP"] = "When using groups, all widgets must be grouped. %d out of %d are missing a group.",
+	["OPTIONHOUSE_REQUIRED"] = "Cannot find OptionHouse-1.1, make sure it loads before HousingAuthority.",
 }
+
+local OptionHouse = LibStub:GetLibrary("OptionHouse-1.1", true)
+if( not OptionHouse ) then error(L["OPTIONHOUSE_REQUIRED"], 3) end
 
 local function assert(level,condition,message)
 	if( not condition ) then
@@ -495,7 +498,7 @@ end
 local configs = {}
 local id = 0
 
-local methods = { "GetFrame", "CreateConfiguration", "CreateGroup", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
+local methods = { "GetFrame", "CreateConfiguration", "CreateButton", "CreateGroup", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
 
 -- Stage 0, Adding widgets, can call Create*
 -- Stage 1, Frame is being finished up (first GetFrame() call)
@@ -519,7 +522,7 @@ function HouseAuthority:RegisterFrame(data)
 	argcheck(data.onSet, "onSet", type, "nil")
 	
 	if( not data.frame ) then
-		data.frame = CreateFrame("Frame", nil, OptionHouseFrames.addon)	
+		data.frame = CreateFrame("Frame", nil, OptionHouse:GetFrame("addon"))	
 	end
 	
 	id = id + 1
@@ -534,6 +537,58 @@ function HouseAuthority:RegisterFrame(data)
 	configs[id] = config
 
 	return configs[id].obj
+end
+
+local function buttonClicked(self)
+	local handler = self.data.handler or self.parent.handler
+	if( type(self.data.var) == "table" ) then
+		if( handler ) then
+			handler[self.data.set](handler, unpack(self.data.var))
+		else
+			self.data.set(unpack(self.data.var))
+		end
+	elseif( self.data.var ) then
+		if( handler ) then
+			handler[self.data.set](handler, self.data.var)		
+		else
+			self.data.set(self.data.var)
+		end
+	elseif( handler ) then
+		handler[self.data.set](handler)
+	else
+		self.data.set()
+	end
+end
+
+function HouseAuthority.CreateButton(config, data)
+	argcheck(data, 2, "table")
+	argcheck(data.var, "var", "string", "number", "table", "nil")
+	argcheck(data.template, "template", "string", "nil")
+	argcheck(data.width, "width", "number", "nil")
+	argcheck(data.text, "text", "string", "nil")
+	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateLabel"))
+	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
+
+	-- Make sure the function stuff passed is good
+	local config = configs[config.id]
+	local type = "function"
+	if( config.handler or data.handler ) then
+		type = "string"
+	end
+		
+	argcheck(data.handler or config.handler, "handler", "table", "nil")
+	argcheck(data.set, "set", type)
+	
+	local button = CreateFrame("Button", nil, OptionHouse:GetFrame("addon"), data.template or "GameMenuButtonTemplate")
+	button.parent = config
+	button.data = data
+	button:SetScript("OnClick", buttonClicked)
+	button:SetText(data.text)
+	button:SetHeight(22)
+	button:SetWidth( button:GetFontString():GetStringWidth() + 25 )
+	
+	table.insert(config.widgets, button)
+	return button
 end
 
 -- In order to allow even people who call HAObj:CreateGroup manually to use them
@@ -873,7 +928,7 @@ end
 
 function HouseAuthority.GetFrame(config)
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "GetFrame"))
-	assert(3, OptionHouseFrames.addon, L["OH_NOT_INITIALIZED"])
+	assert(3, OptionHouse:GetFrame("addon"), L["OH_NOT_INITIALIZED"])
 	
 	local config = configs[config.id]
 	if( config.stage == 2 ) then
@@ -941,9 +996,9 @@ function HouseAuthority.GetFrame(config)
 
 	-- Do we even need a scroll frame?
 	if( totalHeight >= 280 ) then
-		local scroll = CreateFrame("ScrollFrame", "HAScroll" .. config.id, OptionHouseFrames.addon, "UIPanelScrollFrameTemplate")
-		scroll:SetPoint("TOPLEFT", OptionHouseFrames.addon, "TOPLEFT", 190, -105)
-		scroll:SetPoint("BOTTOMRIGHT", OptionHouseFrames.addon, "BOTTOMRIGHT", -35, 40)
+		local scroll = CreateFrame("ScrollFrame", "HAScroll" .. config.id, OptionHouse:GetFrame("addon"), "UIPanelScrollFrameTemplate")
+		scroll:SetPoint("TOPLEFT", OptionHouse:GetFrame("addon"), "TOPLEFT", 190, -105)
+		scroll:SetPoint("BOTTOMRIGHT", OptionHouse:GetFrame("addon"), "BOTTOMRIGHT", -35, 40)
 
 		config.frame:SetParent(scroll)
 		config.frame:SetWidth(10)
@@ -966,13 +1021,13 @@ function HouseAuthority:CreateConfiguration(data, frameData)
 	local widgets = {["label"] = "CreateLabel", ["check"] = "CreateCheckBox",
 			["input"] = "CreateInput", ["dropdown"] = "CreateDropdown",
 			["color"] = "CreateColorPicker", ["slider"] = "CreateSlider",
-			["group"] = "CreateGroup"}
+			["group"] = "CreateGroup", ["button"] = "CreateButton",}
 	
 	for id, widget in pairs(data) do
 		if( widget.type and widgets[widget.type] ) then
 			handler[widgets[widget.type]](handler, widget)
 		else
-			error(string.format(L["INVALID_WIDGETTYPE"], widget.type or "nil", "label, check, input, dropdown, color, slider, group"), 3)
+			error(string.format(L["INVALID_WIDGETTYPE"], widget.type or "nil", "label, check, input, dropdown, color, slider, group, button"), 3)
 		end
 	end
 	
