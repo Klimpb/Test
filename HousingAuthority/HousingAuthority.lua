@@ -68,10 +68,12 @@ local function hideTooltip(self)
 	end
 end
 
-local function positionWidgets(columns, parent, widgets, positionGroup)
+local function positionWidgets(columns, parent, widgets, positionGroup, isGroup)
 	local heightUsed = 10
-	if( positionGroup ) then
+	if( positionGroup or columns > 1 ) then
 		heightUsed = 8 + (widgets[1].yPos or 0)
+	elseif( isGroup ) then
+		heightUsed = 14
 	end
 	
 	if( columns == 1 ) then
@@ -103,37 +105,25 @@ local function positionWidgets(columns, parent, widgets, positionGroup)
 		local height = 0
 		local spacePerRow = math.ceil(300 / columns)
 		local resetOn = -1
-		local reset
+		local row = 0
 		
 		-- If we have an uneven number of widgets
 		-- then we need to create an extra row
 		if( mod(#(widgets), columns) == 1 ) then
 			resetOn = #(widgets)
 		end
-		
+
 		for i, widget in pairs(widgets) do
-			local row = mod(i, columns)
-			
-			-- New row
-			if( row == 1 and reset or i == resetOn ) then
+			if( row == columns or row == resetOn ) then
 				heightUsed = heightUsed + height
 				height = 0
-				reset = nil
-			
-			-- New row, next 1 we see is the next row
-			elseif( row == 1 and not reset ) then
-				reset = true
+				row = 0
 			end
 			
-			-- 2 columns, 6 widget
-			-- 1 = 0 spacing
-			-- 2 = 100 * 4
-			-- 4 = new row, 0 spacing
-			-- 5 = 100 * 4
-			-- 6 = last row, new row, 0 spacing
+			-- How far away it is from the next row
 			local spacing = 0
-			if( row ~= 1 ) then
-				spacing = ( spacePerRow * ( row + 2 ) )
+			if( row > 0 ) then
+				spacing = ( spacePerRow * ( row + 1 ) )
 			end
 
 			local xPos = widget.xPos or 0
@@ -149,9 +139,14 @@ local function positionWidgets(columns, parent, widgets, positionGroup)
 				widget.infoButton:Show()
 			end
 			
+			local extraPad = 0
+			if( widget.data.type == "slider" and i > columns ) then
+				extraPad = 10
+			end
+
 			-- Position
 			widget:ClearAllPoints()
-			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing + xPos, -heightUsed)			
+			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing + xPos, -heightUsed - extraPad)			
 			widget:Show()
 			
 			-- Find the heightest widget out of this group and use that
@@ -159,6 +154,8 @@ local function positionWidgets(columns, parent, widgets, positionGroup)
 			if( widgetHeight > height ) then
 				height = widgetHeight
 			end
+
+			row = row + 1
 		end
 	end
 	
@@ -227,33 +224,16 @@ local function setValue(config, data, value)
 	local onSet = data.onSet or config.onSet
 		
 	if( set and handler ) then
-		if( type(data.var) == "table" ) then
-			handler[set](handler, value, unpack(data.var))
-		else
-			handler[set](handler, value, data.var)
-		end
+		handler[set](handler, data.var, value)
 		
 	elseif( set ) then
-		if( type(data.var) == "table" ) then
-			set(value, unpack(data.var))
-		else
-			set(value, data.var)
-		end
+		set(data.var, value)
 	end
 
 	if( onSet and handler ) then
-		if( type(data.var) == "table" ) then
-			handler[onSet](handler, value, unpack(data.var))
-		else
-			handler[onSet](handler, value, data.var)
-		end
-		
+		handler[onSet](handler, data.var, value)
 	elseif( onSet ) then
-		if( type(data.var) == "table" ) then
-			onSet(value, unpack(data.var))
-		else
-			onSet(value, data.var)
-		end
+		onSet(data.var, value)
 	end
 end
 
@@ -263,18 +243,9 @@ local function getValue(config, data)
 	local val
 	
 	if( get and handler ) then
-		if( type(data.var) == "table" ) then
-			val = handler[get](handler, unpack(data.var))
-		else
-			val = handler[get](handler, data.var)
-		end
-		
+		val = handler[get](handler, data.var)
 	elseif( get ) then
-		if( type(data.var) == "table" ) then
-			val = get(unpack(data.var))
-		else
-			val = get(data.var)
-		end
+		val = get(data.var)
 	end
 	
 	if( val == nil and data.default ~= nil ) then
@@ -351,17 +322,9 @@ local function inputChanged(self)
 	if( self.data.validate ) then
 		local handler = self.parent.handler or self.data.handler
 		if( handler ) then
-			if( type(self.data.var) == "table" ) then
-				val = handler[self.data.validate](handler, unpack(self.data.var), val)
-			else
-				val = handler[self.data.validate](handler, self.data.var, val)
-			end
+			val = handler[self.data.validate](handler, self.data.var, val)
 		else
-			if( type(self.data.var) == "table" ) then
-				val = self.data.validate(unpack(self.data.var), val)
-			else
-				val = self.data.validate(self.data.var, val)
-			end
+			val = self.data.validate(self.data.var, val)
 		end
 		
 		-- Validation error, show [!]
@@ -402,15 +365,14 @@ end
 
 local rgb = { r = 0, g = 0, b = 0 }
 local function setColorValue()
-	local self = activeButton
 	local r, g, b = ColorPickerFrame:GetColorRGB()
 	
 	rgb.r = r
 	rgb.g = g
 	rgb.b = b
 	
-	setValue(self.parent, self.data, rgb)
-	self:GetNormalTexture():SetVertexColor(r, g, b)
+	setValue(activeButton.parent, activeButton.data, rgb)
+	activeButton:GetNormalTexture():SetVertexColor(r, g, b)
 end
 
 local function cancelColorValue(previous)
@@ -420,6 +382,11 @@ local function cancelColorValue(previous)
 	self:GetNormalTexture():SetVertexColor(previous.r, previous.g, previous.b)
 end
 
+local function resetStrata(self)
+	self:SetFrameStrata(self.origStrata)
+	self.origStrata = nil
+end
+
 local function openColorPicker(self)
 	local value = getValue(self.parent, self.data)
 	activeButton = self
@@ -427,7 +394,10 @@ local function openColorPicker(self)
 	ColorPickerFrame.previousValues = value
 	ColorPickerFrame.func = setColorValue
 	ColorPickerFrame.cancelFunc = cancelColorValue
+	ColorPickerFrame.origStrata = ColorPickerFrame:GetFrameStrata()
 	
+	ColorPickerFrame:SetFrameStrata("FULLSCREEN")
+	ColorPickerFrame:HookScript("OnHide", resetStrata)
 	ColorPickerFrame:SetColorRGB(value.r, value.g, value.b)
 	ColorPickerFrame:Show()
 end
@@ -451,16 +421,26 @@ local function initDropdown()
 	for _, row in pairs(frame.data.list) do
 		buttonTbl.value = row[1]
 		buttonTbl.text = row[2]
-
+		buttonTbl.checked = nil
+		
 		UIDropDownMenu_AddButton(buttonTbl)
 	end
+	
 end
 
 local function dropdownShown(self)
-	activeDropdown = self
-	
 	UIDropDownMenu_Initialize(self, initDropdown)
-	UIDropDownMenu_SetSelectedValue(self, getValue(self.parent, self.data))
+	
+	local selected = getValue(self.parent, self.data)
+	for _, row in pairs(self.data.list) do
+		if( row[1] == selected ) then
+			UIDropDownMenu_SetSelectedValue(self, row[1])
+			return
+		end
+	end
+		
+	-- No entry found, use first one
+	UIDropDownMenu_SetSelectedValue(self, self.data.list[1][1])
 end
 
 -- GROUP FRAME
@@ -489,6 +469,7 @@ local function createGroup(config, data)
 		group:SetBackdropBorderColor(0.4, 0.4, 0.4)
 	end
 	
+	group:SetFrameStrata("DIALOG")
 	group.title = group:CreateFontString(nil, "BACKGROUND", "GameFontHighlight")
 	group.title:SetPoint("BOTTOMLEFT", group, "TOPLEFT", 9, 0)
 	--group.title:SetText(data.text)
@@ -543,22 +524,10 @@ end
 
 local function buttonClicked(self)
 	local handler = self.data.handler or self.parent.handler
-	if( type(self.data.var) == "table" ) then
-		if( handler ) then
-			handler[self.data.set](handler, unpack(self.data.var))
-		else
-			self.data.set(unpack(self.data.var))
-		end
-	elseif( self.data.var ) then
-		if( handler ) then
-			handler[self.data.set](handler, self.data.var)		
-		else
-			self.data.set(self.data.var)
-		end
-	elseif( handler ) then
-		handler[self.data.set](handler)
+	if( handler ) then
+		handler[self.data.set](handler, self.data.var)
 	else
-		self.data.set()
+		self.data.set(self.data.var)
 	end
 end
 
@@ -581,13 +550,13 @@ function HouseAuthority.CreateButton(config, data)
 	argcheck(data.handler or config.handler, "handler", "table", "nil")
 	argcheck(data.set, "set", type)
 	
-	local button = CreateFrame("Button", nil, OptionHouse:GetFrame("addon"), data.template or "GameMenuButtonTemplate")
+	local button = CreateFrame("Button", nil, config.frame, data.template or "GameMenuButtonTemplate")
 	button.parent = config
 	button.data = data
 	button:SetScript("OnClick", buttonClicked)
 	button:SetText(data.text)
-	button:SetHeight(22)
-	button:SetWidth( button:GetFontString():GetStringWidth() + 25 )
+	button:SetHeight(19)
+	button:SetWidth( button:GetFontString():GetStringWidth() + 18 )
 	
 	table.insert(config.widgets, button)
 	return button
@@ -980,12 +949,12 @@ function HouseAuthority.GetFrame(config)
 			for i, widget in pairs(widgets) do
 				widget:SetParent(frame)
 				widget:SetFrameLevel(frame:GetFrameLevel() + 2 )
-				if widget.data.type == 'dropdown' then
-					-- Special case for dropdown.
-					local arrowButton = _G[widget:GetName().."Button"]
-					arrowButton:SetFrameLevel(widget:GetFrameLevel()+1)
-				end
 				widget.xPos = ( widget.xPos or 0 ) + 5
+				
+				if( widget.data.type == "dropdown" ) then
+					-- Special case for dropdown.
+					getglobal(widget:GetName() .. "Button"):SetFrameLevel(widget:GetFrameLevel() + 1)
+				end
 			end
 
 			-- Now reposition them
@@ -1002,7 +971,7 @@ function HouseAuthority.GetFrame(config)
 		end
 		
 		-- Now position all of the groups
-		positionWidgets(1, config.frame, frames)
+		positionWidgets(1, config.frame, frames, nil, true)
 	end
 
 	-- Do we even need a scroll frame?
