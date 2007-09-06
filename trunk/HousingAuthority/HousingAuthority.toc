@@ -1,7 +1,7 @@
 ## Interface: 20100
 ## Title: Housing Authority
 ## Author: Shadowed
-## OptionalDeps: LibStub
+## OptionalDeps: LibStub, OptionHouse
 
 LibStub.lua
 HousingAuthority.lua
