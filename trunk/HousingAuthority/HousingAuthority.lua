@@ -980,6 +980,11 @@ function HouseAuthority.GetFrame(config)
 			for i, widget in pairs(widgets) do
 				widget:SetParent(frame)
 				widget:SetFrameLevel(frame:GetFrameLevel() + 2 )
+				if widget.data.type == 'dropdown' then
+					-- Special case for dropdown.
+					local arrowButton = _G[widget:GetName().."Button"]
+					arrowButton:SetFrameLevel(widget:GetFrameLevel()+1)
+				end
 				widget.xPos = ( widget.xPos or 0 ) + 5
 			end
 
