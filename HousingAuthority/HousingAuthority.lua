@@ -194,6 +194,7 @@ local function setupWidgetInfo(widget, config, type, msg, skipCall)
 	end
 	
 	if( type == "help" ) then
+		widget.infoButton:SetPushedTextOffset(0,0)
 		widget.infoButton:SetText(GREEN_FONT_COLOR_CODE .. "[?]" .. FONT_COLOR_CODE_CLOSE)
 	elseif( type == "validate" ) then
 		widget.infoButton:SetText(RED_FONT_COLOR_CODE .. "[!]" .. FONT_COLOR_CODE_CLOSE)
@@ -381,6 +382,7 @@ local function inputChanged(self)
 	end
 	
 	setValue(self.parent, self.data, val)
+	
 end
 
 -- COLOR PICKER
@@ -724,9 +726,13 @@ function HouseAuthority.CreateInput(config, data)
 	
 	if( not data.realTime ) then
 		input:SetScript("OnEditFocusLost", inputChanged)
-		input:SetScript("OnEnterPressed", inputChanged)
+		input:SetScript("OnEnterPressed", function(frame)
+			inputChanged(frame)
+			frame:ClearFocus()
+		end)
 	else
 		input:SetScript("OnTextChanged", inputChanged)
+		input:SetScript("OnEnterPressed", input.ClearFocus)
 	end
 	
 	input:SetAutoFocus(false)
