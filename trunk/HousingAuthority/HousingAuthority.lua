@@ -1,4 +1,4 @@
-local major = "HousingAuthority-1.1"
+local major = "HousingAuthority-1.2"
 local minor = tonumber(string.match("$Revision$", "(%d+)") or 1)
 
 assert(LibStub, string.format("%s requires LibStub.", major))
@@ -284,6 +284,22 @@ local function sliderShown(self)
 	else
 		self.text:SetText(self.data.text)
 	end
+	
+	if( self.input ) then
+		self.input:Show()
+	end
+end
+
+local function manualSliderShown(self)
+	self.dontSet = true
+	self:SetNumber(getValue(self.parent, self.data) * 100)
+end
+
+local function updateSliderValue(self)
+	if( self.dontSet ) then self.dontSet = nil return end
+	
+	self:GetParent().dontSet = true
+	self:GetParent():SetValue((self:GetNumber()+1) / 100)
 end
 
 local function sliderValueChanged(self)
@@ -291,6 +307,13 @@ local function sliderValueChanged(self)
 
 	if( self.data.format ) then
 		self.text:SetText(string.format(self.data.format, self:GetValue() * 100))
+	end
+	
+	if( self.data.manualInput and not self.dontSet ) then
+		self.input.dontSet = true	
+		self.input:SetNumber(math.floor(self:GetValue() * 100))
+	else
+		self.dontSet = nil
 	end
 end
 
@@ -346,6 +369,9 @@ local function inputChanged(self)
 	
 	setValue(self.parent, self.data, val)
 	
+	if( not self.data.realTime ) then
+		self:ClearFocus()
+	end
 end
 
 -- COLOR PICKER
@@ -477,6 +503,15 @@ local function createGroup(config, data)
 	return group
 end
 
+-- So everything shows up in front of the group
+local function updateFrameLevels(...)
+	for i=1,select("#", ...) do
+		local frame = select(i,...)
+		frame:SetFrameLevel(frame:GetParent():GetFrameLevel() + 1)
+		updateFrameLevels(frame:GetChildren())
+	end
+end
+
 -- Housing Authority
 local configs = {}
 local id = 0
@@ -555,7 +590,7 @@ function HouseAuthority.CreateButton(config, data)
 	button.data = data
 	button:SetScript("OnClick", buttonClicked)
 	button:SetText(data.text)
-	button:SetHeight(19)
+	button:SetHeight(18)
 	button:SetWidth( button:GetFontString():GetStringWidth() + 18 )
 	
 	table.insert(config.widgets, button)
@@ -614,7 +649,7 @@ end
 
 function HouseAuthority.CreateColorPicker(config, data)
 	argcheck(data, 2, "table")
-	argcheck(data.text, "text", "string")
+	argcheck(data.text, "text", "string", "nil")
 	argcheck(data.help, "help", "string", "nil")
 	argcheck(data.var, "var", "string", "number", "table")
 	argcheck(data.default, "default", "table", "nil")
@@ -664,11 +699,12 @@ end
 
 function HouseAuthority.CreateInput(config, data)
 	argcheck(data, 2, "table")
-	argcheck(data.text, "text", "string")
+	argcheck(data.text, "text", "string", "nil")
 	argcheck(data.var, "var", "string", "number", "table")
 	argcheck(data.default, "default", "number", "string", "nil")
 	argcheck(data.realTime, "realTime", "boolean", "nil")
 	argcheck(data.numeric, "numeric", "boolean", "nil")
+	argcheck(data.maxChars, "maxChars", "number", "nil")
 	argcheck(data.error, "error", "string", "nil")
 	argcheck(data.help, "help", "string", "nil")
 	argcheck(data.width, "width", "number", "nil")
@@ -693,22 +729,23 @@ function HouseAuthority.CreateInput(config, data)
 		input:SetNumeric(true)
 	end
 	
+	if( data.maxChars ) then
+		input:SetMaxLetters(data.maxChars)
+	end
+	
 	if( not data.realTime ) then
 		input:SetScript("OnEditFocusLost", inputChanged)
-		input:SetScript("OnEnterPressed", function(frame)
-			inputChanged(frame)
-			frame:ClearFocus()
-		end)
+		input:SetScript("OnEnterPressed", inputChanged)
 	else
 		input:SetScript("OnTextChanged", inputChanged)
-		input:SetScript("OnEnterPressed", input.ClearFocus)
+		input:SetScript("OnEnterPressed", inputClearFocus)
 	end
 	
 	input:SetAutoFocus(false)
 	input:EnableMouse(true)
 	
 	input:SetHeight(20)
-	input:SetWidth(120 or data.width)
+	input:SetWidth(data.width or 120)
 	input:SetFontObject(ChatFontNormal)
 	input:Hide()
 	
@@ -760,6 +797,7 @@ function HouseAuthority.CreateSlider(config, data)
 	argcheck(data.max, "max", "number", "nil")
 	argcheck(data.maxText, "minText", "string", "nil")
 	argcheck(data.step, "step", "number", "nil")
+	argcheck(data.manualInput, "manualInput", "boolean", "nil")
 	assert(3, ( data.text or data.format ), L["SLIDER_NOTEXT"])
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateSlider"))
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
@@ -810,6 +848,17 @@ function HouseAuthority.CreateSlider(config, data)
 		max:SetText((data.max or 1.0) * 100 .. "%" )
 	else
 		max:SetText(data.maxText)
+	end
+	
+	if( data.manualInput ) then
+		slider.input = HouseAuthority.CreateInput(config, { width = 35, maxChars = string.len((data.max or 1.0) * 100), var = data.var, set = data.set, onSet = data.onSet, get = data.get, handler = data.handler, numeric = true, realTime = true })
+		slider.input:SetScript("OnShow", manualSliderShown)
+		slider.input:SetScript("OnTextChanged", updateSliderValue)
+		slider.input:SetPoint("LEFT", slider, "RIGHT", 15, -2)
+		slider.input:SetParent(slider)
+		slider.input.xPos = nil
+		
+		table.remove(config.widgets, #(config.widgets))
 	end
 	
 	if( data.help ) then
@@ -867,6 +916,7 @@ end
 function HouseAuthority.CreateDropdown(config, data)
 	argcheck(data, 2, "table")
 	argcheck(data.list, "list", "table")
+	argcheck(data.text, "text", "string", "nil")
 	argcheck(data.default, "default", "string", "nil")
 	argcheck(data.help, "help", "string", "nil")
 	argcheck(data.var, "var", "string", "number", "table")
@@ -948,13 +998,9 @@ function HouseAuthority.GetFrame(config)
 			-- Reparent/framelevel/position/blah the widgets
 			for i, widget in pairs(widgets) do
 				widget:SetParent(frame)
-				widget:SetFrameLevel(frame:GetFrameLevel() + 2 )
 				widget.xPos = ( widget.xPos or 0 ) + 5
 				
-				if( widget.data.type == "dropdown" ) then
-					-- Special case for dropdown.
-					getglobal(widget:GetName() .. "Button"):SetFrameLevel(widget:GetFrameLevel() + 1)
-				end
+				updateFrameLevels(widget, frame)
 			end
 
 			-- Now reposition them
