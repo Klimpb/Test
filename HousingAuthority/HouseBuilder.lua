@@ -60,7 +60,8 @@ function HouseBuild:NoGroupSingleCol()
 			error = "Error, \"%s\" is not a valid input",
 		},
 		{	type = "slider",
-			format = "Background opacity: %.2f",
+			manualInput = true,
+			format = "Background opacity: %d%%",
 			help = "K, Thks, Bai", 
 			var = "opacity",
 			default = 1.0,
@@ -83,7 +84,7 @@ function HouseBuild:NoGroupSingleCol()
 		},
 	};
 	
-	local HouseAuthority = LibStub:GetLibrary("HousingAuthority-1.1")
+	local HouseAuthority = LibStub:GetLibrary("HousingAuthority-1.2")
 	
 	return HouseAuthority:CreateConfiguration(config, { handler = self, set = "Set", get = "Get", columns = 1 } )
 end
@@ -131,7 +132,8 @@ function HouseBuild:GroupSingleCol()
 		},
 		{	group = "Secondary Group",
 			type = "slider",
-			format = "Background opacity: %.2f",
+			manualInput = true,
+			format = "Background opacity: %d%%",
 			help = "K, Thks, Bai", 
 			var = "opacity",
 			default = 1.0,
@@ -143,7 +145,8 @@ function HouseBuild:GroupSingleCol()
 		},
 		{	group = "Main Group",
 			type = "slider",
-			format = "Background opacity: %.2f",
+			manualInput = true,
+			format = "Background opacity: %d%%",
 			help = "K, Thks, Bai", 
 			var = "opacity",
 			default = 1.0,
@@ -168,7 +171,7 @@ function HouseBuild:GroupSingleCol()
 		},
 	};
 	
-	local HouseAuthority = LibStub:GetLibrary("HousingAuthority-1.1")
+	local HouseAuthority = LibStub:GetLibrary("HousingAuthority-1.2")
 	
 	return HouseAuthority:CreateConfiguration(config, { handler = self, set = "Set", get = "Get", columns = 1 } )
 end
@@ -211,7 +214,8 @@ function HouseBuild:NoGroupTwoCol()
 			error = "Error, \"%s\" is not a valid input",
 		},
 		{	type = "slider",
-			format = "Background opacity: %.2f",
+			manualInput = true,
+			format = "Background opacity: %d%%",
 			help = "K, Thks, Bai", 
 			var = "opacity",
 			default = 1.0,
@@ -234,7 +238,7 @@ function HouseBuild:NoGroupTwoCol()
 		},
 	};
 	
-	local HouseAuthority = LibStub:GetLibrary("HousingAuthority-1.1")
+	local HouseAuthority = LibStub:GetLibrary("HousingAuthority-1.2")
 	
 	return HouseAuthority:CreateConfiguration(config, { handler = self, set = "Set", get = "Get", columns = 2 } )
 end
@@ -271,7 +275,8 @@ function HouseBuild:GroupTwoCol()
 		},
 		{	group = "Main Group",
 			type = "slider",
-			format = "Background opacity: %.2f",
+			manualInput = true,
+			format = "Background opacity: %d%%",
 			help = "K, Thks, Bai", 
 			var = "opacity",
 			default = 1.0,
@@ -294,7 +299,8 @@ function HouseBuild:GroupTwoCol()
 		},
 		{	group = "Secondary Group",
 			type = "slider",
-			format = "Background opacity: %.2f",
+			manualInput = true,
+			format = "Background opacity: %d%%",
 			help = "K, Thks, Bai", 
 			var = "opacity",
 			default = 1.0,
@@ -319,7 +325,7 @@ function HouseBuild:GroupTwoCol()
 		},
 	};
 	
-	local HouseAuthority = LibStub:GetLibrary("HousingAuthority-1.1")
+	local HouseAuthority = LibStub:GetLibrary("HousingAuthority-1.2")
 	
 	return HouseAuthority:CreateConfiguration(config, { handler = self, set = "Set", get = "Get", columns = 2 } )
 end
