@@ -1,6 +1,8 @@
 local frame = CreateFrame("Frame")
+local HATest
+local HA
 
-local HouseBuild = {}
+HouseBuild = {}
 local tables = {}
 
 function HouseBuild:Set(key, val)
@@ -22,13 +24,17 @@ function HouseBuild:ButtonClicked(key)
 	--DEFAULT_CHAT_FRAME:AddMessage( "Button with a key of " .. tostring(key) .. " was pressed" )
 end
 
+function HouseBuild:Test()
+	HA:GetObject(HATest):UpdateDropdown({ var = { "foo", "bar" }, list = {{ "dog", "Dog" }, { "bunny", "Bunny" }, { "rawr", "RAWRCAT" }}})
+end
+
 -- NO GROUPS SINGLE COLUMN
 function HouseBuild:NoGroupSingleCol()
 	local config = {
 		{	type = "dropdown",
 			text = "Testing List",
 			default = "cat",
-			var = "selection",
+			var = { "foo", "bar" },
 			help = "This is some help information regarding how to use this feature in.",
 			list = {{ "foo", "Foo" },
 				{ "apple", "Apple" },
@@ -84,9 +90,10 @@ function HouseBuild:NoGroupSingleCol()
 		},
 	};
 	
-	local HouseAuthority = LibStub:GetLibrary("HousingAuthority-1.2")
+	HA = LibStub:GetLibrary("HousingAuthority-1.2")
+	HATest = HA:CreateConfiguration(config, { handler = self, set = "Set", get = "Get", columns = 1 } )
 	
-	return HouseAuthority:CreateConfiguration(config, { handler = self, set = "Set", get = "Get", columns = 1 } )
+	return HATest
 end
 
 -- GROUPS USED SINGLE COLUMN
@@ -130,19 +137,6 @@ function HouseBuild:GroupSingleCol()
 			validate = "Check",
 			error = "Error, \"%s\" is not a valid input",
 		},
-		{	group = "Secondary Group",
-			type = "slider",
-			manualInput = true,
-			format = "Background opacity: %d%%",
-			help = "K, Thks, Bai", 
-			var = "opacity",
-			default = 1.0,
-			step = 0.01,
-			minText = "0%",
-			maxText = "200%",
-			min = 0.0,
-			max = 2.0,
-		},
 		{	group = "Main Group",
 			type = "slider",
 			manualInput = true,
@@ -164,10 +158,17 @@ function HouseBuild:GroupSingleCol()
 			var = "enable",
 		},
 		{	group = "Secondary Group",
-			type = "button",
-			text = "Enable something",
-			var = "foo",
-			set = "ButtonClicked",
+			type = "slider",
+			manualInput = true,
+			format = "Background opacity: %d%%",
+			help = "K, Thks, Bai", 
+			var = "opacity",
+			default = 1.0,
+			step = 0.01,
+			minText = "0%",
+			maxText = "200%",
+			min = 0.0,
+			max = 2.0,
 		},
 	};
 	
@@ -298,19 +299,6 @@ function HouseBuild:GroupTwoCol()
 			error = "Error, \"%s\" is not a valid input",
 		},
 		{	group = "Secondary Group",
-			type = "slider",
-			manualInput = true,
-			format = "Background opacity: %d%%",
-			help = "K, Thks, Bai", 
-			var = "opacity",
-			default = 1.0,
-			step = 0.01,
-			minText = "0%",
-			maxText = "200%",
-			min = 0.0,
-			max = 2.0,
-		},
-		{	group = "Secondary Group",
 			type = "check",
 			text = "Enable a mod",
 			help = "FOR PONY",
@@ -322,6 +310,19 @@ function HouseBuild:GroupTwoCol()
 			text = "Enable something",
 			var = "foo",
 			set = "ButtonClicked",
+		},
+		{	group = "Secondary Group",
+			type = "slider",
+			manualInput = true,
+			format = "Background opacity: %d%%",
+			help = "K, Thks, Bai", 
+			var = "opacity",
+			default = 1.0,
+			step = 0.01,
+			minText = "0%",
+			maxText = "200%",
+			min = 0.0,
+			max = 2.0,
 		},
 	};
 	
