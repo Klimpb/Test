@@ -2,8 +2,8 @@ local major = "HousingAuthority-1.2"
 local minor = tonumber(string.match("$Revision$", "(%d+)") or 1)
 
 assert(LibStub, string.format("%s requires LibStub.", major))
-local HouseAuthority, oldInstance = LibStub:NewLibrary(major, minor)
-if( not HouseAuthority ) then return end
+local HAInstance, oldRevision = LibStub:NewLibrary(major, minor)
+if( not HAInstance ) then return end
 
 local L = {
 	["BAD_ARGUMENT"] = "bad argument #%d for '%s' (%s expected, got %s)",
@@ -18,6 +18,7 @@ local L = {
 	["CANNOT_CALLGROUP"] = "You must set the groups setting before any other widgets are added.",
 	["WIDGETS_MISSINGGROUP"] = "When using groups, all widgets must be grouped. %d out of %d are missing a group.",
 	["OPTIONHOUSE_REQUIRED"] = "Cannot find OptionHouse-1.1, make sure it loads before HousingAuthority.",
+	["NO_CONFIGID"] = "No configuration id found, cannot find the HousingAuthority object.",
 }
 
 local OptionHouse = LibStub:GetLibrary("OptionHouse-1.1", true)
@@ -153,6 +154,11 @@ local function positionWidgets(columns, parent, widgets, positionGroup, isGroup)
 			local widgetHeight = widget:GetHeight() + ( widget.yPos or 0 ) + 5
 			if( widgetHeight > height ) then
 				height = widgetHeight
+			end
+			
+			-- Add the extra padding so we don't get overlap
+			if( i == resetOn ) then
+				heightUsed = heightUsed + ( widget.yPos or 0 )
 			end
 
 			row = row + 1
@@ -435,14 +441,13 @@ local function dropdownClicked()
 end
 
 local buttonTbl = { func = dropdownClicked }
-local function initDropdown()
-	local frame
+local function initDropdown(frame)
 	if( string.match(this:GetName(), "Button$") ) then
 		frame = getglobal(string.gsub(this:GetName(), "Button$", ""))
-	else
+	elseif( not frame ) then
 		frame = this
 	end
-
+	
 	buttonTbl.owner = frame
 	for _, row in pairs(frame.data.list) do
 		buttonTbl.value = row[1]
@@ -451,22 +456,30 @@ local function initDropdown()
 		
 		UIDropDownMenu_AddButton(buttonTbl)
 	end
-	
 end
 
-local function dropdownShown(self)
-	UIDropDownMenu_Initialize(self, initDropdown)
+local function updateDropdown(frame, noInit)
+	if( not noInit ) then
+		initDropdown(frame)
+	end
 	
-	local selected = getValue(self.parent, self.data)
-	for _, row in pairs(self.data.list) do
+	-- Select da row
+	local selected = getValue(frame.parent, frame.data)
+	for _, row in pairs(frame.data.list) do
 		if( row[1] == selected ) then
-			UIDropDownMenu_SetSelectedValue(self, row[1])
+			UIDropDownMenu_SetSelectedValue(frame, row[1])
 			return
 		end
 	end
 		
 	-- No entry found, use first one
-	UIDropDownMenu_SetSelectedValue(self, self.data.list[1][1])
+	UIDropDownMenu_SetSelectedValue(frame, frame.data.list[1][1])
+end
+
+local function dropdownShown(self)
+	UIDropDownMenu_Initialize(self, initDropdown)
+	
+	updateDropdown(self, true)
 end
 
 -- GROUP FRAME
@@ -513,10 +526,26 @@ local function updateFrameLevels(...)
 end
 
 -- Housing Authority
+local HouseAuthority = {}
 local configs = {}
 local id = 0
 
-local methods = { "GetFrame", "CreateConfiguration", "CreateButton", "CreateGroup", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
+local methods = { "GetFrame", "UpdateDropdown", "CreateConfiguration", "CreateButton", "CreateGroup", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
+
+-- Extract the configuration obj from a frame
+function HouseAuthority:GetObject(frame)
+	argcheck(frame, 1, "table")
+	assert(3, frame.configID, L["NO_CONFIGID"])
+	
+	for id, config in pairs(configs) do
+		if( frame.configID == id ) then
+			return config.obj
+		end
+	end
+	
+	
+	return nil
+end
 
 -- Stage 0, Adding widgets, can call Create*
 -- Stage 1, Frame is being finished up (first GetFrame() call)
@@ -913,11 +942,53 @@ function HouseAuthority.CreateCheckBox(config, data)
 	return check
 end
 
+function HouseAuthority.UpdateDropdown(config, data)
+	argcheck(data, 2, "table")
+	argcheck(data.list, "list", "table")
+	argcheck(data.text, "text", "string", "nil")
+	argcheck(data.var, "var", "string", "number", "table")
+	argcheck(data.default, "default", "string", "number", "nil")
+	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "UpdateDropdown"))
+	
+	config = configs[config.id]
+	
+	for _, widget in pairs(config.widgets) do
+		if( widget.data.type == "dropdown" and type(data.var) == type(widget.data.var) ) then
+			
+			if( type(data.var) == "table" ) then
+				local matches = 0
+				local rows = 0
+				
+				for k, v in pairs(data.var) do
+					if( widget.data.var[k] == v ) then
+						matches = matches + 1
+					end
+					
+					rows = rows + 1
+				end
+				
+				if( matches >= rows ) then
+					widget.data.list = data.list
+					widget.data.default = widget.data.default or data.default
+					updateDropdown(widget)
+					break
+				end
+			elseif( data.var == widget.data.var ) then
+				widget.data.list = data.list
+				widget.data.default = widget.data.default or data.default
+				
+				updateDropdown(widget)
+				break
+			end
+		end
+	end
+end
+
 function HouseAuthority.CreateDropdown(config, data)
 	argcheck(data, 2, "table")
 	argcheck(data.list, "list", "table")
 	argcheck(data.text, "text", "string", "nil")
-	argcheck(data.default, "default", "string", "nil")
+	argcheck(data.default, "default", "string", "number", "nil")
 	argcheck(data.help, "help", "string", "nil")
 	argcheck(data.var, "var", "string", "number", "table")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateDropdown"))
@@ -1032,9 +1103,11 @@ function HouseAuthority.GetFrame(config)
 		
 		scroll:SetScrollChild(config.frame)
 		config.scroll = scroll
+		config.scroll.configID = config.id
 	end	
 	
 	config.stage = 2
+	config.frame.configID = config.id
 	
 	return config.scroll or config.frame
 end
@@ -1063,9 +1136,9 @@ end
 function HouseAuthority:GetVersion() return major, minor end
 
 local function checkVersion()
-	if( oldInstance ) then
-		id = oldInstance.id or id
-		configs = oldInstance.configs or configs
+	if( oldRevision ) then
+		id = HAInstance.id or id
+		configs = HAInstance.configs or configs
 	end
 
 	for id, config in pairs(configs) do
@@ -1076,6 +1149,10 @@ local function checkVersion()
 	
 	HouseAuthority.id = id
 	HouseAuthority.configs = configs
+	
+	for k, v in pairs(HouseAuthority) do
+		HAInstance[k] = v
+	end
 end
 
 checkVersion()
