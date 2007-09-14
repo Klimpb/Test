@@ -369,8 +369,6 @@ local function inputChanged(self)
 		elseif( self.infoButton and self.infoButton.type == "validate" ) then
 			setupWidgetInfo(self, self.parent, "help", self.data.help)
 		end
-		
-		
 	end
 	
 	setValue(self.parent, self.data, val)
@@ -525,12 +523,27 @@ local function updateFrameLevels(...)
 	end
 end
 
+-- BUTTONS
+
+local function buttonClicked(self)
+	local handler = self.data.handler or self.parent.handler
+	if( handler ) then
+		handler[self.data.set](handler, self.data.var)
+		handler[self.data.onSet](handler, self.data.var)
+	else
+		self.data.set(self.data.var)
+		self.data.onSet(self.data.var)
+	end
+end
+
+
 -- Housing Authority
 local HouseAuthority = {}
 local configs = {}
 local id = 0
 
 local methods = { "GetFrame", "UpdateDropdown", "CreateConfiguration", "CreateButton", "CreateGroup", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
+local widgetList = {["label"] = "CreateLabel", ["check"] = "CreateCheckBox", ["input"] = "CreateInput", ["dropdown"] = "CreateDropdown", ["color"] = "CreateColorPicker", ["slider"] = "CreateSlider", ["group"] = "CreateGroup", ["button"] = "CreateButton",}
 
 -- Extract the configuration obj from a frame
 function HouseAuthority:GetObject(frame)
@@ -586,15 +599,6 @@ function HouseAuthority:RegisterFrame(data)
 	return configs[id].obj
 end
 
-local function buttonClicked(self)
-	local handler = self.data.handler or self.parent.handler
-	if( handler ) then
-		handler[self.data.set](handler, self.data.var)
-	else
-		self.data.set(self.data.var)
-	end
-end
-
 function HouseAuthority.CreateButton(config, data)
 	argcheck(data, 2, "table")
 	argcheck(data.var, "var", "string", "number", "table", "nil")
@@ -613,6 +617,7 @@ function HouseAuthority.CreateButton(config, data)
 		
 	argcheck(data.handler or config.handler, "handler", "table", "nil")
 	argcheck(data.set, "set", type)
+	argcheck(data.onSet, "onSet", type)
 	
 	local button = CreateFrame("Button", nil, config.frame, data.template or "GameMenuButtonTemplate")
 	button.parent = config
@@ -620,7 +625,7 @@ function HouseAuthority.CreateButton(config, data)
 	button:SetScript("OnClick", buttonClicked)
 	button:SetText(data.text)
 	button:SetHeight(18)
-	button:SetWidth( button:GetFontString():GetStringWidth() + 18 )
+	button:SetWidth(button:GetFontString():GetStringWidth() + 18)
 	
 	table.insert(config.widgets, button)
 	return button
@@ -1117,14 +1122,9 @@ function HouseAuthority:CreateConfiguration(data, frameData)
 	argcheck(frameData, 2, "table", "nil")
 	
 	local handler = HouseAuthority:RegisterFrame(frameData)
-	local widgets = {["label"] = "CreateLabel", ["check"] = "CreateCheckBox",
-			["input"] = "CreateInput", ["dropdown"] = "CreateDropdown",
-			["color"] = "CreateColorPicker", ["slider"] = "CreateSlider",
-			["group"] = "CreateGroup", ["button"] = "CreateButton",}
-	
 	for id, widget in pairs(data) do
-		if( widget.type and widgets[widget.type] ) then
-			handler[widgets[widget.type]](handler, widget)
+		if( widget.type and widgetList[widget.type] ) then
+			handler[widgetList[widget.type]](handler, widget)
 		else
 			error(string.format(L["INVALID_WIDGETTYPE"], widget.type or "nil", "label, check, input, dropdown, color, slider, group, button"), 3)
 		end
