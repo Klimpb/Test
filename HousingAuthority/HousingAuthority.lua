@@ -30,7 +30,6 @@ local function assert(level,condition,message)
 	end
 end
 
-
 local function argcheck(value, field, ...)
 	if( type(field) ~= "number" and type(field) ~= "string" ) then
 		error(L["BAD_ARGUMENT"]:format(2, "argcheck", "number, string", type(field)), 1)
@@ -109,7 +108,7 @@ local function positionWidgets(columns, parent, widgets, positionGroup, isGroup)
 		local row = 0
 		
 		-- If we have an uneven number of widgets
-		-- then we need to create an extra row
+		-- then we need to create an extra row for the last one
 		if( mod(#(widgets), columns) == 1 ) then
 			resetOn = #(widgets)
 		end
@@ -482,8 +481,7 @@ end
 
 -- GROUP FRAME
 local groupBackdrop = {
-	--bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", --options frame background
-	bgFile = "Interface\\ChatFrame\\ChatFrameBackground", -- kc_linkview frame background
+	bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
 	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
 	tile = true, tileSize = 16, edgeSize = 16,
 	insets = { left = 5, right = 5, top = 5, bottom = 5 }
@@ -524,7 +522,6 @@ local function updateFrameLevels(...)
 end
 
 -- BUTTONS
-
 local function buttonClicked(self)
 	local handler = self.data.handler or self.parent.handler
 	if( handler ) then
@@ -555,8 +552,7 @@ function HouseAuthority:GetObject(frame)
 			return config.obj
 		end
 	end
-	
-	
+		
 	return nil
 end
 
@@ -635,8 +631,8 @@ end
 -- we have to create all of the groups when GetFrame is called
 function HouseAuthority.CreateGroup(config, data)
 	argcheck(data, 2, "table")
-	argcheck(data.background, "background", "table")
-	argcheck(data.border, "border", "table")
+	argcheck(data.background, "background", "table", "nil")
+	argcheck(data.border, "border", "table", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateGroup"))
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
@@ -950,7 +946,6 @@ end
 function HouseAuthority.UpdateDropdown(config, data)
 	argcheck(data, 2, "table")
 	argcheck(data.list, "list", "table")
-	argcheck(data.text, "text", "string", "nil")
 	argcheck(data.var, "var", "string", "number", "table")
 	argcheck(data.default, "default", "string", "number", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "UpdateDropdown"))
@@ -1054,6 +1049,8 @@ function HouseAuthority.GetFrame(config)
 			groupedWidgets = groupedWidgets + 1
 		end
 		
+		-- Need to account for the fact that the height is for the bar itself
+		-- not bar + top and below text
 		if( config.columns > 1 and widget.data.type == "slider" ) then
 			widget.yPos = widget.yPos + 5
 		end
