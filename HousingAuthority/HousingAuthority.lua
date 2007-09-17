@@ -525,11 +525,21 @@ end
 local function buttonClicked(self)
 	local handler = self.data.handler or self.parent.handler
 	if( handler ) then
-		handler[self.data.set](handler, self.data.var)
-		handler[self.data.onSet](handler, self.data.var)
+		if( self.data.set ) then
+			handler[self.data.set](handler, self.data.var)
+		end
+		
+		if( self.data.onSet ) then
+			handler[self.data.onSet](handler, self.data.var)
+		end
 	else
-		self.data.set(self.data.var)
-		self.data.onSet(self.data.var)
+		if( self.data.set ) then
+			self.data.set(self.data.var)
+		end
+		
+		if( self.data.onSet ) then
+			self.data.onSet(self.data.var)
+		end
 	end
 end
 
