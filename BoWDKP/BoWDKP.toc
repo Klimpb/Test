@@ -1,0 +1,6 @@
+## Interface: 20003
+## Title: BoW DKP
+## Notes: Blades of Wrath, DKP Tracking
+## DefaultState: enabled
+## SavedVariables: BWDKP_Config, BWDKP_Raids, DKP_Raid
+BoWDKP.xml
