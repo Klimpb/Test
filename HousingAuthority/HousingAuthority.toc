@@ -4,5 +4,6 @@
 ## OptionalDeps: LibStub, OptionHouse
 
 LibStub.lua
+OptionHouse.lua
 HousingAuthority.lua
 HouseBuilder.lua
