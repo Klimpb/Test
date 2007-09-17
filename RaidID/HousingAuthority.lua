@@ -1,5 +1,5 @@
 local major = "HousingAuthority-1.2"
-local minor = tonumber(string.match("$Revision: 174 $", "(%d+)") or 1)
+local minor = tonumber(string.match("$Revision: 180 $", "(%d+)") or 1)
 
 assert(LibStub, string.format("%s requires LibStub.", major))
 local HAInstance, oldRevision = LibStub:NewLibrary(major, minor)
@@ -525,11 +525,21 @@ end
 local function buttonClicked(self)
 	local handler = self.data.handler or self.parent.handler
 	if( handler ) then
-		handler[self.data.set](handler, self.data.var)
-		handler[self.data.onSet](handler, self.data.var)
+		if( self.data.set ) then
+			handler[self.data.set](handler, self.data.var)
+		end
+		
+		if( self.data.onSet ) then
+			handler[self.data.onSet](handler, self.data.var)
+		end
 	else
-		self.data.set(self.data.var)
-		self.data.onSet(self.data.var)
+		if( self.data.set ) then
+			self.data.set(self.data.var)
+		end
+		
+		if( self.data.onSet ) then
+			self.data.onSet(self.data.var)
+		end
 	end
 end
 
@@ -601,7 +611,7 @@ function HouseAuthority.CreateButton(config, data)
 	argcheck(data.template, "template", "string", "nil")
 	argcheck(data.width, "width", "number", "nil")
 	argcheck(data.text, "text", "string", "nil")
-	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateLabel"))
+	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateButton"))
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 
 	-- Make sure the function stuff passed is good
@@ -647,6 +657,8 @@ function HouseAuthority.CreateLabel(config, data)
 	argcheck(data.fontSize, "fontSize", "number", "nil")
 	argcheck(data.fontFlag, "fontFlag", "string", "nil")
 	argcheck(data.font, "font", "table", "nil")
+	argcheck(data.xPos, "xPos", "number", "nil")
+	argcheck(data.yPos, "yPos", "number", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateLabel"))
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
@@ -655,8 +667,8 @@ function HouseAuthority.CreateLabel(config, data)
 	local label = configs[config.id].frame:CreateFontString(nil, "ARTWORK")
 	label.parent = config
 	label.data = data
-	label.xPos = 8
-	label.yPos = 5
+	label.xPos = data.xPos or 8
+	label.yPos = data.yPos or 5
 	
 	if( data.font ) then
 		label:SetFontObject(data.font)	
