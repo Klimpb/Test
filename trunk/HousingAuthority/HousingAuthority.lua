@@ -601,7 +601,7 @@ function HouseAuthority.CreateButton(config, data)
 	argcheck(data.template, "template", "string", "nil")
 	argcheck(data.width, "width", "number", "nil")
 	argcheck(data.text, "text", "string", "nil")
-	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateLabel"))
+	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateButton"))
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 
 	-- Make sure the function stuff passed is good
@@ -647,6 +647,8 @@ function HouseAuthority.CreateLabel(config, data)
 	argcheck(data.fontSize, "fontSize", "number", "nil")
 	argcheck(data.fontFlag, "fontFlag", "string", "nil")
 	argcheck(data.font, "font", "table", "nil")
+	argcheck(data.xPos, "xPos", "number", "nil")
+	argcheck(data.yPos, "yPos", "number", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateLabel"))
 	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
@@ -655,8 +657,8 @@ function HouseAuthority.CreateLabel(config, data)
 	local label = configs[config.id].frame:CreateFontString(nil, "ARTWORK")
 	label.parent = config
 	label.data = data
-	label.xPos = 8
-	label.yPos = 5
+	label.xPos = data.xPos or 8
+	label.yPos = data.yPos or 5
 	
 	if( data.font ) then
 		label:SetFontObject(data.font)	
