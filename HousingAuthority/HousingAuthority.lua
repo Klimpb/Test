@@ -513,8 +513,13 @@ end
 local function updateFrameLevels(...)
 	for i=1,select("#", ...) do
 		local frame = select(i,...)
-		frame:SetFrameLevel(frame:GetParent():GetFrameLevel() + 1)
-		updateFrameLevels(frame:GetChildren())
+		if( frame.SetFrameLevel ) then
+			frame:SetFrameLevel(frame:GetParent():GetFrameLevel() + 1)
+		end
+		
+		if( frame.GetChildren ) then
+			updateFrameLevels(frame:GetChildren())
+		end
 	end
 end
 
