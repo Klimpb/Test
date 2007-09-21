@@ -84,12 +84,12 @@ end
   Begin Library Implementation
 ---------------------------------------------------------------------------]]
 local major = "OptionHouse-1.1"
-local minor = tonumber(string.match("$Revision: 604 $", "(%d+)") or 1)
+local minor = tonumber(string.match("$Revision: 619 $", "(%d+)") or 1)
 
 assert(LibStub, string.format("%s requires LibStub.", major))
 
-local OptionHouse, oldInstance = LibStub:NewLibrary(major, minor)
-if( not OptionHouse ) then return end
+local OHInstance, oldRevision = LibStub:NewLibrary(major, minor)
+if( not OHInstance ) then return end
 
 local L = {
 	["ERROR_NO_FRAME"] = "No frame returned for the addon \"%s\", category \"%s\", sub category \"%s\".",
@@ -136,6 +136,7 @@ local function argcheck(value, num, ...)
 end
 
 -- OptionHouse
+local OptionHouse = {}
 local tabfunctions = {}
 local methods = {"RegisterCategory", "RegisterSubCategory", "RemoveCategory", "RemoveSubCategory"}
 local addons = {}
@@ -969,22 +970,6 @@ local function createAddonFrame(hide)
 		frame.shownFrame:Hide()
 	end
 	
-	-- THIS IS TEMP CODE UNTIL PATCH 2.2
-	-- Merge the addon tables from the old instance to the new
-	if( DongleStub and DongleStub.versions["OptionHouse-1.0"] ) then
-		local added
-		for name, data in pairs(DongleStub("OptionHouse-1.0").addons) do
-			if( not addons[name] ) then
-				addons[name] = data
-				added = true
-			end
-		end
-
-		if( added ) then
-			createCategoryListing()
-		end
-	end
-
 	updateConfigList()
 	ShowUIPanel(frame)
 end
@@ -1304,10 +1289,10 @@ end
 function OptionHouse:GetVersion() return major, minor end
 
 local function instanceLoaded()
-	if( oldInstance ) then
-		addons = oldInstance.addons or addons
-		evtFrame = oldInstance.evtFrame or evtFrame
-		tabfunctions = oldInstance.tabfunctions or tabfunctions
+	if( oldRevision ) then
+		addons = OHInstance.addons or addons
+		evtFrame = OHInstance.evtFrame or evtFrame
+		tabfunctions = OHInstance.tabfunctions or tabfunctions		
 	else
 		-- Secure headers are supported so don't want the window stuck open in combat
 		evtFrame = CreateFrame("Frame")
@@ -1317,18 +1302,6 @@ local function instanceLoaded()
 			if( event == "PLAYER_REGEN_DISABLED" and frame and frame:IsShown() ) then
 				HideUIPanel(frame)
 				DEFAULT_CHAT_FRAME:AddMessage(L["ENTERED_COMBAT"])
-			
-			-- THIS IS ONLY TEMP CODE UNTIL PATCH 2.2 GOES LIVE
-			elseif( event == "ADDON_LOADED" ) then
-				SLASH_OPTHOUSE1 = "/opthouse"
-				SLASH_OPTHOUSE2 = "/oh"
-				SlashCmdList["OPTHOUSE"] = function(...)
-					if( select(1, ...) == "" ) then
-						OptionHouse:Open()
-					else
-						OptionHouse:Open(...)
-					end
-				end
 			end
 		end)
 
@@ -1374,6 +1347,11 @@ local function instanceLoaded()
 		else
 			OptionHouse:Open(...)
 		end
+	end
+	
+	-- Now make it active
+	for k, v in pairs(OptionHouse) do
+		OHInstance[k] = v
 	end
 end
 
