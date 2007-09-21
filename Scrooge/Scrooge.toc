@@ -1,0 +1,5 @@
+## Interface: 20100
+## Title: Uncle Scrooge
+## Notes: Steals all those pesky donation links
+
+Scrooge.lua
