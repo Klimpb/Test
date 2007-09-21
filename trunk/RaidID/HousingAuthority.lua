@@ -1,5 +1,90 @@
+-- LibStub is a simple versioning stub meant for use in Libraries.  http://www.wowace.com/wiki/LibStub for more info
+-- LibStub is hereby placed in the Public Domain
+-- Credits: Kaelten, Cladhaire, ckknight, Mikk, Ammo, Nevcairiel, joshborke
+local LIBSTUB_MAJOR, LIBSTUB_MINOR = "LibStub", 2  -- NEVER MAKE THIS AN SVN REVISION! IT NEEDS TO BE USABLE IN ALL REPOS!
+local LibStub = _G[LIBSTUB_MAJOR]
+
+-- Check to see is this version of the stub is obsolete
+if not LibStub or LibStub.minor < LIBSTUB_MINOR then
+	LibStub = LibStub or {libs = {}, minors = {} }
+	_G[LIBSTUB_MAJOR] = LibStub
+	LibStub.minor = LIBSTUB_MINOR
+	
+	-- LibStub:NewLibrary(major, minor)
+	-- major (string) - the major version of the library
+	-- minor (string or number ) - the minor version of the library
+	-- 
+	-- returns nil if a newer or same version of the lib is already present
+	-- returns empty library object or old library object if upgrade is needed
+	function LibStub:NewLibrary(major, minor)
+		assert(type(major) == "string", "Bad argument #2 to `NewLibrary' (string expected)")
+		minor = assert(tonumber(strmatch(minor, "%d+")), "Minor version must either be a number or contain a number.")
+		
+		local oldminor = self.minors[major]
+		if oldminor and oldminor >= minor then return nil end
+		self.minors[major], self.libs[major] = minor, self.libs[major] or {}
+		return self.libs[major], oldminor
+	end
+	
+	-- LibStub:GetLibrary(major, [silent])
+	-- major (string) - the major version of the library
+	-- silent (boolean) - if true, library is optional, silently return nil if its not found
+	--
+	-- throws an error if the library can not be found (except silent is set)
+	-- returns the library object if found
+	function LibStub:GetLibrary(major, silent)
+		if not self.libs[major] and not silent then
+			error(("Cannot find a library instance of %q."):format(tostring(major)), 2)
+		end
+		return self.libs[major], self.minors[major]
+	end
+	
+	-- LibStub:IterateLibraries()
+	-- 
+	-- Returns an iterator for the currently registered libraries
+	function LibStub:IterateLibraries() 
+		return pairs(self.libs) 
+	end
+	
+	setmetatable(LibStub, { __call = LibStub.GetLibrary })
+end
+
+--[[-------------------------------------------------------------------------
+  Copyright (c) 2006-2007, Dongle Development Team
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are
+  met:
+
+      * Redistributions of source code must retain the above copyright
+        notice, this list of conditions and the following disclaimer.
+      * Redistributions in binary form must reproduce the above
+        copyright notice, this list of conditions and the following
+        disclaimer in the documentation and/or other materials provided
+        with the distribution.
+      * Neither the name of the Dongle Development Team nor the names of
+        its contributors may be used to endorse or promote products derived
+        from this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+---------------------------------------------------------------------------]]
+
+--[[-------------------------------------------------------------------------
+  Begin Library Implementation
+---------------------------------------------------------------------------]]
 local major = "HousingAuthority-1.2"
-local minor = tonumber(string.match("$Revision: 180 $", "(%d+)") or 1)
+local minor = tonumber(string.match("$Revision: 184 $", "(%d+)") or 1)
 
 assert(LibStub, string.format("%s requires LibStub.", major))
 local HAInstance, oldRevision = LibStub:NewLibrary(major, minor)
@@ -10,12 +95,9 @@ local L = {
 	["BAD_ARGUMENT_TABLE"] = "bad widget table argument '%s' for '%s' (%s expected, got %s)",
 	["MUST_CALL"] = "You must call '%s' from a registered HouseAuthority object.",
 	["SLIDER_NOTEXT"] = "You must either set text or format for sliders.",
-	["CANNOT_CREATE"] = "You cannot create any new widgets for this anymore, HAObj:GetFrame() was called.",
-	["CANNOT_ENABLE"] = "Cannot enable scroll frames anymore, HAObj:GetFrame() was called.",
 	["OH_NOT_INITIALIZED"] = "OptionHouse has not been initialized yet, you cannot call HAObj:GetFrame() until then.",
 	["INVALID_POSITION"] = "Invalid positioning passed, 'compact' or 'onebyone' required, got '%s'.",
 	["INVALID_WIDGETTYPE"] = "Invalid type '%s' passed, %s expected'.",
-	["CANNOT_CALLGROUP"] = "You must set the groups setting before any other widgets are added.",
 	["WIDGETS_MISSINGGROUP"] = "When using groups, all widgets must be grouped. %d out of %d are missing a group.",
 	["OPTIONHOUSE_REQUIRED"] = "Cannot find OptionHouse-1.1, make sure it loads before HousingAuthority.",
 	["NO_CONFIGID"] = "No configuration id found, cannot find the HousingAuthority object.",
@@ -516,8 +598,13 @@ end
 local function updateFrameLevels(...)
 	for i=1,select("#", ...) do
 		local frame = select(i,...)
-		frame:SetFrameLevel(frame:GetParent():GetFrameLevel() + 1)
-		updateFrameLevels(frame:GetChildren())
+		if( frame.SetFrameLevel ) then
+			frame:SetFrameLevel(frame:GetParent():GetFrameLevel() + 1)
+		end
+		
+		if( frame.GetChildren ) then
+			updateFrameLevels(frame:GetChildren())
+		end
 	end
 end
 
@@ -544,7 +631,7 @@ local function buttonClicked(self)
 end
 
 
--- Housing Authority
+-- Housing Authority library
 local HouseAuthority = {}
 local configs = {}
 local id = 0
@@ -566,10 +653,9 @@ function HouseAuthority:GetObject(frame)
 	return nil
 end
 
--- Stage 0, Adding widgets, can call Create*
--- Stage 1, Frame is being finished up (first GetFrame() call)
--- Stage 2, Frame is finished, positioning has been called/frame returned
 function HouseAuthority:RegisterFrame(data)
+	data = data or {}
+	
 	argcheck(data, 1, "table")
 	argcheck(data.columns, "columns", "number", "nil")
 	
@@ -593,7 +679,7 @@ function HouseAuthority:RegisterFrame(data)
 	
 	id = id + 1
 	
-	local config = { id = id, columns = data.columns, stage = 0, widgets = {}, handler = data.handler, get = data.get, frame = data.frame, set = data.set, onSet = data.onSet }
+	local config = { id = id, columns = data.columns, widgets = {}, handler = data.handler, get = data.get, frame = data.frame, set = data.set, onSet = data.onSet }
 	config.obj = { id = id }
 	
 	for _, method in pairs(methods) do
@@ -612,7 +698,6 @@ function HouseAuthority.CreateButton(config, data)
 	argcheck(data.width, "width", "number", "nil")
 	argcheck(data.text, "text", "string", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateButton"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 
 	-- Make sure the function stuff passed is good
 	local config = configs[config.id]
@@ -622,8 +707,8 @@ function HouseAuthority.CreateButton(config, data)
 	end
 		
 	argcheck(data.handler or config.handler, "handler", "table", "nil")
-	argcheck(data.set, "set", type)
-	argcheck(data.onSet, "onSet", type)
+	argcheck(data.set, "set", type, "nil")
+	argcheck(data.onSet, "onSet", type, "nil")
 	
 	local button = CreateFrame("Button", nil, config.frame, data.template or "GameMenuButtonTemplate")
 	button.parent = config
@@ -644,7 +729,6 @@ function HouseAuthority.CreateGroup(config, data)
 	argcheck(data.background, "background", "table", "nil")
 	argcheck(data.border, "border", "table", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateGroup"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	configs[config.id].groupData = data
 end
@@ -660,7 +744,6 @@ function HouseAuthority.CreateLabel(config, data)
 	argcheck(data.xPos, "xPos", "number", "nil")
 	argcheck(data.yPos, "yPos", "number", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateLabel"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	data.type = "label"
 		
@@ -696,7 +779,6 @@ function HouseAuthority.CreateColorPicker(config, data)
 	argcheck(data.var, "var", "string", "number", "table")
 	argcheck(data.default, "default", "table", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateColorPicker"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	validateFunctions(configs[config.id], data)	
 
@@ -751,7 +833,6 @@ function HouseAuthority.CreateInput(config, data)
 	argcheck(data.help, "help", "string", "nil")
 	argcheck(data.width, "width", "number", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateInput"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	validateFunctions(configs[config.id], data)	
 
@@ -842,7 +923,6 @@ function HouseAuthority.CreateSlider(config, data)
 	argcheck(data.manualInput, "manualInput", "boolean", "nil")
 	assert(3, ( data.text or data.format ), L["SLIDER_NOTEXT"])
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateSlider"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	validateFunctions(configs[config.id], data)	
 	
@@ -917,7 +997,6 @@ function HouseAuthority.CreateCheckBox(config, data)
 	argcheck(data.help, "help", "string", "nil")
 	argcheck(data.var, "var", "string", "number", "table")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateCheckBox"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	validateFunctions(configs[config.id], data)
 
@@ -970,7 +1049,7 @@ function HouseAuthority.UpdateDropdown(config, data)
 			if( type(data.var) == "table" ) then
 				local matches = 0
 				local rows = 0
-				
+
 				for k, v in pairs(data.var) do
 					if( widget.data.var[k] == v ) then
 						matches = matches + 1
@@ -978,17 +1057,19 @@ function HouseAuthority.UpdateDropdown(config, data)
 					
 					rows = rows + 1
 				end
-				
+			
+				-- Everything matches?
 				if( matches >= rows ) then
 					widget.data.list = data.list
 					widget.data.default = widget.data.default or data.default
 					updateDropdown(widget)
 					break
 				end
+				
 			elseif( data.var == widget.data.var ) then
 				widget.data.list = data.list
 				widget.data.default = widget.data.default or data.default
-				
+
 				updateDropdown(widget)
 				break
 			end
@@ -1004,7 +1085,6 @@ function HouseAuthority.CreateDropdown(config, data)
 	argcheck(data.help, "help", "string", "nil")
 	argcheck(data.var, "var", "string", "number", "table")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateDropdown"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	validateFunctions(configs[config.id], data)
 	
@@ -1039,18 +1119,24 @@ function HouseAuthority.GetFrame(config)
 	assert(3, OptionHouse:GetFrame("addon"), L["OH_NOT_INITIALIZED"])
 	
 	local config = configs[config.id]
-	if( config.stage == 2 ) then
+	
+	-- If no new widgets have been added, then return the current one
+	if( config.totalWidgets and config.totalWidgets == #(config.widgets) ) then
 		return config.scroll or config.frame
 	end
 	
-	config.stage = 1
-		
 	-- Now figure out how many groups we have/need
+	if( not config.groupFrames ) then
+		config.groupFrames = {}
+	end
+	
 	config.groups = {}
+		
 	local totalGroups = 0
 	local groupedWidgets = 0
 
 	for _, widget in pairs(config.widgets) do
+		-- Yup it's a group
 		if( widget.data.group ) then
 			if( not config.groups[widget.data.group] ) then
 				config.groups[widget.data.group] = {}
@@ -1077,8 +1163,15 @@ function HouseAuthority.GetFrame(config)
 		
 		-- Create all the groups, then position the objects to the widget
 		local frames = {}
+		local num = 0
 		for text, widgets in pairs(config.groups) do
-			local frame = createGroup(config, config.groupData)
+			-- Check if we have an old frame to grab from
+			num = num + 1
+			if( config.groupFrames[num] ) then
+				frame = config.groupFrames[num]
+			else
+				frame = createGroup(config, config.groupData)
+			end
 			
 			-- Reparent/framelevel/position/blah the widgets
 			for i, widget in pairs(widgets) do
@@ -1104,9 +1197,9 @@ function HouseAuthority.GetFrame(config)
 		-- Now position all of the groups
 		positionWidgets(1, config.frame, frames, nil, true)
 	end
-
-	-- Do we even need a scroll frame?
-	if( totalHeight >= 280 ) then
+	
+	-- Do we even need a scroll frame, and does it not exist yet?
+	if( totalHeight >= 250 and not config.scroll ) then
 		local scroll = CreateFrame("ScrollFrame", "HAScroll" .. config.id, OptionHouse:GetFrame("addon"), "UIPanelScrollFrameTemplate")
 		scroll:SetPoint("TOPLEFT", OptionHouse:GetFrame("addon"), "TOPLEFT", 190, -105)
 		scroll:SetPoint("BOTTOMRIGHT", OptionHouse:GetFrame("addon"), "BOTTOMRIGHT", -35, 40)
@@ -1120,9 +1213,8 @@ function HouseAuthority.GetFrame(config)
 		config.scroll.configID = config.id
 	end	
 	
-	config.stage = 2
+	config.totalWidgets = #(config.widgets)
 	config.frame.configID = config.id
-	
 	return config.scroll or config.frame
 end
 
