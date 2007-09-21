@@ -1,4 +1,3 @@
--- $Id: LibStub.lua 48018 2007-09-03 01:50:17Z mikk $
 -- LibStub is a simple versioning stub meant for use in Libraries.  http://www.wowace.com/wiki/LibStub for more info
 -- LibStub is hereby placed in the Public Domain
 -- Credits: Kaelten, Cladhaire, ckknight, Mikk, Ammo, Nevcairiel, joshborke
@@ -51,28 +50,57 @@ if not LibStub or LibStub.minor < LIBSTUB_MINOR then
 end
 
 --[[-------------------------------------------------------------------------
+  Copyright (c) 2006-2007, Dongle Development Team
+  All rights reserved.
+
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are
+  met:
+
+      * Redistributions of source code must retain the above copyright
+        notice, this list of conditions and the following disclaimer.
+      * Redistributions in binary form must reproduce the above
+        copyright notice, this list of conditions and the following
+        disclaimer in the documentation and/or other materials provided
+        with the distribution.
+      * Neither the name of the Dongle Development Team nor the names of
+        its contributors may be used to endorse or promote products derived
+        from this software without specific prior written permission.
+
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+---------------------------------------------------------------------------]]
+
+--[[-------------------------------------------------------------------------
   Begin Library Implementation
 ---------------------------------------------------------------------------]]
-local major = "HousingAuthority-1.1"
-local minor = tonumber(string.match("$Revision: 156 $", "(%d+)") or 1)
+local major = "HousingAuthority-1.2"
+local minor = tonumber(string.match("$Revision: 184 $", "(%d+)") or 1)
 
 assert(LibStub, string.format("%s requires LibStub.", major))
-local HouseAuthority, oldInstance = LibStub:NewLibrary(major, minor)
-if( not HouseAuthority ) then return end
+local HAInstance, oldRevision = LibStub:NewLibrary(major, minor)
+if( not HAInstance ) then return end
 
 local L = {
 	["BAD_ARGUMENT"] = "bad argument #%d for '%s' (%s expected, got %s)",
 	["BAD_ARGUMENT_TABLE"] = "bad widget table argument '%s' for '%s' (%s expected, got %s)",
 	["MUST_CALL"] = "You must call '%s' from a registered HouseAuthority object.",
 	["SLIDER_NOTEXT"] = "You must either set text or format for sliders.",
-	["CANNOT_CREATE"] = "You cannot create any new widgets for this anymore, HAObj:GetFrame() was called.",
-	["CANNOT_ENABLE"] = "Cannot enable scroll frames anymore, HAObj:GetFrame() was called.",
 	["OH_NOT_INITIALIZED"] = "OptionHouse has not been initialized yet, you cannot call HAObj:GetFrame() until then.",
 	["INVALID_POSITION"] = "Invalid positioning passed, 'compact' or 'onebyone' required, got '%s'.",
 	["INVALID_WIDGETTYPE"] = "Invalid type '%s' passed, %s expected'.",
-	["CANNOT_CALLGROUP"] = "You must set the groups setting before any other widgets are added.",
 	["WIDGETS_MISSINGGROUP"] = "When using groups, all widgets must be grouped. %d out of %d are missing a group.",
 	["OPTIONHOUSE_REQUIRED"] = "Cannot find OptionHouse-1.1, make sure it loads before HousingAuthority.",
+	["NO_CONFIGID"] = "No configuration id found, cannot find the HousingAuthority object.",
 }
 
 local OptionHouse = LibStub:GetLibrary("OptionHouse-1.1", true)
@@ -83,7 +111,6 @@ local function assert(level,condition,message)
 		error(message,level)
 	end
 end
-
 
 local function argcheck(value, field, ...)
 	if( type(field) ~= "number" and type(field) ~= "string" ) then
@@ -123,10 +150,12 @@ local function hideTooltip(self)
 	end
 end
 
-local function positionWidgets(columns, parent, widgets, positionGroup)
+local function positionWidgets(columns, parent, widgets, positionGroup, isGroup)
 	local heightUsed = 10
-	if( positionGroup ) then
+	if( positionGroup or columns > 1 ) then
 		heightUsed = 8 + (widgets[1].yPos or 0)
+	elseif( isGroup ) then
+		heightUsed = 14
 	end
 	
 	if( columns == 1 ) then
@@ -158,37 +187,25 @@ local function positionWidgets(columns, parent, widgets, positionGroup)
 		local height = 0
 		local spacePerRow = math.ceil(300 / columns)
 		local resetOn = -1
-		local reset
+		local row = 0
 		
 		-- If we have an uneven number of widgets
-		-- then we need to create an extra row
+		-- then we need to create an extra row for the last one
 		if( mod(#(widgets), columns) == 1 ) then
 			resetOn = #(widgets)
 		end
-		
+
 		for i, widget in pairs(widgets) do
-			local row = mod(i, columns)
-			
-			-- New row
-			if( row == 1 and reset or i == resetOn ) then
+			if( row == columns or row == resetOn ) then
 				heightUsed = heightUsed + height
 				height = 0
-				reset = nil
-			
-			-- New row, next 1 we see is the next row
-			elseif( row == 1 and not reset ) then
-				reset = true
+				row = 0
 			end
 			
-			-- 2 columns, 6 widget
-			-- 1 = 0 spacing
-			-- 2 = 100 * 4
-			-- 4 = new row, 0 spacing
-			-- 5 = 100 * 4
-			-- 6 = last row, new row, 0 spacing
+			-- How far away it is from the next row
 			local spacing = 0
-			if( row ~= 1 ) then
-				spacing = ( spacePerRow * ( row + 2 ) )
+			if( row > 0 ) then
+				spacing = ( spacePerRow * ( row + 1 ) )
 			end
 
 			local xPos = widget.xPos or 0
@@ -204,9 +221,14 @@ local function positionWidgets(columns, parent, widgets, positionGroup)
 				widget.infoButton:Show()
 			end
 			
+			local extraPad = 0
+			if( widget.data.type == "slider" and i > columns ) then
+				extraPad = 10
+			end
+
 			-- Position
 			widget:ClearAllPoints()
-			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing + xPos, -heightUsed)			
+			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing + xPos, -heightUsed - extraPad)			
 			widget:Show()
 			
 			-- Find the heightest widget out of this group and use that
@@ -214,6 +236,13 @@ local function positionWidgets(columns, parent, widgets, positionGroup)
 			if( widgetHeight > height ) then
 				height = widgetHeight
 			end
+			
+			-- Add the extra padding so we don't get overlap
+			if( i == resetOn ) then
+				heightUsed = heightUsed + ( widget.yPos or 0 )
+			end
+
+			row = row + 1
 		end
 	end
 	
@@ -249,6 +278,7 @@ local function setupWidgetInfo(widget, config, type, msg, skipCall)
 	end
 	
 	if( type == "help" ) then
+		widget.infoButton:SetPushedTextOffset(0,0)
 		widget.infoButton:SetText(GREEN_FONT_COLOR_CODE .. "[?]" .. FONT_COLOR_CODE_CLOSE)
 	elseif( type == "validate" ) then
 		widget.infoButton:SetText(RED_FONT_COLOR_CODE .. "[!]" .. FONT_COLOR_CODE_CLOSE)
@@ -281,33 +311,16 @@ local function setValue(config, data, value)
 	local onSet = data.onSet or config.onSet
 		
 	if( set and handler ) then
-		if( type(data.var) == "table" ) then
-			handler[set](handler, value, unpack(data.var))
-		else
-			handler[set](handler, value, data.var)
-		end
+		handler[set](handler, data.var, value)
 		
 	elseif( set ) then
-		if( type(data.var) == "table" ) then
-			set(value, unpack(data.var))
-		else
-			set(value, data.var)
-		end
+		set(data.var, value)
 	end
 
 	if( onSet and handler ) then
-		if( type(data.var) == "table" ) then
-			handler[onSet](handler, value, unpack(data.var))
-		else
-			handler[onSet](handler, value, data.var)
-		end
-		
+		handler[onSet](handler, data.var, value)
 	elseif( onSet ) then
-		if( type(data.var) == "table" ) then
-			onSet(value, unpack(data.var))
-		else
-			onSet(value, data.var)
-		end
+		onSet(data.var, value)
 	end
 end
 
@@ -317,18 +330,9 @@ local function getValue(config, data)
 	local val
 	
 	if( get and handler ) then
-		if( type(data.var) == "table" ) then
-			val = handler[get](handler, unpack(data.var))
-		else
-			val = handler[get](handler, data.var)
-		end
-		
+		val = handler[get](handler, data.var)
 	elseif( get ) then
-		if( type(data.var) == "table" ) then
-			val = get(unpack(data.var))
-		else
-			val = get(data.var)
-		end
+		val = get(data.var)
 	end
 	
 	if( val == nil and data.default ~= nil ) then
@@ -367,6 +371,22 @@ local function sliderShown(self)
 	else
 		self.text:SetText(self.data.text)
 	end
+	
+	if( self.input ) then
+		self.input:Show()
+	end
+end
+
+local function manualSliderShown(self)
+	self.dontSet = true
+	self:SetNumber(getValue(self.parent, self.data) * 100)
+end
+
+local function updateSliderValue(self)
+	if( self.dontSet ) then self.dontSet = nil return end
+	
+	self:GetParent().dontSet = true
+	self:GetParent():SetValue((self:GetNumber()+1) / 100)
 end
 
 local function sliderValueChanged(self)
@@ -374,6 +394,13 @@ local function sliderValueChanged(self)
 
 	if( self.data.format ) then
 		self.text:SetText(string.format(self.data.format, self:GetValue() * 100))
+	end
+	
+	if( self.data.manualInput and not self.dontSet ) then
+		self.input.dontSet = true	
+		self.input:SetNumber(math.floor(self:GetValue() * 100))
+	else
+		self.dontSet = nil
 	end
 end
 
@@ -405,17 +432,9 @@ local function inputChanged(self)
 	if( self.data.validate ) then
 		local handler = self.parent.handler or self.data.handler
 		if( handler ) then
-			if( type(self.data.var) == "table" ) then
-				val = handler[self.data.validate](handler, unpack(self.data.var), val)
-			else
-				val = handler[self.data.validate](handler, self.data.var, val)
-			end
+			val = handler[self.data.validate](handler, self.data.var, val)
 		else
-			if( type(self.data.var) == "table" ) then
-				val = self.data.validate(unpack(self.data.var), val)
-			else
-				val = self.data.validate(self.data.var, val)
-			end
+			val = self.data.validate(self.data.var, val)
 		end
 		
 		-- Validation error, show [!]
@@ -431,11 +450,13 @@ local function inputChanged(self)
 		elseif( self.infoButton and self.infoButton.type == "validate" ) then
 			setupWidgetInfo(self, self.parent, "help", self.data.help)
 		end
-		
-		
 	end
 	
 	setValue(self.parent, self.data, val)
+	
+	if( not self.data.realTime ) then
+		self:ClearFocus()
+	end
 end
 
 -- COLOR PICKER
@@ -455,15 +476,14 @@ end
 
 local rgb = { r = 0, g = 0, b = 0 }
 local function setColorValue()
-	local self = activeButton
 	local r, g, b = ColorPickerFrame:GetColorRGB()
 	
 	rgb.r = r
 	rgb.g = g
 	rgb.b = b
 	
-	setValue(self.parent, self.data, rgb)
-	self:GetNormalTexture():SetVertexColor(r, g, b)
+	setValue(activeButton.parent, activeButton.data, rgb)
+	activeButton:GetNormalTexture():SetVertexColor(r, g, b)
 end
 
 local function cancelColorValue(previous)
@@ -473,6 +493,11 @@ local function cancelColorValue(previous)
 	self:GetNormalTexture():SetVertexColor(previous.r, previous.g, previous.b)
 end
 
+local function resetStrata(self)
+	self:SetFrameStrata(self.origStrata)
+	self.origStrata = nil
+end
+
 local function openColorPicker(self)
 	local value = getValue(self.parent, self.data)
 	activeButton = self
@@ -480,7 +505,10 @@ local function openColorPicker(self)
 	ColorPickerFrame.previousValues = value
 	ColorPickerFrame.func = setColorValue
 	ColorPickerFrame.cancelFunc = cancelColorValue
+	ColorPickerFrame.origStrata = ColorPickerFrame:GetFrameStrata()
 	
+	ColorPickerFrame:SetFrameStrata("FULLSCREEN")
+	ColorPickerFrame:HookScript("OnHide", resetStrata)
 	ColorPickerFrame:SetColorRGB(value.r, value.g, value.b)
 	ColorPickerFrame:Show()
 end
@@ -492,34 +520,50 @@ local function dropdownClicked()
 end
 
 local buttonTbl = { func = dropdownClicked }
-local function initDropdown()
-	local frame
+local function initDropdown(frame)
 	if( string.match(this:GetName(), "Button$") ) then
 		frame = getglobal(string.gsub(this:GetName(), "Button$", ""))
-	else
+	elseif( not frame ) then
 		frame = this
 	end
-
+	
 	buttonTbl.owner = frame
 	for _, row in pairs(frame.data.list) do
 		buttonTbl.value = row[1]
 		buttonTbl.text = row[2]
-
+		buttonTbl.checked = nil
+		
 		UIDropDownMenu_AddButton(buttonTbl)
 	end
 end
 
-local function dropdownShown(self)
-	activeDropdown = self
+local function updateDropdown(frame, noInit)
+	if( not noInit ) then
+		initDropdown(frame)
+	end
 	
+	-- Select da row
+	local selected = getValue(frame.parent, frame.data)
+	for _, row in pairs(frame.data.list) do
+		if( row[1] == selected ) then
+			UIDropDownMenu_SetSelectedValue(frame, row[1])
+			return
+		end
+	end
+		
+	-- No entry found, use first one
+	UIDropDownMenu_SetSelectedValue(frame, frame.data.list[1][1])
+end
+
+local function dropdownShown(self)
 	UIDropDownMenu_Initialize(self, initDropdown)
-	UIDropDownMenu_SetSelectedValue(self, getValue(self.parent, self.data))
+	
+	updateDropdown(self, true)
 end
 
 -- GROUP FRAME
 local groupBackdrop = {
-	--bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", --options frame background
-	bgFile = "Interface\\ChatFrame\\ChatFrameBackground", -- kc_linkview frame background
+	bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
 	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
 	tile = true, tileSize = 16, edgeSize = 16,
 	insets = { left = 5, right = 5, top = 5, bottom = 5 }
@@ -542,6 +586,7 @@ local function createGroup(config, data)
 		group:SetBackdropBorderColor(0.4, 0.4, 0.4)
 	end
 	
+	group:SetFrameStrata("DIALOG")
 	group.title = group:CreateFontString(nil, "BACKGROUND", "GameFontHighlight")
 	group.title:SetPoint("BOTTOMLEFT", group, "TOPLEFT", 9, 0)
 	--group.title:SetText(data.text)
@@ -549,16 +594,68 @@ local function createGroup(config, data)
 	return group
 end
 
--- Housing Authority
+-- So everything shows up in front of the group
+local function updateFrameLevels(...)
+	for i=1,select("#", ...) do
+		local frame = select(i,...)
+		if( frame.SetFrameLevel ) then
+			frame:SetFrameLevel(frame:GetParent():GetFrameLevel() + 1)
+		end
+		
+		if( frame.GetChildren ) then
+			updateFrameLevels(frame:GetChildren())
+		end
+	end
+end
+
+-- BUTTONS
+local function buttonClicked(self)
+	local handler = self.data.handler or self.parent.handler
+	if( handler ) then
+		if( self.data.set ) then
+			handler[self.data.set](handler, self.data.var)
+		end
+		
+		if( self.data.onSet ) then
+			handler[self.data.onSet](handler, self.data.var)
+		end
+	else
+		if( self.data.set ) then
+			self.data.set(self.data.var)
+		end
+		
+		if( self.data.onSet ) then
+			self.data.onSet(self.data.var)
+		end
+	end
+end
+
+
+-- Housing Authority library
+local HouseAuthority = {}
 local configs = {}
 local id = 0
 
-local methods = { "GetFrame", "CreateConfiguration", "CreateButton", "CreateGroup", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
+local methods = { "GetFrame", "UpdateDropdown", "CreateConfiguration", "CreateButton", "CreateGroup", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
+local widgetList = {["label"] = "CreateLabel", ["check"] = "CreateCheckBox", ["input"] = "CreateInput", ["dropdown"] = "CreateDropdown", ["color"] = "CreateColorPicker", ["slider"] = "CreateSlider", ["group"] = "CreateGroup", ["button"] = "CreateButton",}
 
--- Stage 0, Adding widgets, can call Create*
--- Stage 1, Frame is being finished up (first GetFrame() call)
--- Stage 2, Frame is finished, positioning has been called/frame returned
+-- Extract the configuration obj from a frame
+function HouseAuthority:GetObject(frame)
+	argcheck(frame, 1, "table")
+	assert(3, frame.configID, L["NO_CONFIGID"])
+	
+	for id, config in pairs(configs) do
+		if( frame.configID == id ) then
+			return config.obj
+		end
+	end
+		
+	return nil
+end
+
 function HouseAuthority:RegisterFrame(data)
+	data = data or {}
+	
 	argcheck(data, 1, "table")
 	argcheck(data.columns, "columns", "number", "nil")
 	
@@ -582,7 +679,7 @@ function HouseAuthority:RegisterFrame(data)
 	
 	id = id + 1
 	
-	local config = { id = id, columns = data.columns, stage = 0, widgets = {}, handler = data.handler, get = data.get, frame = data.frame, set = data.set, onSet = data.onSet }
+	local config = { id = id, columns = data.columns, widgets = {}, handler = data.handler, get = data.get, frame = data.frame, set = data.set, onSet = data.onSet }
 	config.obj = { id = id }
 	
 	for _, method in pairs(methods) do
@@ -594,35 +691,13 @@ function HouseAuthority:RegisterFrame(data)
 	return configs[id].obj
 end
 
-local function buttonClicked(self)
-	local handler = self.data.handler or self.parent.handler
-	if( type(self.data.var) == "table" ) then
-		if( handler ) then
-			handler[self.data.set](handler, unpack(self.data.var))
-		else
-			self.data.set(unpack(self.data.var))
-		end
-	elseif( self.data.var ) then
-		if( handler ) then
-			handler[self.data.set](handler, self.data.var)		
-		else
-			self.data.set(self.data.var)
-		end
-	elseif( handler ) then
-		handler[self.data.set](handler)
-	else
-		self.data.set()
-	end
-end
-
 function HouseAuthority.CreateButton(config, data)
 	argcheck(data, 2, "table")
 	argcheck(data.var, "var", "string", "number", "table", "nil")
 	argcheck(data.template, "template", "string", "nil")
 	argcheck(data.width, "width", "number", "nil")
 	argcheck(data.text, "text", "string", "nil")
-	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateLabel"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
+	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateButton"))
 
 	-- Make sure the function stuff passed is good
 	local config = configs[config.id]
@@ -632,15 +707,16 @@ function HouseAuthority.CreateButton(config, data)
 	end
 		
 	argcheck(data.handler or config.handler, "handler", "table", "nil")
-	argcheck(data.set, "set", type)
+	argcheck(data.set, "set", type, "nil")
+	argcheck(data.onSet, "onSet", type, "nil")
 	
-	local button = CreateFrame("Button", nil, OptionHouse:GetFrame("addon"), data.template or "GameMenuButtonTemplate")
+	local button = CreateFrame("Button", nil, config.frame, data.template or "GameMenuButtonTemplate")
 	button.parent = config
 	button.data = data
 	button:SetScript("OnClick", buttonClicked)
 	button:SetText(data.text)
-	button:SetHeight(22)
-	button:SetWidth( button:GetFontString():GetStringWidth() + 25 )
+	button:SetHeight(18)
+	button:SetWidth(button:GetFontString():GetStringWidth() + 18)
 	
 	table.insert(config.widgets, button)
 	return button
@@ -650,10 +726,9 @@ end
 -- we have to create all of the groups when GetFrame is called
 function HouseAuthority.CreateGroup(config, data)
 	argcheck(data, 2, "table")
-	argcheck(data.background, "background", "table")
-	argcheck(data.border, "border", "table")
+	argcheck(data.background, "background", "table", "nil")
+	argcheck(data.border, "border", "table", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateGroup"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	configs[config.id].groupData = data
 end
@@ -666,16 +741,17 @@ function HouseAuthority.CreateLabel(config, data)
 	argcheck(data.fontSize, "fontSize", "number", "nil")
 	argcheck(data.fontFlag, "fontFlag", "string", "nil")
 	argcheck(data.font, "font", "table", "nil")
+	argcheck(data.xPos, "xPos", "number", "nil")
+	argcheck(data.yPos, "yPos", "number", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateLabel"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	data.type = "label"
 		
 	local label = configs[config.id].frame:CreateFontString(nil, "ARTWORK")
 	label.parent = config
 	label.data = data
-	label.xPos = 8
-	label.yPos = 5
+	label.xPos = data.xPos or 8
+	label.yPos = data.yPos or 5
 	
 	if( data.font ) then
 		label:SetFontObject(data.font)	
@@ -698,12 +774,11 @@ end
 
 function HouseAuthority.CreateColorPicker(config, data)
 	argcheck(data, 2, "table")
-	argcheck(data.text, "text", "string")
+	argcheck(data.text, "text", "string", "nil")
 	argcheck(data.help, "help", "string", "nil")
 	argcheck(data.var, "var", "string", "number", "table")
 	argcheck(data.default, "default", "table", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateColorPicker"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	validateFunctions(configs[config.id], data)	
 
@@ -748,16 +823,16 @@ end
 
 function HouseAuthority.CreateInput(config, data)
 	argcheck(data, 2, "table")
-	argcheck(data.text, "text", "string")
+	argcheck(data.text, "text", "string", "nil")
 	argcheck(data.var, "var", "string", "number", "table")
 	argcheck(data.default, "default", "number", "string", "nil")
 	argcheck(data.realTime, "realTime", "boolean", "nil")
 	argcheck(data.numeric, "numeric", "boolean", "nil")
+	argcheck(data.maxChars, "maxChars", "number", "nil")
 	argcheck(data.error, "error", "string", "nil")
 	argcheck(data.help, "help", "string", "nil")
 	argcheck(data.width, "width", "number", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateInput"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	validateFunctions(configs[config.id], data)	
 
@@ -777,18 +852,23 @@ function HouseAuthority.CreateInput(config, data)
 		input:SetNumeric(true)
 	end
 	
+	if( data.maxChars ) then
+		input:SetMaxLetters(data.maxChars)
+	end
+	
 	if( not data.realTime ) then
 		input:SetScript("OnEditFocusLost", inputChanged)
 		input:SetScript("OnEnterPressed", inputChanged)
 	else
 		input:SetScript("OnTextChanged", inputChanged)
+		input:SetScript("OnEnterPressed", inputClearFocus)
 	end
 	
 	input:SetAutoFocus(false)
 	input:EnableMouse(true)
 	
 	input:SetHeight(20)
-	input:SetWidth(120 or data.width)
+	input:SetWidth(data.width or 120)
 	input:SetFontObject(ChatFontNormal)
 	input:Hide()
 	
@@ -840,9 +920,9 @@ function HouseAuthority.CreateSlider(config, data)
 	argcheck(data.max, "max", "number", "nil")
 	argcheck(data.maxText, "minText", "string", "nil")
 	argcheck(data.step, "step", "number", "nil")
+	argcheck(data.manualInput, "manualInput", "boolean", "nil")
 	assert(3, ( data.text or data.format ), L["SLIDER_NOTEXT"])
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateSlider"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	validateFunctions(configs[config.id], data)	
 	
@@ -892,6 +972,17 @@ function HouseAuthority.CreateSlider(config, data)
 		max:SetText(data.maxText)
 	end
 	
+	if( data.manualInput ) then
+		slider.input = HouseAuthority.CreateInput(config, { width = 35, maxChars = string.len((data.max or 1.0) * 100), var = data.var, set = data.set, onSet = data.onSet, get = data.get, handler = data.handler, numeric = true, realTime = true })
+		slider.input:SetScript("OnShow", manualSliderShown)
+		slider.input:SetScript("OnTextChanged", updateSliderValue)
+		slider.input:SetPoint("LEFT", slider, "RIGHT", 15, -2)
+		slider.input:SetParent(slider)
+		slider.input.xPos = nil
+		
+		table.remove(config.widgets, #(config.widgets))
+	end
+	
 	if( data.help ) then
 		setupWidgetInfo(slider, config, "help", data.help)
 	end
@@ -906,7 +997,6 @@ function HouseAuthority.CreateCheckBox(config, data)
 	argcheck(data.help, "help", "string", "nil")
 	argcheck(data.var, "var", "string", "number", "table")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateCheckBox"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	validateFunctions(configs[config.id], data)
 
@@ -944,14 +1034,57 @@ function HouseAuthority.CreateCheckBox(config, data)
 	return check
 end
 
+function HouseAuthority.UpdateDropdown(config, data)
+	argcheck(data, 2, "table")
+	argcheck(data.list, "list", "table")
+	argcheck(data.var, "var", "string", "number", "table")
+	argcheck(data.default, "default", "string", "number", "nil")
+	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "UpdateDropdown"))
+	
+	config = configs[config.id]
+	
+	for _, widget in pairs(config.widgets) do
+		if( widget.data.type == "dropdown" and type(data.var) == type(widget.data.var) ) then
+			
+			if( type(data.var) == "table" ) then
+				local matches = 0
+				local rows = 0
+
+				for k, v in pairs(data.var) do
+					if( widget.data.var[k] == v ) then
+						matches = matches + 1
+					end
+					
+					rows = rows + 1
+				end
+			
+				-- Everything matches?
+				if( matches >= rows ) then
+					widget.data.list = data.list
+					widget.data.default = widget.data.default or data.default
+					updateDropdown(widget)
+					break
+				end
+				
+			elseif( data.var == widget.data.var ) then
+				widget.data.list = data.list
+				widget.data.default = widget.data.default or data.default
+
+				updateDropdown(widget)
+				break
+			end
+		end
+	end
+end
+
 function HouseAuthority.CreateDropdown(config, data)
 	argcheck(data, 2, "table")
 	argcheck(data.list, "list", "table")
-	argcheck(data.default, "default", "string", "nil")
+	argcheck(data.text, "text", "string", "nil")
+	argcheck(data.default, "default", "string", "number", "nil")
 	argcheck(data.help, "help", "string", "nil")
 	argcheck(data.var, "var", "string", "number", "table")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateDropdown"))
-	assert(3, configs[config.id].stage == 0, L["CANNOT_CREATE"])
 	
 	validateFunctions(configs[config.id], data)
 	
@@ -986,18 +1119,24 @@ function HouseAuthority.GetFrame(config)
 	assert(3, OptionHouse:GetFrame("addon"), L["OH_NOT_INITIALIZED"])
 	
 	local config = configs[config.id]
-	if( config.stage == 2 ) then
+	
+	-- If no new widgets have been added, then return the current one
+	if( config.totalWidgets and config.totalWidgets == #(config.widgets) ) then
 		return config.scroll or config.frame
 	end
 	
-	config.stage = 1
-		
 	-- Now figure out how many groups we have/need
+	if( not config.groupFrames ) then
+		config.groupFrames = {}
+	end
+	
 	config.groups = {}
+		
 	local totalGroups = 0
 	local groupedWidgets = 0
 
 	for _, widget in pairs(config.widgets) do
+		-- Yup it's a group
 		if( widget.data.group ) then
 			if( not config.groups[widget.data.group] ) then
 				config.groups[widget.data.group] = {}
@@ -1008,6 +1147,8 @@ function HouseAuthority.GetFrame(config)
 			groupedWidgets = groupedWidgets + 1
 		end
 		
+		-- Need to account for the fact that the height is for the bar itself
+		-- not bar + top and below text
 		if( config.columns > 1 and widget.data.type == "slider" ) then
 			widget.yPos = widget.yPos + 5
 		end
@@ -1022,14 +1163,22 @@ function HouseAuthority.GetFrame(config)
 		
 		-- Create all the groups, then position the objects to the widget
 		local frames = {}
+		local num = 0
 		for text, widgets in pairs(config.groups) do
-			local frame = createGroup(config, config.groupData)
+			-- Check if we have an old frame to grab from
+			num = num + 1
+			if( config.groupFrames[num] ) then
+				frame = config.groupFrames[num]
+			else
+				frame = createGroup(config, config.groupData)
+			end
 			
 			-- Reparent/framelevel/position/blah the widgets
 			for i, widget in pairs(widgets) do
 				widget:SetParent(frame)
-				widget:SetFrameLevel(frame:GetFrameLevel() + 2 )
 				widget.xPos = ( widget.xPos or 0 ) + 5
+				
+				updateFrameLevels(widget, frame)
 			end
 
 			-- Now reposition them
@@ -1046,11 +1195,11 @@ function HouseAuthority.GetFrame(config)
 		end
 		
 		-- Now position all of the groups
-		positionWidgets(1, config.frame, frames)
+		positionWidgets(1, config.frame, frames, nil, true)
 	end
-
-	-- Do we even need a scroll frame?
-	if( totalHeight >= 280 ) then
+	
+	-- Do we even need a scroll frame, and does it not exist yet?
+	if( totalHeight >= 250 and not config.scroll ) then
 		local scroll = CreateFrame("ScrollFrame", "HAScroll" .. config.id, OptionHouse:GetFrame("addon"), "UIPanelScrollFrameTemplate")
 		scroll:SetPoint("TOPLEFT", OptionHouse:GetFrame("addon"), "TOPLEFT", 190, -105)
 		scroll:SetPoint("BOTTOMRIGHT", OptionHouse:GetFrame("addon"), "BOTTOMRIGHT", -35, 40)
@@ -1061,10 +1210,11 @@ function HouseAuthority.GetFrame(config)
 		
 		scroll:SetScrollChild(config.frame)
 		config.scroll = scroll
+		config.scroll.configID = config.id
 	end	
 	
-	config.stage = 2
-	
+	config.totalWidgets = #(config.widgets)
+	config.frame.configID = config.id
 	return config.scroll or config.frame
 end
 
@@ -1073,14 +1223,9 @@ function HouseAuthority:CreateConfiguration(data, frameData)
 	argcheck(frameData, 2, "table", "nil")
 	
 	local handler = HouseAuthority:RegisterFrame(frameData)
-	local widgets = {["label"] = "CreateLabel", ["check"] = "CreateCheckBox",
-			["input"] = "CreateInput", ["dropdown"] = "CreateDropdown",
-			["color"] = "CreateColorPicker", ["slider"] = "CreateSlider",
-			["group"] = "CreateGroup", ["button"] = "CreateButton",}
-	
 	for id, widget in pairs(data) do
-		if( widget.type and widgets[widget.type] ) then
-			handler[widgets[widget.type]](handler, widget)
+		if( widget.type and widgetList[widget.type] ) then
+			handler[widgetList[widget.type]](handler, widget)
 		else
 			error(string.format(L["INVALID_WIDGETTYPE"], widget.type or "nil", "label, check, input, dropdown, color, slider, group, button"), 3)
 		end
@@ -1092,9 +1237,9 @@ end
 function HouseAuthority:GetVersion() return major, minor end
 
 local function checkVersion()
-	if( oldInstance ) then
-		id = oldInstance.id or id
-		configs = oldInstance.configs or configs
+	if( oldRevision ) then
+		id = HAInstance.id or id
+		configs = HAInstance.configs or configs
 	end
 
 	for id, config in pairs(configs) do
@@ -1105,6 +1250,10 @@ local function checkVersion()
 	
 	HouseAuthority.id = id
 	HouseAuthority.configs = configs
+	
+	for k, v in pairs(HouseAuthority) do
+		HAInstance[k] = v
+	end
 end
 
 checkVersion()
