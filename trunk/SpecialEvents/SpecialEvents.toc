@@ -2,5 +2,6 @@
 ## Title: Special Events
 
 LibStub.lua
-EventTester.lua
+SpecialEventsCore.lua
 SpecialEvents.lua
+EventTester.lua

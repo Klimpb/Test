@@ -82,6 +82,8 @@ if( SEInstance ) then
 	
 	-- Trigger everything
 	function SECore:TriggerCallback(name, ...)
+		DEFAULT_CHAT_FRAME:AddMessage(name .. ": " .. table.concat({...}, ", ")
+		
 		for _, row in pairs(registered) do
 			if( row.name == name ) then
 				if( row.handler ) then
@@ -96,11 +98,11 @@ if( SEInstance ) then
 	
 	-- Upgrade, or setup vars needed for it
 	if( oldRevision ) then
-		SECore.registered = oldInstance.registered or registered
+		SECore.registered = SEInstance.registered or registered
 	else
 		SECore.registered = registered
 	end
-	
+
 	-- Upgrade any embeds
 	for _, lib in pairs(embeds) do
 		lib["RegisterCallback"] = SECore["RegisterCallback"]
