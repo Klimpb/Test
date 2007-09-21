@@ -664,7 +664,7 @@ function UI:LoadUI()
 		{ text = L["Battleground join delay"], type = "input", forceType = "int", width = 30, var = { "join", "bgDelay" }, parent = "Join" },
 		{ text = L["AFK battleground join delay"], type = "input", forceType = "int", width = 30, var = { "join", "bgAfk" }, parent = "Join" },
 		{ text = L["Arena join delay"], type = "input", forceType = "int", width = 30, var = { "join", "arenaDelay" }, parent = "Join" },
-		{ text = L["Default Channel"], type = "dropdown", list = { { "less", L["Less than (<)"] }, { "lseql", L["Less than/equal(<=)"] } },  var = { "join", "type" }, parent = "Join" },
+		{ text = L["Priority check mode"], type = "dropdown", list = { { "less", L["Less than (<)"] }, { "lseql", L["Less than/equal(<=)"] } },  var = { "join", "type" }, parent = "Join" },
 
 		{ text = L["Battlefield auto joining priorities"], list = priorityList, type = "priority", var = { "priority" }, parent = "Priorities" },
  		

@@ -513,6 +513,7 @@ SSPVPLocals = {
 	["Show world PvP objectives in overlay"] = "Show world PvP objectives in overlay",
 	["Enable SSPVP"] = "Enable SSPVP",
 	["Default Channel"] = "Default Channel",
+	["Priority check mode"] = "Priority check mode",
 	["Auto group queue when leader"] = "Auto group queue when leader",
 	["Auto solo queue when ungrouped"] = "Auto solo queue when ungrouped",
 	["Sound file"] = "Sound file",
