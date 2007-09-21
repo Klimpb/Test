@@ -1,6 +1,6 @@
 local version = (tonumber(string.match("$Revision$", "(%d+)")) or 1)
 
-local RaidID = {}
+RaidID = {}
 local instanceList = {}
 local versionList = {}
 local OptionHouse
@@ -41,7 +41,7 @@ function RaidID:ADDON_LOADED(addon)
 
 		OptionHouse = LibStub:GetLibrary("OptionHouse-1.1")
 		OHObj = OptionHouse:RegisterAddOn("RaidID", nil, "Amarand", "r" .. version)
-		OHObj:RegisterCategory(name, self, "CreatePingUI", true)
+		OHObj:RegisterCategory("Version List", self, "CreatePingUI", true)
 	
 		-- Add all the instances we have currently
 		for _, instances in pairs(RaidID_List[realm]) do
@@ -52,7 +52,6 @@ end
 
 -- This is hackish because we recreate the entire thing everytime you review it
 -- need to change some core ways HousingAuthority works to fix that
-local row = {type = "label", xPos = 0, yPos = 0, font = "GameFontNormalSmall"}
 local config = {}
 function RaidID:CreateUI(instance)
 	local currentTime = time()
@@ -66,20 +65,13 @@ function RaidID:CreateUI(instance)
 	for player, instances in pairs(RaidID_List[realm]) do
 		for saved, data in pairs(instances) do
 			if( saved == instance and data.resetDate > currentTime ) then
-				-- Player name
-				row.group = data.id
-				row.text = player
-				table.insert(config, row)
-				
-				-- Time remaining
-				row.group = data.id
-				row.text = date("%x %I:%M:%S %p", data.resetDate)
-				table.insert(config, row)
+				table.insert(config, {type = "label", xPos = 5, yPos = 0, font = GameFontNormalSmall, group = "#" .. data.id, text = player})
+				table.insert(config, {type = "label", xPos = 0, yPos = 0, font = GameFontNormalSmall, group = "#" .. data.id, text = date("%x %I:%M:%S %p", data.resetDate)})
 			end
 		end
 	end
 	
-	return LibStub:GetLibrary("HousingAuthority-1.2"):CreateConfiguration(config)
+	return LibStub:GetLibrary("HousingAuthority-1.2"):CreateConfiguration(config, { columns = 2 })
 end
 
 -- Ping UI
@@ -95,16 +87,10 @@ function RaidID:CreatePingUI()
 	table.sort(versionList, sortPings)
 	local config = {}
 	for _, player in pairs(versionList) do
-		row.group = nil
-		row.text = player.name
-		table.insert(config, row)
-		
-		row.group = nil
-		row.text = player.version
-		table.insert(config, row)
+		table.insert(config, {type = "label", xPos = 5, yPos = 0, font = GameFontNormalSmall, group = "r" .. player.version, text = player.name})
 	end
 	
-	return LibStub:GetLibrary("HousingAuthority-1.2"):CreateConfiguration(config, { frame = frame })
+	return LibStub:GetLibrary("HousingAuthority-1.2"):CreateConfiguration(config)
 end
 
 function RaidID:UpdatePing()
@@ -136,6 +122,11 @@ function RaidID:SendMessage(msg, type, target)
 	SendAddonMessage("RID", msg, type, target)
 end
 
+function RaidID:Fake()
+	RaidID:SendMessage("ID:Karazhan,13469,84600", "GUILD")
+	RaidID:SendMessage("ID:Tempest Keep,62346,90000", "GUILD")
+end
+
 function RaidID:CHAT_MSG_ADDON(prefix, msg, type, author)
 	if( prefix == "RID" ) then
 		local type, data = string.match(msg, "([^:]+)%:(.+)")
@@ -144,6 +135,13 @@ function RaidID:CHAT_MSG_ADDON(prefix, msg, type, author)
 		if( type == "ID" ) then
 			local instance, id, remaining = string.split(",", data)
 			
+			remaining = tonumber(remaining)
+			id = tonumber(id)
+			
+			if( not remaining or not instance or not id ) then
+				return
+			end
+			
 			if( not RaidID_List[realm][author] ) then
 				RaidID_List[realm][author] = {}
 			end
@@ -151,10 +149,10 @@ function RaidID:CHAT_MSG_ADDON(prefix, msg, type, author)
 			RaidID_List[realm][author][instance] = { id = id, remaining = remaining, resetDate = remaining + time() }
 			self:ScanInstanceList(RaidID_List[realm][author])
 			
-			DEFAULT_CHAT_FRAME:AddMessage("New raid ID for ".. author .. ", " .. instance .. " (" .. id .. "), seconds left " .. remaining)
+			--DEFAULT_CHAT_FRAME:AddMessage("New raid ID for ".. author .. ", " .. instance .. " (" .. id .. "), seconds left " .. remaining)
 		
 		-- Request a specific one
-		elseif( type == "REQID" ) thhen
+		elseif( type == "REQID" ) then
 			if( GetNumSavedInstances() == 0 ) then
 				self:SendMessage("CLEARALL", "GUILD")
 			else
@@ -180,7 +178,7 @@ function RaidID:CHAT_MSG_ADDON(prefix, msg, type, author)
 		-- Clear all of ours
 		elseif( msg == "CLEARALL" and RaidID_List[realm][author] ) then
 			RaidID_List[realm][author] = nil
-			DEFAULT_CHAT_FRAME:AddMessage("Cleared all saved records for " .. author )
+			--DEFAULT_CHAT_FRAME:AddMessage("Cleared all saved records for " .. author )
 			
 		-- Ping request
 		elseif( msg == "PING" ) then
@@ -204,6 +202,7 @@ end)
 
 SLASH_RAIDID1 = "/syncid"
 SLASH_RAIDID2 = "/getrid"
+SLASH_RAIDID3 = "/raidid"
 SlashCmdList["RAIDID"] = function(msg)
 	msg = string.lower(msg or "")
 	if( msg == "" ) then
