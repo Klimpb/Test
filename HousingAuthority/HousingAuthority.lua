@@ -622,8 +622,8 @@ function HouseAuthority.CreateButton(config, data)
 	end
 		
 	argcheck(data.handler or config.handler, "handler", "table", "nil")
-	argcheck(data.set, "set", type)
-	argcheck(data.onSet, "onSet", type)
+	argcheck(data.set, "set", type, "nil")
+	argcheck(data.onSet, "onSet", type, "nil")
 	
 	local button = CreateFrame("Button", nil, config.frame, data.template or "GameMenuButtonTemplate")
 	button.parent = config
@@ -1112,9 +1112,9 @@ function HouseAuthority.GetFrame(config)
 		-- Now position all of the groups
 		positionWidgets(1, config.frame, frames, nil, true)
 	end
-
+	
 	-- Do we even need a scroll frame, and does it not exist yet?
-	if( totalHeight >= 280 and not config.scroll ) then
+	if( totalHeight >= 250 and not config.scroll ) then
 		local scroll = CreateFrame("ScrollFrame", "HAScroll" .. config.id, OptionHouse:GetFrame("addon"), "UIPanelScrollFrameTemplate")
 		scroll:SetPoint("TOPLEFT", OptionHouse:GetFrame("addon"), "TOPLEFT", 190, -105)
 		scroll:SetPoint("BOTTOMRIGHT", OptionHouse:GetFrame("addon"), "BOTTOMRIGHT", -35, 40)
