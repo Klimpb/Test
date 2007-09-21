@@ -564,6 +564,8 @@ function HouseAuthority:GetObject(frame)
 end
 
 function HouseAuthority:RegisterFrame(data)
+	data = data or {}
+	
 	argcheck(data, 1, "table")
 	argcheck(data.columns, "columns", "number", "nil")
 	
