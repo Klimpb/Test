@@ -11,7 +11,7 @@ local blank = function() end
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:SetScript("OnEvent", function()
-	if( LibStub and Rock ( not Rock.hooked or Rock.hooked ~= LibStub.minors["LibRock-1.0"] ) ) then
+	if( LibStub and Rock and ( not Rock.hooked or Rock.hooked ~= LibStub.minors["LibRock-1.0"] ) ) then
 		OpenDonationFrame = blank
 
 		Rock.hooked = LibStub.minors["LibRock-1.0"]
