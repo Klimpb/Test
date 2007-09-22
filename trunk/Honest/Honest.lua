@@ -420,7 +420,11 @@ function Honest:AddHonor( amount, type )
 		SCT:Display_Event("SHOWHONOR", "+" .. floor(amount) .. " " .. HONOR )
 		
 	elseif( IsAddOnLoaded( "Blizzard_CombatText" ) ) then
-		CombatText_AddMessage( string.format( COMBAT_TEXT_HONOR_GAINED, honor ), COMBAT_TEXT_SCROLL_FUNCTION, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].r, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].g, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].b, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].var, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].isStaggered  )
+		if( not COMBAT_TEXT_SCROLL_FUNCTION ) then
+			CombatText_UpdateDisplayedMessages()
+		end
+		
+		CombatText_AddMessage( string.format( COMBAT_TEXT_HONOR_GAINED, honor ), COMBAT_TEXT_SCROLL_FUNCTION, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].r, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].g, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].b, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].var, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].isStaggered )
 	end
 end
 
