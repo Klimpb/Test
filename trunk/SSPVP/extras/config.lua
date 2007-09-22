@@ -47,7 +47,7 @@ function UI:Initialize()
 		}},
 	}
 
-	OptionHouse = DongleStub("OptionHouse-1.0")
+	OptionHouse = LibStub("OptionHouse-1.1")
 	local obj = OptionHouse:RegisterAddOn( "SSPVP", nil, "Amarand", "r" .. tonumber( string.match( "$Revision$", "(%d+)" ) or 1 ) )
 	
 	for f, cat in pairs(categories) do
@@ -529,9 +529,9 @@ function UI:LoadFrame(category, subCat)
 	-- Create base frame
 	local frame
 	if( subFrame ) then
-		frame = CreateFrame("Frame", "SSConf" .. catFrame .. subFrame, OptionHouseFrames.addon)
+		frame = CreateFrame("Frame", "SSConf" .. catFrame .. subFrame, OptionHouse:GetFrame("addon"))
 	else
-		frame = CreateFrame("Frame", "SSConf" .. catFrame, OptionHouseFrames.addon)
+		frame = CreateFrame("Frame", "SSConf" .. catFrame, OptionHouse:GetFrame("addon"))
 	end
 	
 	

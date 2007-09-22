@@ -1,4 +1,5 @@
 local version = (tonumber(string.match("$Revision$", "(%d+)")) or 1)
+local frame = CreateFrame("Frame")
 
 RaidID = {}
 local instanceList = {}
@@ -69,6 +70,12 @@ function RaidID:CreateUI(instance)
 				table.insert(config, {type = "label", xPos = 0, yPos = 0, font = GameFontNormalSmall, group = "#" .. data.id, text = date("%x %I:%M:%S %p", data.resetDate)})
 			end
 		end
+	end
+	
+	-- All the things expired
+	if( #(config) == 0 ) then
+		OHObj:RemoveCategory(instance)
+		return frame
 	end
 	
 	return LibStub:GetLibrary("HousingAuthority-1.2"):CreateConfiguration(config, { columns = 2 })
@@ -191,7 +198,6 @@ function RaidID:CHAT_MSG_ADDON(prefix, msg, type, author)
 	end
 end
 
-local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("CHAT_MSG_ADDON")
 frame:RegisterEvent("UPDATE_INSTANCE_INFO")
