@@ -84,7 +84,7 @@ end
   Begin Library Implementation
 ---------------------------------------------------------------------------]]
 local major = "OptionHouse-1.1"
-local minor = tonumber(string.match("$Revision: 615 $", "(%d+)") or 1)
+local minor = tonumber(string.match("$Revision: 619 $", "(%d+)") or 1)
 
 assert(LibStub, string.format("%s requires LibStub.", major))
 
@@ -970,22 +970,6 @@ local function createAddonFrame(hide)
 		frame.shownFrame:Hide()
 	end
 	
-	-- THIS IS TEMP CODE UNTIL PATCH 2.2
-	-- Merge the addon tables from the old instance to the new
-	if( DongleStub and DongleStub.versions["OptionHouse-1.0"] ) then
-		local added
-		for name, data in pairs(DongleStub("OptionHouse-1.0").addons) do
-			if( not addons[name] ) then
-				addons[name] = data
-				added = true
-			end
-		end
-
-		if( added ) then
-			createCategoryListing()
-		end
-	end
-
 	updateConfigList()
 	ShowUIPanel(frame)
 end
@@ -1318,18 +1302,6 @@ local function instanceLoaded()
 			if( event == "PLAYER_REGEN_DISABLED" and frame and frame:IsShown() ) then
 				HideUIPanel(frame)
 				DEFAULT_CHAT_FRAME:AddMessage(L["ENTERED_COMBAT"])
-			
-			-- THIS IS ONLY TEMP CODE UNTIL PATCH 2.2 GOES LIVE
-			elseif( event == "ADDON_LOADED" ) then
-				SLASH_OPTHOUSE1 = "/opthouse"
-				SLASH_OPTHOUSE2 = "/oh"
-				SlashCmdList["OPTHOUSE"] = function(...)
-					if( select(1, ...) == "" ) then
-						OptionHouse:Open()
-					else
-						OptionHouse:Open(...)
-					end
-				end
 			end
 		end)
 

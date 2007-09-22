@@ -6,7 +6,7 @@ local StartTime = 0
 local HonorGained = 0
 
 local RegisteredFrames = {}
-local OH = DongleStub("OptionHouse-1.0")
+local OH = LibStub("OptionHouse-1.1")
 
 function Honest:Enable()
 	self.defaults = {

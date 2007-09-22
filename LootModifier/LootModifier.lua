@@ -20,7 +20,7 @@ function LootMod:Initialize()
 	self.db = self:InitializeDB( "LootModDB", self.defaults )
 
 	-- Register with OptionHouse
-	local OH = DongleStub("OptionHouse-1.0")
+	local OH = LibStub("OptionHouse-1.1")
 	local ui = OH:RegisterAddOn( "LootModifier", L["Loot Mod"], "Amarand", "r" .. tonumber( string.match( "$Revision$", "(%d+)" ) or 1 ) )
 	ui:RegisterCategory( L["General"], self, "CreateUI" )	
 	
