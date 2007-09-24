@@ -113,6 +113,23 @@ function Honest:ADDON_LOADED(event, addon)
 	end
 end
 
+-- Block honor gained messages from Blizzard_CombatText and sct
+local Orig_CombatText_OnEvent;
+local function FCT_CombatText_OnEvent(event, ...)
+	if( event == "HONOR_GAINED" ) then
+		return
+	end
+	
+	Orig_CombatText_OnEvent(event, ...)
+end
+
+function Honest:BlizzardCombatTextEvent(event, ...)
+	if( event == "HONOR_GAINED" ) then
+		return
+	end
+	
+	Honest.Orig_BlizzardCombatTextEvent(SCT, event, ...)
+end
 -- Hook honor gained functions for blocking
 function Honest:HookSCT()
 	if( SCT and SCT.BlizzardCombatTextEvent ) then
@@ -123,27 +140,11 @@ end
 
 function Honest:HookFCT()
 	if( CombatText_OnEvent ) then
-		Honest.Orig_CombatText_OnEvent = CombatText_OnEvent
-		CombatText_OnEvent = Honest.CombatText_OnEvent
+		Orig_CombatText_OnEvent = CombatText_OnEvent
+		CombatText_OnEvent = FCT_CombatText_OnEvent
 	end
 end
 
--- Block honor gained messages from Blizzard_CombatText and sct
-function Honest:CombatText_OnEvent(event, ...)
-	if( event == "HONOR_GAINED" ) then
-		return
-	end
-	
-	Honest:Orig_CombatText_OnEvent(event, ...)
-end
-
-function Honest:BlizzardCombatTextEvent(event, ...)
-	if( event == "HONOR_GAINED" ) then
-		return
-	end
-	
-	Honest.Orig_BlizzardCombatTextEvent(SCT, event, ...)
-end
 
 function Honest:CreateUI()
 	local frame = CreateFrame("Frame", nil, OptionHouseFrames.addon)
