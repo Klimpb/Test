@@ -1,9 +1,0 @@
-## Interface: 21000
-## Title: Raid ID Sync
-## Notes: Displays all the instances that guildies are locked into
-## SavedVariables: RaidID_List
-## OptionalDeps: LibStub, OptionHouse
-
-OptionHouse.lua
-HousingAuthority.lua
-RaidID.lua
