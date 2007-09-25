@@ -109,6 +109,8 @@ end
 
 -- Got data from login
 function RaidID:UPDATE_INSTANCE_INFO()
+	if( not (GetGuildInfo("player")) ) then
+	
 	self:SendMessage("CLEARALL", "GUILD")
 	
 	for i=1, GetNumSavedInstances() do
