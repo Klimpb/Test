@@ -517,6 +517,9 @@ SSPVPLocals = {
 	["Auto group queue when leader"] = "Auto group queue when leader",
 	["Auto solo queue when ungrouped"] = "Auto solo queue when ungrouped",
 	["Sound file"] = "Sound file",
+	
+	["Frame Mover"] = "Frame Mover",
+	["Auto Queue"] = "Auto Queue",
 };
 
 BINDING_HEADER_SSPVP = "SSPVP";

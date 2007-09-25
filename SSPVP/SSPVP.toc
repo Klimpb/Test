@@ -1,4 +1,4 @@
-## Interface: 20100
+## Interface: 20200
 ## Title: SSPVP
 ## Version: $Revision$
 ## Notes: PvP, Battleground and Arena mod

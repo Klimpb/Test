@@ -1,59 +1,59 @@
-local Ressurection = SSPVP:NewModule( "SSPVP-Res" );
-Ressurection.activeIn = "bg";
+local Ressurection = SSPVP:NewModule( "SSPVP-Res" )
+Ressurection.activeIn = "bg"
 
-local L = SSPVPLocals;
+local L = SSPVPLocals
 
 function Ressurection:EnableModule()
-	SSOverlay:AddCategory( "res", L["Ressurections"], 1 );
+	SSOverlay:AddCategory( "res", L["Ressurections"], 1 )
 
-	--self:RegisterEvent( "CHAT_MSG_BG_SYSTEM_NEUTRAL" );
-	--self:RegisterEvent( "CHAT_MSG_MONSTER_YELL" );
-	--self:RegisterEvent( "CHAT_MSG_BG_SYSTEM_HORDE" );
-	--self:RegisterEvent( "CHAT_MSG_BG_SYSTEM_ALLIANCE" );	
+	--self:RegisterEvent( "CHAT_MSG_BG_SYSTEM_NEUTRAL" )
+	--self:RegisterEvent( "CHAT_MSG_MONSTER_YELL" )
+	--self:RegisterEvent( "CHAT_MSG_BG_SYSTEM_HORDE" )
+	--self:RegisterEvent( "CHAT_MSG_BG_SYSTEM_ALLIANCE" )	
 
-	self:RegisterEvent( "PLAYER_DEAD" );
-	self:RegisterEvent( "CORPSE_IN_RANGE" );
-	self:RegisterEvent( "CORPSE_OUT_OF_RANGE" );
+	self:RegisterEvent( "PLAYER_DEAD" )
+	self:RegisterEvent( "CORPSE_IN_RANGE" )
+	self:RegisterEvent( "CORPSE_OUT_OF_RANGE" )
 end
 
 function Ressurection:DisableModule()
-	self:UnregisterAllEvents();
-	SSOverlay:RemoveCategory( "res" );
+	self:UnregisterAllEvents()
+	SSOverlay:RemoveCategory( "res" )
 end
 
 function Ressurection:CORPSE_OUT_OF_RANGE()
-	SSPVP:UnregisterTimer( RetrieveCorpse );
+	SSPVP:UnregisterTimer( RetrieveCorpse )
 end
 
 function Ressurection:CORPSE_IN_RANGE()
 	if( SSPVP.db.profile.bf.autoAccept and GetCorpseRecoveryDelay() ~= nil and GetCorpseRecoveryDelay() > 0 ) then
-		SSPVP:RegisterTimer( RetrieveCorpse, GetCorpseRecoveryDelay() + 1 );
+		SSPVP:RegisterTimer( RetrieveCorpse, GetCorpseRecoveryDelay() + 1 )
 	end
 end
 
 function Ressurection:PLAYER_DEAD()
 	if( SSPVP.db.profile.bf.release ) then
-		if( not HasSoulstone() or SSPVP.db.profile.bf.releaseSS ) then
-			StaticPopupDialogs["DEATH"].text = L["Releasing..."];
-			RepopMe();	
+		if( not HasSoulstone() and SSPVP.db.profile.bf.release ) then
+			StaticPopupDialogs["DEATH"].text = L["Releasing..."]
+			RepopMe()	
 			
-		elseif( HasSoulstone() and not SSPVP.db.profile.bf.releaseSS ) then
-			StaticPopupDialogs["DEATH"].text = string.format( L["Using %s..."], HasSoulstone() );
-			UseSoulstone();		
+		elseif( HasSoulstone() and SSPVP.db.profile.bf.releaseSS ) then
+			StaticPopupDialogs["DEATH"].text = string.format( L["Using %s..."], HasSoulstone() )
+			UseSoulstone()		
 		else
-			StaticPopupDialogs["DEATH"].text = HasSoulstone();	
+			StaticPopupDialogs["DEATH"].text = HasSoulstone()	
 		end
 	else
-		StaticPopupDialogs["DEATH"].text = TEXT( DEATH_RELEASE_TIMER );
+		StaticPopupDialogs["DEATH"].text = TEXT( DEATH_RELEASE_TIMER )
 	end
 end
 
 function Ressurection:CHAT_MSG_BG_SYSTEM_HORDE( event, msg )
-	self:ParseMessage( msg, "Horde" );
+	self:ParseMessage( msg, "Horde" )
 end
 
 function Ressurection:CHAT_MSG_BG_SYSTEM_ALLIANCE( event, msg )
-	self:ParseMessage( msg, "Alliance" );
+	self:ParseMessage( msg, "Alliance" )
 end
 
 function Ressurection:CHAT_MSG_BG_SYSTEM_NEUTRAL( event, msg )
@@ -64,14 +64,14 @@ end
 -- Alterac Valley
 function Ressurection:CHAT_MSG_MONSTER_YELL( event, msg, from )
 	if( from ~= L["Herald"] ) then
-		return;
+		return
 	end
 
 	if( string.find( msg, L["(.+) is under attack!"] ) ) then
-		local name = string.match( msg, L["(.+) is under attack!"] );
+		local name = string.match( msg, L["(.+) is under attack!"] )
 
 	elseif( string.find( msg, L["(.+) was taken by the"] ) ) then
-		local name = string.match( msg, L["(.+) was taken by the"] );
+		local name = string.match( msg, L["(.+) was taken by the"] )
 	end
 end
 
@@ -79,20 +79,20 @@ function Ressurection:ParseMessage( msg, faction )
 	-- Arathi Basin
 	if( SSPVP:IsPlayerIn( "ab" ) ) then
 		if( string.find( msg, L["has assaulted the ([^!]+)"] ) ) then
-			local name = string.match( msg, L["has assaulted the ([^!]+)"] );
+			local name = string.match( msg, L["has assaulted the ([^!]+)"] )
 
 		elseif( string.find( msg, L["has taken the ([^!]+)"] ) ) then
-			local name = string.match( msg, L["has taken the ([^!]+)"] );
+			local name = string.match( msg, L["has taken the ([^!]+)"] )
 
 		end
 	
 	-- Eye of the Storm
 	elseif( SSPVP:IsPlayerIn( "eots" ) ) then
 		if( string.find( msg, L["has lost control of the (.+)!"] ) ) then
-			local name = string.match( msg, L["has lost control of the (.+)!"] );
+			local name = string.match( msg, L["has lost control of the (.+)!"] )
 			
 		elseif( string.find( msg, L["has taken control of the (.+)!"] ) ) then
-			local name = string.match( msg, L["has taken control of the (.+)!"] );
+			local name = string.match( msg, L["has taken control of the (.+)!"] )
 		end
 	end
 end
