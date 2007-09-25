@@ -1,4 +1,4 @@
-## Interface: 20100
+## Interface: 20200
 ## Title: Arena Enemy Info Data
 ## Notes: Contains the enemy information database for AEI
 ## RequiredDeps: ArenaEnemyInfo
