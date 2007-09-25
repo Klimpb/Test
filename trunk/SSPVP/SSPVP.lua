@@ -779,9 +779,9 @@ function SSPVP:StopSound()
 	if( string.find( SSPVP.db.profile.general.sound, "mp3$" ) ) then
 		StopMusic()
 	else
-		local old = GetCVar( "MasterSoundEffects" )
-		SetCVar( "MasterSoundEffects", 0 )
-		SetCVar( "MasterSoundEffects", old )
+		local old = GetCVar( "Sound_EnableAllSound" )
+		SetCVar( "Sound_EnableAllSound", 0 )
+		SetCVar( "Sound_EnableAllSound", old )
 	end
 end
 
