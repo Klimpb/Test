@@ -110,6 +110,8 @@ end
 -- Got data from login
 function RaidID:UPDATE_INSTANCE_INFO()
 	if( not (GetGuildInfo("player")) ) then
+		return
+	end
 	
 	self:SendMessage("CLEARALL", "GUILD")
 	
