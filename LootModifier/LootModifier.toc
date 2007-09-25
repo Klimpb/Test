@@ -1,4 +1,4 @@
-## Interface: 20100
+## Interface: 20200
 ## Title: Loot Modifier
 ## Version: $Revision$
 ## Notes: Modifies the loot window to show better info on the items on a corpse

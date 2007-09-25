@@ -1,4 +1,4 @@
-## Interface: 20100
+## Interface: 20200
 ## Title: Arena Enemy Information
 ## Notes: Provides enhanced information regarding opponents in the arena
 ## SavedVariables: AEI_NoDataID, AEI_NoData

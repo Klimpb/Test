@@ -1,4 +1,4 @@
-## Interface: 20100
+## Interface: 20200
 ## Title: Honest
 ## Notes: Honor estimation, and PvP data mod
 ## SavedVariables: HonestDB
