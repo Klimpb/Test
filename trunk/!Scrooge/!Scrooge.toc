@@ -1,0 +1,5 @@
+## Interface: 20100
+## Title: Uncle Scrooge
+## Notes: How do you get to be the most richest duck in the world? Steal donations!
+
+Scrooge.lua
