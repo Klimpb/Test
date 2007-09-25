@@ -3,18 +3,25 @@ GetAddOnMetadata = function(name, field, ...)
 	if( field and field == "X-Donate" ) then
 		return nil
 	end
-	
+
 	return Orig_GetAddOnMetadata(name, field, ...)
 end
 
-local blank = function() end
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:SetScript("OnEvent", function()
-	if( LibStub and Rock and ( not Rock.hooked or Rock.hooked ~= LibStub.minors["LibRock-1.0"] ) ) then
-		OpenDonationFrame = blank
+	-- Kill the default Rock donation link
+	if( LibStub and LibStub.libs["LibRockConfig-1.0"] ) then
+		LibStub.libs["LibRockConfig-1.0"].rockOptions.args.donate = nil
 
-		Rock.hooked = LibStub.minors["LibRock-1.0"]
-		Rock.donate = nil
+		for addon, rows in pairs(LibStub.libs["LibRockConfig-1.0"].data) do
+			if( rows.extraArgs ) then
+				for k, row in pairs(rows.extraArgs) do
+					if( k == "donate" ) then
+						LibStub.libs["LibRockConfig-1.0"].data[addon].extraArgs[k] = nil;
+					end
+				end
+			end
+		end
 	end
 end)
