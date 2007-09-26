@@ -515,7 +515,7 @@ function SSOverlay:RemoveRow( type, category, text, color )
 			-- Check category
 			if( ( category and row.category == category ) or not category ) then
 				-- Check text
-				if( ( text and string.lower( row.addedText ) == string.lower( text ) ) or not text ) then
+				if( ( text and string.match(string.lower(row.addedText), string.lower(text)) ) or not text ) then
 					-- Check color
 					if( not color or ( color and row.color and color.r == row.color.r and color.g == row.color.g and color.b == row.color.b ) ) then
 						table.remove( rows, i );

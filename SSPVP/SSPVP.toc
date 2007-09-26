@@ -19,9 +19,6 @@ extras\overlay.lua
 extras\sync.lua
 extras\turnin.lua
 extras\score.lua
-extras\ressurection.lua
-## extras\pvpflag.lua
-extras\reformat.lua
 
 battlegrounds\ab.lua
 battlegrounds\av.lua

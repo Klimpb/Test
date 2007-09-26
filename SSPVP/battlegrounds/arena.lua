@@ -672,30 +672,37 @@ function Arena:PVPTeamDetails_Update()
 end
 
 -- Adds the actual rating!
+local function GetPoints(rating, penalty)
+	penalty = penalty or 1.0
+	
+	local points = 0
+	if( rating > 1500 ) then
+		points = (1511.26 / (1 + 1639.28 * math.exp(1) ^ (-0.00412 * rating))) * penalty
+	else
+		points = ((0.22 * rating ) + 14) * penalty
+	end
+	
+	if( points < 0 ) then
+		points = 0
+	end
+	
+	return points
+end
+
 function Arena:SetRating( parent, teamSize, teamRating )
 	if( teamRating == 0 ) then
 		return
 	end
 
-	local points
+	local penalty = 1.0
 	local ratingText = getglobal( parent .. "DataRating" )
 	local label = getglobal( parent.. "DataRatingLabel" )
-	
-	if( teamRating > 1500 ) then
-		points = 1426.79 / ( 1 + 918.836 * math.pow( 2.71828, -0.00386405 * teamRating ) )
-	else
-		points = 0.38 * teamRating - 194
-	end
-
-	if( points < 0 ) then
-		points = 0
-	end
 
 	-- Apply the percent reduction from brackets
 	if( teamSize == 3 ) then
-		points = points * 0.80
+		penalty = 0.88
 	elseif( teamSize == 2 ) then
-		points = points * 0.70
+		penalty = 0.76
 	end
 
 	ratingText:ClearAllPoints()
@@ -704,7 +711,7 @@ function Arena:SetRating( parent, teamSize, teamRating )
 	label:ClearAllPoints()
 	label:SetPoint( "LEFT", parent .. "DataName", "RIGHT", -19, 0 )
 
-	ratingText:SetText( string.format( "%d |cffffffff(%d)|r", teamRating, points ) )
+	ratingText:SetText( string.format( "%d |cffffffff(%d)|r", teamRating, GetPoints(teamRating, penalty) ) )
 	ratingText:SetWidth( 70 )
 
 	getglobal( parent .. "DataName" ):SetWidth( 160 )
@@ -859,46 +866,38 @@ function Arena.CalculateGoal( currentGames, currentTotal )
 	SSPVP:Print( string.format( L["You have played %d games and need to play %d more (%d played games, %d total games) to reach 30%%"], currentGames, totalGames - currentTotal, games, totalGames ) )
 end
 
--- Points -> Rating
-local function GetRating( points )
-	local rating = 0
-	if( points > 376 ) then
-		rating = math.log( ( 1426.79 / points - 1 ) / 918.836 ) / -0.00386405
-	else
-		rating = ( points + 194 ) / 0.38
-	end
+-- Rating -> Points
+function Arena.CalculatePoints(rating)
+	rating = tonumber(rating)
 
+	SSPVP:Print(string.format(L["[%d vs %d] %d rating = %d points"], 5, 5, rating, GetPoints(rating)))
+	SSPVP:Print(string.format(L["[%d vs %d] %d rating = %d points - %d%% = %d points"], 3, 3, rating, GetPoints(rating), 80, GetPoints(rating, 0.88)))
+	SSPVP:Print(string.format(L["[%d vs %d] %d rating = %d points - %d%% = %d points"], 2, 2, rating, GetPoints(rating), 70, GetPoints(rating, 0.76)))
+end
+
+-- Points -> Rating
+local function GetRating(points, penalty)
+	penalty = penalty or 1.0
+	
+	local rating = 0
+	if( points > GetPoints(1500, penalty) ) then
+		rating = (math.log(((1511.26 * penalty / points) - 1) / 1639.28) / -0.00412)
+	else
+		rating = ((points / penalty - 14) / 0.22 )
+	end
+	
+	-- Can the new formula go below 0?
 	if( rating < 0 ) then
 		rating = 0
 	end
 	
-	return math.floor( rating + 0.5 )
+	return math.floor(rating + 0.5)
 end
 
-function Arena.CalculateRating( points )
-	points = tonumber( points )
+function Arena.CalculateRating(points)
+	points = tonumber(points)
 
-	SSPVP:Print( string.format( L["[%d vs %d] %d points = %d rating"], 5, 5, points, GetRating( points ) ) )
-	SSPVP:Print( string.format( L["[%d vs %d] %d points = %d rating"], 3, 3, points, GetRating( points * 0.80 ) ) )
-	SSPVP:Print( string.format( L["[%d vs %d] %d points = %d rating"], 2, 2, points, GetRating( points * 0.70 ) ) )
-end
-
--- Rating -> Points
-function Arena.CalculatePoints( rating )
-	rating = tonumber( rating )
-	
-	local points
-	if( rating > 1500 ) then
-		points = 1426.79 / ( 1 + 918.836 * math.pow( 2.71828, -0.00386405 * rating ) )
-	else
-		points = 0.38 * rating - 194
-	end
-	
-	if( points < 0 ) then
-		points = 0
-	end
-
-	SSPVP:Print( string.format( L["[%d vs %d] %d rating = %d points"], 5, 5, rating, points ) )
-	SSPVP:Print( string.format( L["[%d vs %d] %d rating = %d points - %d%% = %d points"], 3, 3, rating, points, 80, points * 0.80 ) )
-	SSPVP:Print( string.format( L["[%d vs %d] %d rating = %d points - %d%% = %d points"], 2, 2, rating, points, 70, points * 0.70 ) )
+	SSPVP:Print(string.format(L["[%d vs %d] %d points = %d rating"], 5, 5, points, GetRating(points)))
+	SSPVP:Print(string.format(L["[%d vs %d] %d points = %d rating"], 3, 3, points, GetRating(points, 0.88)))
+	SSPVP:Print(string.format(L["[%d vs %d] %d points = %d rating"], 2, 2, points, GetRating(points, 0.76)))
 end
