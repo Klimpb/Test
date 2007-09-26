@@ -34,6 +34,7 @@ SSPVPLocals = {
 	["Starting In: %s"] = "Starting In: %s";
 	
 	["%s's %s"] = "%s's %s",
+	["Joining"] = "Joining",
 	
 	["Ressurections"] = "Ressurections",
 	
@@ -368,10 +369,6 @@ SSPVPLocals = {
 	["SSPVP-EoTS"] = "Eye of the Storm",
 	["SSPVP-AV"] = "Alterac Valley",
 	["SSPVP-Arena"] = "Arena",
-	["SSPVP-Score"] = "Score modifications",
-	--["SSPVP-Res"] = "Ressurection & Death",
-	--["SSPVP-Flag"] = "PvP flag timer",
-	["SSPVP-Reformat"] = "Battleground reformat",
 	
 	["Disable module %s"] = "Disable module %s",
 	

@@ -1,22 +1,25 @@
 --[[ 
-	SSPVP By Shadowd / Amarand from US-Icecrown PvE
+	SSPVP By Shadowd / Amarand from Icecrown (US) PvE
 	
 	1.x Release: January 26th 2006
 	2.x Release: December 27th 2006
 	3.x Release: April 9th 2007
-
 ]]
 
-SSPVP = DongleStub("Dongle-1.0"):New( "SSPVP" )
+SSPVP = DongleStub("Dongle-1.1"):New("SSPVP")
 
 local L = SSPVPLocals
 
-local activeBF = { id = -1 }
-local battlefieldInfo = {}
-local joiningBF
-local queuedUpdates = {}
 local confirmedPortLeave = {}
+local activeBF = {id = -1}
+local battlefieldInfo = {}
+local queuedUpdates = {}
 local confirmedBFLeave
+local joiningBF
+local joiningAt
+
+local JoinedRaid
+local LeftRaid
 
 function SSPVP:Initialize()
 	self.defaults = {
@@ -172,34 +175,39 @@ function SSPVP:Initialize()
 		}
 	}
 	
-	self.db = self:InitializeDB( "SSPVPDB", self.defaults )
+	self.db = self:InitializeDB("SSPVPDB", self.defaults)
 
-	self.cmd = self:InitializeSlashCommand( L["SSPVP commands"], "SSPVP", "sspvp" )
-	self.cmd:InjectDBCommands( self.db, "delete", "copy", "list", "set" )
+	self.cmd = self:InitializeSlashCommand(L["SSPVP commands"], "SSPVP", "sspvp")
+	self.cmd:InjectDBCommands(self.db, "delete", "copy", "list", "set")
 		
-	SSOverlay:AddCategory( "general", L["Time before start"], -1 )
-	SSOverlay:AddCategory( "queue", L["Battlefield queues"], 1 )
+	SSOverlay:AddCategory("general", L["Time before start"], -1)
+	SSOverlay:AddCategory("queue", L["Battlefield queues"], 1)
 	
-	-- Grab the list of team mates
+	-- For BGReformat
+	JoinedRaid = string.format(ERR_RAID_MEMBER_ADDED_S, "(.+)")
+	LeftRaid = string.format(ERR_RAID_MEMBER_REMOVED_S, "(.+)")
+
+	-- Grab the list of team mates for the auto arena queue stuff
 	for i=1, MAX_ARENA_TEAMS do
 		ArenaTeamRoster(i)
 	end
-
-	-- "Upgrade", we removed arena and added ratedARena/skirmArena instead
-	self.db.profile.priority.arena = nil
 end
 
 function SSPVP:Enable()
-	self:RegisterEvent( "UPDATE_BATTLEFIELD_STATUS" )
-	self:RegisterEvent( "PLAYER_REGEN_ENABLED" )
-	self:RegisterEvent( "CHAT_MSG_BG_SYSTEM_NEUTRAL" )
-	self:RegisterEvent( "BATTLEFIELDS_SHOW" )
-	self:RegisterEvent( "GOSSIP_SHOW" )
-	self:RegisterEvent( "SCREENSHOT_SUCCEEDED", "ScreenshotTaken" )
-	self:RegisterEvent( "SCREENSHOT_FAILED", "ScreenshotTaken" )
+	self:RegisterEvent("GOSSIP_SHOW")
+	self:RegisterEvent("PLAYER_DEAD")
+	self:RegisterEvent("CORPSE_IN_RANGE")
+	self:RegisterEvent("BATTLEFIELDS_SHOW")
+	self:RegisterEvent("CORPSE_OUT_OF_RANGE")
+	self:RegisterEvent("PLAYER_REGEN_ENABLED")
+	self:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
+	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL")
+	self:RegisterEvent("SCREENSHOT_SUCCEEDED", "ScreenshotTaken")
+	self:RegisterEvent("SCREENSHOT_FAILED", "ScreenshotTaken")
 	
+	-- Enable any "passive" modules
 	for name, module in SSPVP:IterateModules() do
-		if( not self.db.profile.modules[ name ] and not module.activeIn and module.EnableModule ) then
+		if( not self.db.profile.modules[name] and not module.activeIn and module.EnableModule ) then
 			module.moduleEnabled = true
 			module.EnableModule(module)
 		end
@@ -207,79 +215,84 @@ function SSPVP:Enable()
 end
 
 function SSPVP:Disable()
-	self:DisableModules()
+	self:DisableAllModules()
 
 	self:UnregisterAllEvents()
 	self:UnregisterAllMessages()
 	self:UnregisterAllTimers()
 	
-	SSOverlay:RemoveCategory( "general" )
-	SSOverlay:RemoveCategory( "queue" )
+	SSOverlay:RemoveCategory("general")
+	SSOverlay:RemoveCategory("queue")
 
-	if( activeBF.id > 0 ) then
-		confirmBF = {}
-		activeBF = { id = -1 }
-		joiningBF = nil
-	end
+	confirmBF = {}
+	battlefieldInfo = {}
+	
+	activeBF.id = -1
+	joiningBF = nil
+	joiningAt = nil
 end
 
 function SSPVP:Reload()
 	SSPVP:UPDATE_BATTLEFIELD_STATUS()
 end
 
-function SSPVP:Message( msg, color )
+function SSPVP:Message(msg, color)
 	if( not color ) then
-		DEFAULT_CHAT_FRAME:AddMessage( msg )
+		DEFAULT_CHAT_FRAME:AddMessage(msg)
 	else
-		DEFAULT_CHAT_FRAME:AddMessage( msg, color.r, color.g, color.b )
+		DEFAULT_CHAT_FRAME:AddMessage(msg, color.r, color.g, color.b)
 	end
 end
 
+-- Block the joined queue message because will show it ourself
 local Orig_UIErrorsFrame_OnEvent = UIErrorsFrame_OnEvent
-function UIErrorsFrame_OnEvent( event, message, ... )
-	if( string.match( message, L["Your group has joined the queue for"] ) ) then
+function UIErrorsFrame_OnEvent(event, message, ...)
+	if( string.match(message, L["Your group has joined the queue for"]) ) then
 		return
 	end
 
-	return Orig_UIErrorsFrame_OnEvent( event, message, ... )
+	return Orig_UIErrorsFrame_OnEvent(event, message, ...)
 end
 
+-- Blocking messages that start with [SS]
 local Orig_ChatFrame_MessageEventHandler = ChatFrame_MessageEventHandler
-function ChatFrame_MessageEventHandler( event, ... )
+function ChatFrame_MessageEventHandler(event, ...)
 	if( SSPVP.db.profile.general.block and ( event == "CHAT_MSG_RAID" or event == "CHAT_MSG_RAID_LEADER" or event == "CHAT_MSG_PARTY" or event == "CHAT_MSG_BATTLEGROUND" or event == "CHAT_MSG_BATTLEGROUND_LEADER" ) ) then
-		if( string.sub( arg1, 0, 4 ) == "[SS]" ) then
+		if( string.sub(arg1, 0, 4) == "[SS]" ) then
 			return false
 		end
 	end
 	
-	return Orig_ChatFrame_MessageEventHandler( event, ... )
+	return Orig_ChatFrame_MessageEventHandler(event, ...)
 end
 
+-- Confirmation for leaving battlefield queues
 local Orig_AcceptBattlefieldPort = AcceptBattlefieldPort
-function AcceptBattlefieldPort( id, flag, ... )
-	if( not flag and not confirmedPortLeave[ id ] and SSPVP.db.profile.leave.confirm ) then
-		local _, map, _, _, _, teamSize = GetBattlefieldStatus( id )
+function AcceptBattlefieldPort(id, flag, ...)
+	if( not flag and not confirmedPortLeave[id] and SSPVP.db.profile.leave.confirm ) then
+		local _, map, _, _, _, teamSize = GetBattlefieldStatus(id)
 		if( teamSize > 0 ) then
-			StaticPopupDialogs["CONFIRM_PORT_LEAVE"].text = string.format( L["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"], map, teamSize, teamSize )
+			StaticPopupDialogs["CONFIRM_PORT_LEAVE"].text = string.format(L["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"], map, teamSize, teamSize)
 		else
-			StaticPopupDialogs["CONFIRM_PORT_LEAVE"].text = string.format( L["You are about to leave the active or queued battlefield %s, are you sure?"], map )
+			StaticPopupDialogs["CONFIRM_PORT_LEAVE"].text = string.format(L["You are about to leave the active or queued battlefield %s, are you sure?"], map)
 		end
 		
-		local popup = StaticPopup_Show( "CONFIRM_PORT_LEAVE", nil, nil, id )
+		local popup = StaticPopup_Show("CONFIRM_PORT_LEAVE")
 		if( popup ) then
 			popup.data = id
 		end
 		return
 	end
 	
-	confirmedPortLeave[ id ] = nil
-	
-	StaticPopup_Hide( "CONFIRM_PORT_LEAVE", id )
-	Orig_AcceptBattlefieldPort( id, flag, ... )
+	confirmedPortLeave[id] = nil
+	StaticPopup_Hide("CONFIRM_PORT_LEAVE", id)
+
+	Orig_AcceptBattlefieldPort(id, flag, ...)
 end
 
+-- Confirmation for leaving a battlefield
 local Orig_LeaveBattlefield = LeaveBattlefield
-function LeaveBattlefield( ... )
+function LeaveBattlefield(...)
 	if( not confirmedBFLeave and SSPVP.db.profile.leave.confirm and this:GetName() ~= "WorldStateScoreFrameLeaveButton" ) then
 		-- Find an active battlefield
 		local map, status, teamSize
@@ -291,12 +304,12 @@ function LeaveBattlefield( ... )
 		end
 		
 		if( teamSize > 0 ) then
-			StaticPopupDialogs["CONFIRM_BATTLEFIELD_LEAVE"].text = string.format( L["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"], map, teamSize, teamSize )
+			StaticPopupDialogs["CONFIRM_BATTLEFIELD_LEAVE"].text = string.format(L["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"], map, teamSize, teamSize)
 		else
-			StaticPopupDialogs["CONFIRM_BATTLEFIELD_LEAVE"].text = string.format( L["You are about to leave the active or queued battlefield %s, are you sure?"], map )
+			StaticPopupDialogs["CONFIRM_BATTLEFIELD_LEAVE"].text = string.format(L["You are about to leave the active or queued battlefield %s, are you sure?"], map)
 		end
 		
-		StaticPopup_Show( "CONFIRM_BATTLEFIELD_LEAVE" )
+		StaticPopup_Show("CONFIRM_BATTLEFIELD_LEAVE")
 		return
 	end
 	
@@ -304,28 +317,78 @@ function LeaveBattlefield( ... )
 	Orig_LeaveBattlefield( ... )
 end
 
-function SSPVP:CHAT_MSG_BG_SYSTEM_NEUTRAL( event, msg )
-	if( string.find( msg, L["2 minute"] ) ) then
-		SSOverlay:UpdateTimer( "general", L["Starting In: %s"], 121 )
+-- Block raid join/leaves
+local Orig_ChatFrame_SystemEventHandler = ChatFrame_SystemEventHandler
+function ChatFrame_SystemEventHandler(event, ...)
+	if( arg1 and SSPVP.db.profile.reformat.blockSpam and (string.match(arg1, JoinedRaid) or string.match(arg1, LeftRaid) ) ) then
+		return true
+	end
+	
+	return Orig_ChatFrame_SystemEventHandler(event, ...)
+end
 
-	elseif( string.find( msg, L["1 minute"] ) or string.find( msg, L["One minute until"] ) ) then
-		SSOverlay:UpdateTimer( "general", L["Starting In: %s"], 61 )
+-- Auto append server name
+local Orig_SendChatMessage = SendChatMessage
+function SendChatMessage(text, type, language, target, ...)
+	if( target and SSPVP.db.profile.reformat.autoAppend and type == "WHISPER" and not string.match(target, "-") ) then
+		local foundName
+		local foundPlayers = 0
+				
+		target = string.lower(target)
+		
+		for i=1, GetNumBattlefieldScores() do
+			local name = GetBattlefieldScore(i)
+			
+			if( string.match(string.lower(name), "^" .. target) ) then
+				foundPlayers = foundPlayers + 1
+				foundName = name
+			end
+		end
+		
+		-- Nothing found in battlefield scores, scan raid
+		if( foundPlayers == 0 ) then
+			for i=1, GetNumRaidMembers() do
+				local name, server = UnitName( "raid" .. i )
+				
+				if( server and string.lower(name) == target ) then
+					foundName = target .. "-" .. select(2, UnitName("raid" .. i))
+					foundPlayers = foundPlayers + 1
+				end
+			end
+		end
+		
+		-- If we only found one match, set the new name, otherwise discard it
+		if( foundPlayers == 1 ) then
+			target = foundName
+		end
+	end
+	
+	return Orig_SendChatMessage(text, type, language, target, ...)
+end
 
-	elseif( string.find( msg, L["30 seconds"] ) or string.find( msg, L["Thirty seconds until"] ) ) then
-		SSOverlay:UpdateTimer( "general", L["Starting In: %s"], 31 )
+-- Battlefield start time
+function SSPVP:CHAT_MSG_BG_SYSTEM_NEUTRAL(event, msg)
+	if( string.match(msg, L["2 minute"]) ) then
+		SSOverlay:UpdateTimer("general", L["Starting In: %s"], 121)
 
-	elseif( string.find( msg, L["Fifteen seconds until"] ) ) then
-		SSOverlay:UpdateTimer( "general", L["Starting In: %s"], 15 )
+	elseif( string.match(msg, L["1 minute"]) or string.match(msg, L["One minute until"]) ) then
+		SSOverlay:UpdateTimer("general", L["Starting In: %s"], 61)
+
+	elseif( string.match(msg, L["30 seconds"]) or string.match(msg, L["Thirty seconds until"]) ) then
+		SSOverlay:UpdateTimer("general", L["Starting In: %s"], 31)
+
+	elseif( string.match(msg, L["Fifteen seconds until"]) ) then
+		SSOverlay:UpdateTimer("general", L["Starting In: %s"], 15)
 	end
 end
 
+-- Auto queue
 function SSPVP:BATTLEFIELDS_SHOW()
-	local status, map, registeredMatch
 	local queued = 0
 	local shownField = GetBattlefieldInfo()
 
 	for i=1, MAX_BATTLEFIELD_QUEUES do
-		status, map, _, _, _, registeredMatch = GetBattlefieldStatus( i )
+		local status, map, _, _, _, registeredMatch = GetBattlefieldStatus( i )
 		if( status == "queued" or status == "confirm" ) then
 			queued = queued + 1
 		
@@ -339,6 +402,8 @@ function SSPVP:BATTLEFIELDS_SHOW()
 	if( shownField == L["All Arenas"] ) then
 		if( ( ( GetNumPartyMembers() > 0 ) or ( GetNumRaidMembers() > 0 ) ) and IsPartyLeader() ) then
 			local teamTotals = { [2] = 0, [3] = 0, [5] = 0 }
+			
+			-- Figure out which team we're playing with
 			for teamID=1, MAX_ARENA_TEAMS do
 				local _, teamSize = GetArenaTeam(teamID)
 				if( teamSize > 0 ) then
@@ -355,7 +420,8 @@ function SSPVP:BATTLEFIELDS_SHOW()
 					end
 				end
 			end
-	
+			
+			-- Choose something!
 			if( teamTotals[5] == 5 ) then
 				ArenaFrame.selection = 3
 			elseif( teamTotals[3] == 3 ) then
@@ -374,6 +440,7 @@ function SSPVP:BATTLEFIELDS_SHOW()
 		return
 	end
 	
+	-- Auto 
 	if( self.db.profile.queue.autoSolo and GetNumPartyMembers() == 0 and GetNumRaidMembers() == 0 ) then
 		JoinBattlefield( GetSelectedBattlefield() )
 	elseif( self.db.profile.queue.autoGroup and CanJoinBattlefieldAsGroup() and IsPartyLeader() ) then
@@ -381,21 +448,23 @@ function SSPVP:BATTLEFIELDS_SHOW()
 	end
 end
 
+-- Auto skip gossip
 function SSPVP:GOSSIP_SHOW()
 	if( GossipFrame.buttonIndex ) then
 		for i=1, GossipFrame.buttonIndex do
-			local gossipText = getglobal( "GossipTitleButton" .. i ):GetText()
+			local gossipText = getglobal("GossipTitleButton" .. i):GetText()
 			
 			if( gossipText == L["I would like to go to the battleground."] or gossipText == L["I would like to fight in an arena."] or gossipText == L["I wish to join the battle!"] ) then
-				getglobal( "GossipTitleButton" .. i ):Click()	
+				getglobal("GossipTitleButton" .. i):Click()	
 			end
 		end
 	end
 end
 
-function SSPVP:EnableModules( activeBattlefield )
+-- Enable any module that needs to be active in a battlefield/bg
+function SSPVP:EnableModules(activeBattlefield)
 	for name, module in SSPVP:IterateModules() do
-		if( not self.db.profile.modules[ name ] and module.activeIn and not module.moduleEnabled ) then
+		if( not self.db.profile.modules[name] and module.activeIn and not module.moduleEnabled ) then
 			-- A battleground refers to WSG, AB, EoTS, AV, while a battlefield refers to WSG, AB, EoTS, AV, Arenas.
 			if( module.activeIn == "bf" or ( module.activeIn == "bg" and activeBattlefield ~= "arena" ) or module.activeIn == activeBattlefield ) then
 				module.moduleEnabled = true
@@ -405,7 +474,8 @@ function SSPVP:EnableModules( activeBattlefield )
 	end
 end
 
-function SSPVP:DisableModules()
+-- Disable all active modules
+function SSPVP:DisableAllModules()
 	for name, module in SSPVP:IterateModules() do
 		if( module.DisableModule and module.moduleEnabled ) then
 			module.moduleEnabled = nil
@@ -414,117 +484,103 @@ function SSPVP:DisableModules()
 	end
 end
 
+-- Battlefield info!
 function SSPVP:UPDATE_BATTLEFIELD_STATUS()
-	SSOverlay:RemoveCategory( "queue" )
-	
-	local status, map, id, teamSize
-
+	SSOverlay:RemoveCategory("queue")
 	for i=1, MAX_BATTLEFIELD_QUEUES do
-		status, map, id, _, _, teamSize, registeredMatch = GetBattlefieldStatus( i )
+		local status, map, id, _, _, teamSize, registeredMatch = GetBattlefieldStatus(i)
 		
-		if( status == "confirm" and battlefieldInfo[ map .. teamSize ] ~= "confirm" ) then
-			battlefieldInfo[ map .. ":" .. teamSize ] = status
+		-- Queue popped
+		if( status == "confirm" and battlefieldInfo[map .. teamSize] ~= "confirm" ) then
+			battlefieldInfo[map .. teamSize] = status
 
-			self:QueueReady( i, map )
+			self:QueueReady(i, map)
 			self:PlaySound()
 		
-		elseif( status == "queued" and battlefieldInfo[ map .. teamSize ] ~= "queued" ) then
-			battlefieldInfo[ map .. teamSize ] = status
+		-- Just joined the queue for a battlefield
+		elseif( status == "queued" and battlefieldInfo[map .. teamSize] ~= "queued" ) then
+			battlefieldInfo[map .. teamSize] = status
 
-			if( GetBattlefieldTimeWaited( i ) <= 1000 ) then
+			if( GetBattlefieldTimeWaited(i) <= 1000 ) then
 				if( teamSize > 0 ) then
 					if( registeredMatch ) then
-						self:Print( string.format( L["You are now in the queue for %s Arena (%dvs%d)."], L["Rated"], teamSize, teamSize ) )
+						self:Print(string.format(L["You are now in the queue for %s Arena (%dvs%d)."], L["Rated"], teamSize, teamSize))
 					else
-						self:Print( string.format( L["You are now in the queue for %s Arena (%dvs%d)."], L["Skirmish"], teamSize, teamSize ) )
+						self:Print(string.format(L["You are now in the queue for %s Arena (%dvs%d)."], L["Skirmish"], teamSize, teamSize))
 					end
 				else
-					self:Print( string.format( L["You are now in the queue for %s."], map ) )
+					self:Print(string.format(L["You are now in the queue for %s."], map))
 				end
 				
-				if( ( GetBattlefieldInfo() ) == map and BattlefieldFrame:IsShown() ) then
-					HideUIPanel( BattlefieldFrame )
+				if( (GetBattlefieldInfo()) == map and BattlefieldFrame:IsShown() ) then
+					HideUIPanel(BattlefieldFrame)
 				end
 			end
-			
+		
+		-- Just joined a battlefield
 		elseif( status == "active" and i ~= activeBF.id ) then
+			battlefieldInfo[map .. teamSize] = status
+			
+			-- Grab data now so we aren't waiting 15 seconds
 			RequestBattlefieldScoreData()
-			battlefieldInfo[ map .. teamSize ] = status
-
+			
+			-- Basic data
 			activeBF.id = i
 			activeBF.map = map
 			activeBF.teamSize = teamSize
 			activeBF.isRegistered = registeredMatch
-			activeBF.abbrev = SSPVP:GetBattlefieldAbbrev( map )
+			activeBF.abbrev = SSPVP:GetBattlefieldAbbrev(map)
 			
+			-- Joined, get modules/sound finished up/ready
 			self:StopSound()
-			self:DisableModules()
-			self:EnableModules( activeBF.abbrev )
+			self:DisableAllModules()
+			self:EnableModules(activeBF.abbrev)
 			
+			-- Pop the battlefield minimap
 			if( activeBF.abbrev ~= "arena" ) then
 				if( SSPVP.db.profile.bf.minimap ) then
 					BattlefieldMinimap_LoadUI()
 
-					if( BattlefieldMinimap ) then
+					if( IsAddOnLoaded("Blizzard_BattlefieldMinimap") ) then
 						BattlefieldMinimap:Show()
 						BattlefieldMinimap_Update()
 					end
-
-				elseif( BattlefieldMinimap ) then
+				elseif( IsAddOnLoaded("Blizzard_BattlefieldMinimap") ) then
 					BattlefieldMinimap:Hide()
 				end
-
-			elseif( BattlefieldMinimap ) then
+			
+			-- Don't need it open, hide then!
+			elseif( IsAddOnLoaded("Blizzard_BattlefieldMinimap") ) then
 				BattlefieldMinimap:Hide()
 			end
-
+		
+		-- We left the battlefield
 		elseif( status ~= "active" and i == activeBF.id ) then
-			self:DisableModules()
-			SSOverlay:RemoveRow("timer", "general", L["Starting In: %s"])
-			
-			battlefieldInfo[ map .. teamSize ] = status
-			activeBF = { id = -1 }
+			activeBF.id = -1
 
-			if( IsAddOnLoaded( "Blizzard_BattlefieldMinimap" ) ) then
+			self:DisableAllModules()
+			SSOverlay:RemoveRow("timer", "general", L["Starting In: %s"])
+
+			if( IsAddOnLoaded("Blizzard_BattlefieldMinimap") ) then
 				BattlefieldMinimap:Hide()
 			end
 		end
 		
 		-- No longer a confirmation, so clear out config/joining
 		if( status ~= "confirm" and map ) then
-			battlefieldInfo[ map .. teamSize ] = nil
-			
 			if( id == joiningBF ) then
 				joiningBF = nil
+				joiningAt = nil
 			end
 		end
 		
 		-- Deal with the queue overlay
 		if( status ~= "none" and SSPVP.db.profile.queue.enabled and ( activeBF.id == -1 or SSPVP.db.profile.queue.insideField ) ) then
-			if( teamSize > 0 ) then
-				if( registeredMatch ) then
-					map = string.format( L["%s [%s] (%dvs%d)"], map, L["R"], teamSize, teamSize )
-				else
-					map = string.format( L["%s [%s] (%dvs%d)"], map, L["S"], teamSize, teamSize )
-				end
-			end
-			
-			if( status == "confirm" ) then
-				SSOverlay:UpdateTimer( "queue", map .. ": %s", GetBattlefieldPortExpiration( i ) / 1000 )
-
-			elseif( status == "active" ) then
-				SSOverlay:UpdateText( "queue", map .. ": #" .. id )
-
-			elseif( status == "queued" ) then
-				if( SSPVP.db.profile.queue.showEta and GetBattlefieldEstimatedWaitTime( i ) > 0 ) then
-					SSOverlay:UpdateElapsed( "queue", map .. ": %s (" .. SSOverlay:FormatTime( GetBattlefieldEstimatedWaitTime( i ) / 1000, SSPVP.db.profile.queue.etaFormat ) .. ")", GetBattlefieldTimeWaited( i ) / 1000 )
-				else
-					SSOverlay:UpdateElapsed( "queue", map .. ": %s", GetBattlefieldTimeWaited( i ) / 1000 )
-				end
-			end
-		end		
+			SSPVP:UpdateQueueOverlay(i)
+		end	
 	end
 	
+	-- Do we need to queue auto leave or take a screenshot?
 	if( activeBF.id > 0 ) then
 		if( not SSPVP.db.profile.queue.insideField ) then
 			SSOverlay:RemoveCategory( "queue" )
@@ -542,10 +598,55 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 	end
 end
 
+function SSPVP:UpdateQueueOverlay(id)
+	local status, map, instanceID, _, _, teamSize, registeredMatch = GetBattlefieldStatus(id)
+
+	if( teamSize > 0 ) then
+		local allArena
+		
+		-- We need to make a copy of all arenas so we can remove the old message
+		-- when switching from queue -> confirmation
+		if( registeredMatch ) then
+			allArena = string.format( L["%s [%s] (%dvs%d)"], L["All Arenas"], L["R"], teamSize, teamSize)
+			map = string.format(L["%s [%s] (%dvs%d)"], map, L["R"], teamSize, teamSize )
+		else
+			allArena = string.format( L["%s [%s] (%dvs%d)"], L["All Arenas"], L["S"], teamSize, teamSize)
+			map = string.format(L["%s [%s] (%dvs%d)"], map, L["S"], teamSize, teamSize)
+		end
+		
+		SSOverlay:RemoveRow(nil, "queue", allArena)
+	end
+	
+	SSOverlay:RemoveRow(nil, "queue", map)
+	
+	if( status == "confirm" ) then
+		if( joiningBF == id and joiningAt ) then
+			SSOverlay:UpdateTimer("queue", map .. ": " .. L["Joining"] .. " %s", joiningAt - GetTime())
+		else
+			SSOverlay:UpdateTimer("queue", map .. ": %s", GetBattlefieldPortExpiration(id) / 1000)
+		end
+	elseif( status == "active" ) then
+		local runTime = GetBattlefieldInstanceRunTime()
+		if( runTime > 0 ) then
+			SSOverlay:UpdateElapsed("queue", map .. ": %s (#%d)", runTime, instanceID)
+		else
+			SSOverlay:UpdateText("queue", map .. ": #%s", instanceID)
+		end
+	elseif( status == "queued" ) then
+		local etaTime = GetBattlefieldEstimatedWaitTime(id) / 1000
+		if( SSPVP.db.profile.queue.showEta and etaTime > 0 ) then
+			SSOverlay:UpdateElapsed("queue", map .. ": %s (%s)", GetBattlefieldTimeWaited(id) / 1000, SSOverlay:FormatTime(GetBattlefieldEstimatedWaitTime(id) / 1000, SSPVP.db.profile.queue.etaFormat))
+		else
+			SSOverlay:UpdateElapsed("queue", map .. ": %s", GetBattlefieldTimeWaited(id) / 1000)
+		end
+	end
+end
+
 -- Theres delay issues if we don't check leaving battlefield before this.
 function SSPVP:LeaveBattlefield()
 	if( GetBattlefieldWinner() ) then
-		if( SSPVP.db.profile.arena.chatInfo and (IsActiveBattlefieldArena()) and select(2, IsActiveBattlefieldArena()) ) then
+		local self = SSPVP
+		if( self.db.profile.arena.chatInfo and (IsActiveBattlefieldArena()) and select(2, IsActiveBattlefieldArena()) ) then
 			local winName, winRating, winPoints
 			local loseName, loseRating, losePoints
 			local oldRating
@@ -561,7 +662,7 @@ function SSPVP:LeaveBattlefield()
 			end
 			
 			if( winName and loseName ) then
-				SSPVP:Print(string.format(L["%s %d points (%d rating) / %s %d points (%d rating)"], winName, winPoints, winRating, loseName, losePoints, loseRating))
+				self:Print(string.format(L["%s %d points (%d rating) / %s %d points (%d rating)"], winName, winPoints, winRating, loseName, losePoints, loseRating))
 			end
 		end
 		
@@ -570,19 +671,23 @@ function SSPVP:LeaveBattlefield()
 	end
 end
 
+-- If the auto leave happens before the screenshots finished then you get a nice
+-- screenshot of the loading screen
 function SSPVP:ScreenshotTaken()
 	if( activeBF.screenShot and self.db.profile.leave.screen ) then
+		activeBf.screenShot = nil
 		self:QueueBattlefieldLeave()
 	end
 end
 
+-- Queue battlefield leave
+-- Make sure we don't have a battlefield thats ready to be joined
 function SSPVP:QueueBattlefieldLeave()
-	-- Make sure we don't have a battlefield thats ready to be joined
 	local active = 0
-	local status, map, abbrev
+	local abbrev
 	
 	for i=1, MAX_BATTLEFIELD_QUEUES do
-		status, map = GetBattlefieldStatus( i )
+		local status, map = GetBattlefieldStatus( i )
 		
 		if( status == "active" ) then
 			active = active + 1
@@ -594,14 +699,19 @@ function SSPVP:QueueBattlefieldLeave()
 	end
 	
 	if( active == 1 ) then
+		local delay
 		if( abbrev == "arena" ) then
-			self:RegisterTimer( self, "LeaveBattlefield", self.db.profile.leave.arenaDelay )
+			delay = self.db.profile.leave.arenaDelay
 		else
-			self:RegisterTimer( self, "LeaveBattlefield", self.db.profile.leave.bgDelay )
+			delay = self.db.profile.leave.bgDelay
 		end
+		
+		
+		self:ScheduleTimer("SSAUTOLEAVE", self.LeaveBattlefield, delay)
 	end
 end
 
+-- Simplifies checks
 function SSPVP:GetBattlefieldAbbrev( map )
 	if( map == L["Warsong Gulch"] ) then
 		return "wsg"
@@ -633,8 +743,10 @@ function SSPVP:MaxBattlefieldPlayers()
 	return 0
 end
 
+-- Make sure we can actually auto join still
 function SSPVP:AutoJoinBattlefield()
-	if( not joiningBF or not SSPVP.db.profile.join.enabled ) then
+	local self = SSPVP
+	if( not joiningBF or not self.db.profile.join.enabled ) then
 		return		
 	end
 	
@@ -642,7 +754,7 @@ function SSPVP:AutoJoinBattlefield()
 	local isInstance, type = IsInInstance()
 
 	-- Figure out our current status
-	if( UnitIsAFK( "player" ) ) then
+	if( UnitIsAFK("player") ) then
 		currentType = "afk"
 	elseif( activeBF.id > 0 ) then
 		if( activeBF.abbrev == "arena" ) then
@@ -677,6 +789,7 @@ function SSPVP:AutoJoinBattlefield()
 	-- Don't bother trying to auto join if we're already inside
 	if( joinAbbrev == activeBF.abbrev ) then
 		joiningBF = nil
+		joiningAt = nil
 		return
 	end
 	
@@ -684,17 +797,19 @@ function SSPVP:AutoJoinBattlefield()
 	-- the other only overrides ones that are less then or equal, 
 	if( ( self.db.profile.join.type == "less" and self.db.profile.priority[ currentType ] < self.db.profile.priority[ joinAbbrev ] ) or
 	( self.db.profile.join.type == "lseql" and self.db.profile.priority[ currentType ] <= self.db.profile.priority[ joinAbbrev ] ) ) then
-		SSPVP:Print( string.format( L["You're currently inside/doing something that is a higher priority then %s, auto join disabled." ], joinMap ) )
+		SSPVP:Print(string.format(L["You're currently inside/doing something that is a higher priority then %s, auto join disabled." ], joinMap))
 		return
 	end
 	
-	AcceptBattlefieldPort( joiningBF, true )
+	AcceptBattlefieldPort(joiningBF, true)
 	joiningBF = nil
+	joiningAt = nil
 end
 
-function SSPVP:QueueReady( id, map )
+-- Queues ready, check if we need to queue a timer fori t
+function SSPVP:QueueReady(id, map)
 	local delayType
-	if( SSPVP:GetBattlefieldAbbrev( map ) == "arena" ) then
+	if( SSPVP:GetBattlefieldAbbrev(map) == "arena" ) then
 		delayType = "arenaDelay"
 	else
 		if( UnitIsAFK( "player" ) ) then
@@ -707,29 +822,36 @@ function SSPVP:QueueReady( id, map )
 	-- Not joining anything else, just register the auto join
 	if( not joiningBF ) then
 		joiningBF = id
-		self:RegisterTimer( self, "AutoJoinBattlefield", self.db.profile.join[ delayType ] )
+		joiningAt = GetTime() + self.db.profile.join[delayType]
+
+		self:ScheduleTimer("SSAUTOJOIN", self.AutoJoinBattlefield, self.db.profile.join[delayType])
 
 	elseif( joiningBF ~= id ) then
 		-- Check if we have a higher priority queue
-		local _, joinMap = GetBattlefieldStatus( joiningBF )
+		local _, joinMap = GetBattlefieldStatus(joiningBF)
+		
 		-- This allows us to have two priority modes, one only overrides priorities that are less then the current
 		-- the other only overrides ones that are less then or equal, 
 		if( ( self.db.profile.join.type == "less" and self.db.profile.priority[ SSPVP:GetBattlefieldAbbrev( map ) ] < self.db.profile.priority[ SSPVP:GetBattlefieldAbbrev( joinMap ) ] ) or
 		( self.db.profile.join.type == "lseql" and self.db.profile.priority[ SSPVP:GetBattlefieldAbbrev( map ) ] <= self.db.profile.priority[ SSPVP:GetBattlefieldAbbrev( joinMap ) ] ) ) then
 			joiningBF = id
+			joiningAt = GetTime() + self.db.profile.join[delayType]
 			
-			self:UnregisterTimer( "AutoJoinBattlefield" )
-			self:RegisterTimer( self, "AutoJoinBattlefield", self.db.profile.join[ delayType ] )
-			self:Print( string.format( L["Higher priority battlefield found, auto joining %s in %d seconds."], map, self.db.profile.join[ delayType ] ) )
+			self:ScheduleTimer("SSAUTOJOIN", self.AutoJoinBattlefield, self.db.profile.join[delayType])
+			self:Print(string.format(L["Higher priority battlefield found, auto joining %s in %d seconds."], map, self.db.profile.join[delayType]))
 		end
 	end
+	
+	SSPVP:UpdateQueueOverlay(id)
 end
 
-function SSPVP:IsPlayerIn( type )
+-- For modules
+function SSPVP:IsPlayerIn(type)
 	return ( activeBF.abbrev == type )
 end
 
-function SSPVP:ChannelMessage( msg, skipPrefix )
+-- Basic channel messages
+function SSPVP:ChannelMessage(msg, skipPrefix)
 	if( not skipPrefix ) then
 		msg = "[SS] " .. msg
 	end
@@ -741,7 +863,8 @@ function SSPVP:ChannelMessage( msg, skipPrefix )
 	SendChatMessage( msg, self.db.profile.general.channel )
 end
 
-function SSPVP:PrintTimer( name, endTime, faction )
+-- Formats/cleans up a timer before sending it out
+function SSPVP:PrintTimer(name, endTime, faction)
 	local secondsLeft = endTime - GetTime()
 
 	if( secondsLeft > 0 and name ) then
@@ -749,18 +872,20 @@ function SSPVP:PrintTimer( name, endTime, faction )
 	end
 end
 
-function SSPVP:AutoMessage( msg, skipPrefix )
+-- Automatic messages SSPVP sends out
+function SSPVP:AutoMessage(msg, skipPrefix)
 	if( not skipPrefix ) then
 		msg = "[SS] " .. msg
 	end
 	
 	if( GetNumRaidMembers() > 0 ) then
-		SendChatMessage( msg, "RAID" )
+		SendChatMessage(msg, "RAID")
 	elseif( GetNumPartyMembers() > 0 ) then
-		SendChatMessage( msg, "PARTY" )
+		SendChatMessage(msg, "PARTY")
 	end
 end
 
+-- Sound
 function SSPVP:PlaySound()
 	if( SSPVP.db.profile.general.sound == "" ) then
 		return
@@ -768,10 +893,10 @@ function SSPVP:PlaySound()
 	
 	SSPVP:StopSound()
 	
-	if( string.find( SSPVP.db.profile.general.sound, "mp3$" ) ) then
-		PlayMusic( "Interface\\AddOns\\SSPVP\\" .. SSPVP.db.profile.general.sound )
+	if( string.find(SSPVP.db.profile.general.sound, "mp3$") ) then
+		PlayMusic("Interface\\AddOns\\SSPVP\\" .. SSPVP.db.profile.general.sound)
 	else
-		PlaySoundFile( "Interface\\AddOns\\SSPVP\\" .. SSPVP.db.profile.general.sound )
+		PlaySoundFile("Interface\\AddOns\\SSPVP\\" .. SSPVP.db.profile.general.sound)
 	end
 end
 
@@ -779,98 +904,68 @@ function SSPVP:StopSound()
 	if( string.find( SSPVP.db.profile.general.sound, "mp3$" ) ) then
 		StopMusic()
 	else
-		local old = GetCVar( "Sound_EnableAllSound" )
-		SetCVar( "Sound_EnableAllSound", 0 )
-		SetCVar( "Sound_EnableAllSound", old )
+		local old = GetCVar("Sound_EnableAllSound")
+		SetCVar("Sound_EnableAllSound", 0)
+		SetCVar("Sound_EnableAllSound", old)
+	end
+end
+
+-- Auto release/accept
+function SSPVP:CORPSE_OUT_OF_RANGE()
+	SSPVP:UnregisterTimer(RetrieveCorpse)
+end
+
+function SSPVP:CORPSE_IN_RANGE()
+	if( SSPVP.db.profile.bf.autoAccept and GetCorpseRecoveryDelay() ~= nil and GetCorpseRecoveryDelay() > 0 ) then
+		self:ScheduleTimer("SSAUTO_RELEASE", RetrieveCorpse, GetCorpseRecoveryDelay() + 1)
+	end
+end
+
+function SSPVP:PLAYER_DEAD()
+	if( SSPVP.db.profile.bf.release ) then
+		if( not HasSoulstone() and SSPVP.db.profile.bf.release ) then
+			StaticPopupDialogs["DEATH"].text = L["Releasing..."]
+			RepopMe()	
+			
+		elseif( HasSoulstone() and SSPVP.db.profile.bf.releaseSS ) then
+			StaticPopupDialogs["DEATH"].text = string.format(L["Using %s..."], HasSoulstone())
+			UseSoulstone()		
+		else
+			StaticPopupDialogs["DEATH"].text = HasSoulstone()	
+		end
+	else
+		StaticPopupDialogs["DEATH"].text = TEXT(DEATH_RELEASE_TIMER)
 	end
 end
 
 -- I'm sure i'll have to extend this at some point to add argument passing.
 function SSPVP:PLAYER_REGEN_ENABLED( event )
 	for func, handler in pairs( queuedUpdates ) do
-		if( type( handler ) == "table" ) then
-			handler[ func ]( handler )
-		elseif( type( func ) == "function" ) then
+		if( type(handler) == "table" ) then
+			handler[func ](handler)
+		elseif( type(func) == "function" ) then
 			func()
-		elseif( type( func ) == "string" ) then
-			getglobal( func )()
+		elseif( type(func) == "string" ) then
+			getglobal(func)()
 		end
 		
-		queuedUpdates[ func ] = nil
+		queuedUpdates[func] = nil
 	end
 end
 
-function SSPVP:UnregisterOOCUpdate( func )
-	queuedUpdates[ func ] = nil
+function SSPVP:UnregisterOOCUpdate(func)
+	queuedUpdates[func] = nil
 end
 
-function SSPVP:RegisterOOCUpdate( handler, func )
-	if( type( handler ) == "table" and type( func ) == "string" ) then
-		queuedUpdates[ func ] = handler
-	elseif( type( handler ) == "function" or type( handler ) == "string" ) then
-		queuedUpdates[ handler ] = true
+function SSPVP:RegisterOOCUpdate(handler, func)
+	if( type(handler) == "table" and type(func) == "string" ) then
+		queuedUpdates[func] = handler
+	elseif( type(handler) == "function" or type(handler) == "string" ) then
+		queuedUpdates[handler] = true
 	end
 end
 
-
--- Timers
-local timers = {}
-function SSPVP:RegisterTimer( addon, func, delay, ... )
-	if( not SSPVP.frame ) then
-		SSPVP.frame = CreateFrame( "Frame" )
-		SSPVP.frame:SetScript( "OnUpdate", SSPVP.OnUpdate )
-	end
-	
-	-- God knows why RetrieveCorpse is being bitchy, i'll deal with it later.
-	if( not delay ) then
-		return
-	end
-	
-	table.insert( timers, { handler = type( func ) == "string" and addon, func = func, runAt = GetTime() + delay, ... } )
-end
-
-function SSPVP:UnregisterAllTimers()
-	timers = {}
-end
-
-function SSPVP:UnregisterTimer( func )
-	for i=#( timers ), 1, -1 do
-		if( timers[i].func == func ) then
-			table.remove( timers, i )
-		end
-	end
-end
-
-local elapsed = 0
-local scoreElapsed = 0
-function SSPVP:OnUpdate()
-	elapsed = elapsed + arg1
-	scoreElapsed = scoreElapsed + arg1
-	
-	if( elapsed > 0.10 ) then
-		local crttime = GetTime()
-		
-		for i=#( timers ), 1, -1 do
-			if( timers[ i ].runAt <= crttime ) then
-				if( timers[ i ].handler ) then
-					timers[ i ].handler[ timers[ i ].func ]( timers[ i ].handler, unpack( timers[ i ] ) )
-				
-				elseif( type( timers[ i ].func ) == "string" ) then
-					getglobal( timers[ i ].func )( unpack( timers[ i ] ) )
-				end
-				
-				table.remove( timers, i )
-			end
-		end
-	end
-	
-	if( activeBF.id > 0 and scoreElapsed > 15 ) then
-		scoreElapsed = 0
-		RequestBattlefieldScoreData()
-	end
-end
-
-
+-- Confirmation popups
 StaticPopupDialogs["CONFIRM_PORT_LEAVE"] = {
 	text = "",
 	button1 = TEXT( YES ),

@@ -1,266 +1,307 @@
-local AB = SSPVP:NewModule( "SSPVP-AB" );
-AB.activeIn = "ab";
+local AB = SSPVP:NewModule("SSPVP-AB")
+AB.activeIn = "ab"
 
-local L = SSPVPLocals;
-local baseInfo = { [0] = 0, [1] = 0.83, [2] = 1.0, [3] = 1.66, [4] = 3.3, [5] = 30.0 };
+local L = SSPVPLocals
+local baseInfo = {[0] = 0, [1] = 0.83, [2] = 1.0, [3] = 1.66, [4] = 3.3, [5] = 30.0}
 
-local Alliance = {};
-local Horde = {};
-local lowest;
+local Alliance = {}
+local Horde = {}
 
-local timers = {};
-local dataSent = {};
+local timers = {}
+local dataSent = {}
+
+local lowest
+local playerFaction
 
 function AB:EnableModule()
-	self:RegisterEvent( "UPDATE_WORLD_STATES", "UpdateOverlay" );
-	self:RegisterEvent( "CHAT_MSG_BG_SYSTEM_HORDE", "HordeMessage" );
-	self:RegisterEvent( "CHAT_MSG_BG_SYSTEM_ALLIANCE", "AllianceMessage" );
+	self:RegisterEvent("UPDATE_WORLD_STATES", "UpdateOverlay")
+	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "HordeMessage")
+	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "AllianceMessage")
 
-	self:RegisterMessage( "SS_ABTIMERS_REQ", "ResponseDelay" );
-	self:RegisterMessage( "SS_ABTIMERS_DATA", "ParseSync" );
+	self:RegisterMessage("SS_ABTIMERS_REQ", "ResponseDelay")
+	self:RegisterMessage("SS_ABTIMERS_DATA", "ParseSync")
 	
-	SSOverlay:AddCategory( "ab", L["Timers"], nil, AB, "PrintAllTimers" );
-	SSOverlay:AddCategory( "abinfo", L["Battlefield Info"], nil, AB, "PrintMatchInfo" );
+	SSOverlay:AddCategory("ab", L["Timers"], nil, AB, "PrintAllTimers")
+	SSOverlay:AddCategory("abinfo", L["Battlefield Info"], nil, AB, "PrintMatchInfo")
 
-	PVPSync:SendMessage( "ABTIMERS" );
+	PVPSync:SendMessage("ABTIMERS")
+	
+	playerFaction = UnitFactionGroup("player")
 end
 
-
 function AB:DisableModule()
-	self:UnregisterAllMessages();
-	self:UnregisterAllEvents();
+	self:UnregisterAllMessages()
+	self:UnregisterAllEvents()
 
-	timers = {};
-	dataSent = {};
+	timers = {}
+	dataSent = {}
 	
-	SSOverlay:RemoveCategory( "abinfo" );
-	SSOverlay:RemoveCategory( "ab" );
+	SSOverlay:RemoveCategory("abinfo")
+	SSOverlay:RemoveCategory("ab")
 end
 
 function AB:Reload()
 	if( not SSPVP.db.profile.timers ) then
-		SSOverlay:RemoveCategory( "ab" );
-	elseif( SSPVP:IsPlayerIn( "ab" ) ) then
-		PVPSync:SendMessage( "ABTIMERS" );
+		SSOverlay:RemoveCategory("ab")
+	elseif( SSPVP:IsPlayerIn("ab") ) then
+		PVPSync:SendMessage("ABTIMERS")
 	end
 	
 	if( not SSPVP.db.profile.overlay ) then
-		SSOverlay:RemoveCategory( "abinfo" );
+		SSOverlay:RemoveCategory("abinfo")
 	end
 end
 
+-- Print match info
 function AB:PrintMatchInfo()
-	SSPVP:ChannelMessage( string.format( L["Time Left: %s / Bases to win: %d (A:%d/H:%d)"], SSOverlay:FormatTime( lowest, "minsec" ), Alliance.basesWin, Alliance.baseScore, Horde.baseScore ) );
-	SSPVP:ChannelMessage( string.format( L["Final Score (Alliance): %d / Final Score (Horde): %d"], Alliance.final, Horde.final ) );
+	SSPVP:ChannelMessage(string.format(L["Time Left: %s / Bases to win: %d (A:%d/H:%d)"], SSOverlay:FormatTime(lowest, "minsec"), Alliance.basesWin, Alliance.baseScore, Horde.baseScore))
+	SSPVP:ChannelMessage(string.format(L["Final Score (Alliance): %d / Final Score (Horde): %d"], Alliance.final, Horde.final))
 end
 
+-- Print all timers!
 function AB:PrintAllTimers()
-	for name, timer in pairs( timers ) do
-		SSPVP:PrintTimer( name, timer.endTime, timer.faction );
+	for name, timer in pairs(timers) do
+		SSPVP:PrintTimer(name, timer.endTime, timer.faction)
 	end
 end
 
+-- Send timers for syncing
 function AB:SendTimers()
-	local send = {};
-	local currentTime = GetTime();
-	local faction, seconds;
+	local send = {}
+	local currentTime = GetTime()
+	local faction, seconds
 
-	for name, timer in pairs( timers ) do
+	-- Send data off
+	for name, timer in pairs(timers) do
 		-- We've already seen the data sent, ignore it.
-		if( not dataSent[ name ] ) then
-			seconds = math.floor( timer.endTime - currentTime );
+		if( not dataSent[name] ) then
+			seconds = math.floor(timer.endTime - currentTime)
 			if( seconds > 0 ) then
-				table.insert( send, name .. ":" .. timer.faction .. ":" .. seconds );
+				table.insert(send, name .. ":" .. timer.faction .. ":" .. seconds)
 			end
 		end
 	end
 	
-	timers = {};
+	-- Reset our saved timers
+	timers = {}
 	
-	if( #( send ) > 0 ) then
-		PVPSync:SendMessage( "ABTIMERS:TIME:T:" .. GetTime() .. "," .. table.concat( send, "," ), "GUILD" );
+	if( #(send) > 0 ) then
+		PVPSync:SendMessage("ABTIMERS:TIME:T:0," .. table.concat( send, "," ), "BATTLEGROUND")
 	end
 end
 
+-- Send timers within 1-5 seconds
 function AB:ResponseDelay()
 	if( not SSPVP.db.profile.ab.timers ) then
-		return;
+		return
 	end
 
-	dataSent = {};
-	SSPVP:RegisterTimer( self, "SendTimers", math.random( 5 ) );
+	dataSent = {}
+	SSPVP:ScheduleTimer("SSABTIMERS", self.SendTimers, math.random(5))
 end
 
-function AB:ParseSync( event, ... )
+-- Parse sync message
+function AB:ParseSync(event, ...)
 	if( not SSPVP.db.profile.ab.timers ) then
-		return;
+		return
 	end
-
-	local name, faction, seconds;
 	
-	for i=1, select( "#", ... ) do
-		name, faction, seconds = string.split( ":", ( select( i, ... ) ) );
-		seconds = tonumber( seconds );
+	for i=1, select("#", ...) do
+		local name, faction, seconds = string.split(":", (select(i, ...)))
+		seconds = tonumber(seconds)
 		
+		-- The first argument was the time it was sent
+		-- this was originally used to sync them
+		-- so if it took 2-3 before parsing it would be more accurate
+		-- but, because of inconsistancies with GetTime() it was removed
 		if( i > 1 ) then
-			dataSent[ name ] = true;
+			dataSent[name] = true
 
 			-- Not an active timer, fine to remove it.
-			if( not timers[ name ] ) then
-				timers[ name ] = { faction = faction, endTime = GetTime() + seconds }
+			if( not timers[name] ) then
+				timers[name] = {faction = faction, endTime = GetTime() + seconds}
 			
+				-- This is mostly for style, uppercase the first letter
+				-- farm -> Farm, blacksmith -> Blacksmith and so on
 				if( GetLocale() == "enUS" ) then
-					name = string.upper( string.sub( name, 0, 1 ) ) .. string.sub( name, 2 );
+					name = string.upper(string.sub(name, 0, 1)) .. string.sub(name, 2)
 				end
 				
-				SSOverlay:UpdateTimer( "ab", name .. ": %s", seconds, SSOverlay:GetFactionColor( faction ) );
-				SSOverlay:AddOnClick( "timer", "ab", name .. ": %s", SSPVP, "PrintTimer", name, GetTime() + seconds, faction );
+				-- Update/display!
+				SSOverlay:UpdateTimer("ab", name .. ": %s", seconds, SSOverlay:GetFactionColor(faction))
+				SSOverlay:AddOnClick("timer", "ab", name .. ": %s", SSPVP, "PrintTimer", name, GetTime() + seconds, faction)
 			end
 		end
 	end
 end
 
-function AB:HordeMessage( event, msg )
-	self:ParseMessage( msg, "Horde" );
+-- Horde event message
+function AB:HordeMessage(event, msg)
+	self:ParseMessage(msg, "Horde")
 end
 
-function AB:AllianceMessage( event, msg )
-	self:ParseMessage( msg, "Alliance" );
+function AB:AllianceMessage(event, msg)
+	self:ParseMessage(msg, "Alliance")
 end
 
-function AB:ParseMessage( msg, faction )
+-- Parse the event message
+function AB:ParseMessage(msg, faction)
 	if( not SSPVP.db.profile.ab.timers ) then
-		return;
+		return
 	end
 	
-	if( string.find( msg, L["has assaulted the ([^!]+)"] ) ) then
-		local name = string.match( msg, L["has assaulted the ([^!]+)"] );
-
-		timers[ name ] = { faction = faction, endTime = GetTime() + 62 }
+	-- Someone took an already controlled node
+	if( string.match(msg, L["has assaulted the ([^!]+)"]) ) then
+		local name = string.match(msg, L["has assaulted the ([^!]+)"])
+		timers[name] = {faction = faction, endTime = GetTime() + 62}
+		
+		-- Uppercase the first letter
 		if( GetLocale() == "enUS" ) then
-			name = string.upper( string.sub( name, 0, 1 ) ) .. string.sub( name, 2 );
+			name = string.upper(string.sub(name, 0, 1)) .. string.sub(name, 2)
 		end
 		
-		SSOverlay:UpdateTimer( "ab", name .. ": %s", 62, SSOverlay:GetFactionColor( faction ) );
-		SSOverlay:AddOnClick( "timer", "ab", name .. ": %s", SSPVP, "PrintTimer", name, GetTime() + 62, faction );
-		
-	elseif( string.find( msg, L["(.+) claims the ([^!]+)"] ) ) then
-		local _, name = string.match( msg, L["(.+) claims the ([^!]+)"] );
-
-		timers[ name ] = { faction = faction, endTime = GetTime() + 62 }
-		if( GetLocale() == "enUS" ) then
-			name = string.upper( string.sub( name, 0, 1 ) ) .. string.sub( name, 2 );
-		end
-		
-		SSOverlay:UpdateTimer( "ab", name .. ": %s", 62, SSOverlay:GetFactionColor( faction ) );
-		SSOverlay:AddOnClick( "timer", "ab", name .. ": %s", SSPVP, "PrintTimer", name, GetTime() + 62, faction );
-		
-	elseif( string.find( msg, L["has taken the ([^!]+)"] ) ) then
-		local name = string.match( msg, L["has taken the ([^!]+)"] );
+		SSOverlay:UpdateTimer("ab", name .. ": %s", 62, SSOverlay:GetFactionColor(faction))
+		SSOverlay:AddOnClick("timer", "ab", name .. ": %s", SSPVP, "PrintTimer", name, GetTime() + 62, faction)
 	
-		SSOverlay:RemoveRow( "timer", "ab", name .. ": %s" );
-		timers[ name ] = nil;
+	-- Someone took an uncontrolled node
+	elseif( string.match( msg, L["(.+) claims the ([^!]+)"] ) ) then
+		local _, name = string.match( msg, L["(.+) claims the ([^!]+)"])
+		timers[name] = {faction = faction, endTime = GetTime() + 62}
 		
-	elseif( string.find( msg, L["has defended the ([^!]+)"] ) ) then
-		local name = string.match( msg, L["has defended the ([^!]+)"] );
+		-- Uppercase the first letter
+		if( GetLocale() == "enUS" ) then
+			name = string.upper(string.sub(name, 0, 1)) .. string.sub(name, 2)
+		end
 		
-		SSOverlay:RemoveRow( "timer", "ab", name .. ": %s" );
-		timers[ name ] = nil;
+		SSOverlay:UpdateTimer("ab", name .. ": %s", 62, SSOverlay:GetFactionColor(faction))
+		SSOverlay:AddOnClick("timer", "ab", name .. ": %s", SSPVP, "PrintTimer", name, GetTime() + 62, faction)
+		
+	-- Node was taken
+	elseif( string.match(msg, L["has taken the ([^!]+)"]) ) then
+		local name = string.match(msg, L["has taken the ([^!]+)"])
+	
+		SSOverlay:RemoveRow("timer", "ab", name .. ": %s")
+		timers[name] = nil
+
+	-- Node was defended before it could be captured
+	elseif( string.match(msg, L["has defended the ([^!]+)"]) ) then
+		local name = string.match(msg, L["has defended the ([^!]+)"])
+		
+		SSOverlay:RemoveRow("timer", "ab", name .. ": %s")
+		timers[name] = nil
 	end
 end
 
+-- Update match info overlay
 function AB:UpdateOverlay()
+	SSOverlay:RemoveCategory("abinfo")
+
 	if( not SSPVP.db.profile.ab.overlay ) then
-		SSOverlay:RemoveCategory( "abinfo" );
-		return;
+		return
 	end
 	
-	SSOverlay:RemoveCategory( "abinfo" );
+	-- Grab info
+	local _, _, allianceText = GetWorldStateUIInfo(1)
+	local _, _, hordeText = GetWorldStateUIInfo(2)
 	
-	local bases, points, enemy, friendly;
-	local _, _, allianceText = GetWorldStateUIInfo( 1 );
-	local _, _, hordeText = GetWorldStateUIInfo( 2 );
-	
-	bases, points = string.match( allianceText, L["Bases: ([0-9]+)  Resources: ([0-9]+)/2000"] );
-	Alliance.bases = tonumber( bases );
-	Alliance.points = tonumber( points );
-	Alliance.left = 2000 - points;
+	-- Parse alliance info
+	local bases, points = string.match(allianceText, L["Bases: ([0-9]+)  Resources: ([0-9]+)/2000"])
+	Alliance.bases = tonumber( bases )
+	Alliance.points = tonumber( points )
+	Alliance.left = 2000 - points
 
-	Alliance.time = Alliance.left / baseInfo[ Alliance.bases ];
-	Alliance.basesWin = 0;
+	Alliance.time = Alliance.left / baseInfo[ Alliance.bases ]
+	Alliance.basesWin = 0
 	
-	bases, points = string.match( hordeText, L["Bases: ([0-9]+)  Resources: ([0-9]+)/2000"] );
-	Horde.bases = tonumber( bases );
-	Horde.points = tonumber( points );
-	Horde.left = 2000 - points;
-	Horde.time = Horde.left / baseInfo[ Horde.bases ];
-	Horde.basesWin = 0;
+	-- Now parse horde info
+	bases, points = string.match(hordeText, L["Bases: ([0-9]+)  Resources: ([0-9]+)/2000"])
+	Horde.bases = tonumber(bases)
+	Horde.points = tonumber(points)
+	Horde.left = 2000 - points
+	Horde.time = Horde.left / baseInfo[Horde.bases]
+	Horde.basesWin = 0
 	
+	-- Game hasn't started yet, just return
 	if( Horde.points == 0 and Alliance.points == 0 ) then
-		return;
+		return
 	end
 	
+	-- Find out which side is going to win
 	if( Alliance.time < Horde.time ) then
-		lowest = Alliance.time;
+		lowest = Alliance.time
 	else
-		lowest = Horde.time;
+		lowest = Horde.time
 	end
 	
+	-- Add time left
 	if( SSPVP.db.profile.ab.timeLeft ) then
-		SSOverlay:UpdateTimer( "abinfo", L["Time Left: %s"], lowest, SSOverlay:GetFactionColor() );
+		SSOverlay:UpdateTimer("abinfo", L["Time Left: %s"], lowest, SSOverlay:GetFactionColor())
 	end
 	
-	Alliance.final = floor( ( Alliance.points + ( lowest * baseInfo[ Alliance.bases ] + 0.5 ) ) / 10 ) * 10;
-	Horde.final = floor( ( Horde.points + ( lowest * baseInfo[ Horde.bases ] + 0.5 ) ) / 10 ) * 10;
-
+	-- Calculate final scores
+	Alliance.final = floor((Alliance.points + (lowest * baseInfo[Alliance.bases] + 0.5)) / 10) * 10
+	Horde.final = floor((Horde.points + (lowest * baseInfo[Horde.bases] + 0.5)) / 10) * 10
+	
+	-- Display them
 	if( SSPVP.db.profile.ab.finalScore ) then
-		SSOverlay:UpdateText( "abinfo", L["Final Score: %d"], SSOverlay:GetFactionColor( "Alliance" ), Alliance.final );
-		SSOverlay:UpdateText( "abinfo", L["Final Score: %d"], SSOverlay:GetFactionColor( "Horde" ), Horde.final );
+		SSOverlay:UpdateText("abinfo", L["Final Score: %d"], SSOverlay:GetFactionColor("Alliance"), Alliance.final)
+		SSOverlay:UpdateText("abinfo", L["Final Score: %d"], SSOverlay:GetFactionColor("Horde"), Horde.final)
 	end
 	
-	if( UnitFactionGroup( "player" ) == "Alliance" ) then
-		enemy = Horde;
-		friendly = Alliance;
+	-- Figure out bases to win information
+	local enemy, friendly
+	if( playerFaction == "Alliance" ) then
+		enemy = Horde
+		friendly = Alliance
 	else
-		enemy = Alliance;
-		friendly = Horde;
+		enemy = Alliance
+		friendly = Horde
 	end
 	
-	local baseLowest;
+	local baseLowest
 	
 	for i=1, 5 do
-		local enemyTime = enemy.left / baseInfo[ 5 - i ];
-		local friendlyTime = friendly.left / baseInfo[ i ];
+		-- Calculate time left using the base info
+		local enemyTime = enemy.left / baseInfo[5 - i]
+		local friendlyTime = friendly.left / baseInfo[i]
 		if( friendlyTime < enemyTime ) then
-			baseLowest = friendlyTime;
+			baseLowest = friendlyTime
 		else
-			baseLowest = enemyTime;
+			baseLowest = enemyTime
 		end
 		
-		local enemyFinal = floor( ( enemy.points + floor( baseLowest * baseInfo[ 5 - i ] + 0.5 ) ) / 10 ) * 10;
-		local friendlyFinal = floor( ( friendly.points + floor( baseLowest * baseInfo[ i ] + 0.5 ) ) / 10 ) * 10;
+		-- Calculate final scores using base info
+		local enemyFinal = floor((enemy.points + floor(baseLowest * baseInfo[ 5 - i ] + 0.5 )) / 10) * 10
+		local friendlyFinal = floor((friendly.points + floor(baseLowest * baseInfo[ i ] + 0.5)) / 10) * 10
 		
+		-- Will win!
 		if( friendlyFinal >= 2000 and enemyFinal < 2000 ) then
-			Alliance.basesWin = i;
-			Horde.basesWin = i;
+			-- Store this for printing match info
+			Alliance.basesWin = i
+			Horde.basesWin = i
 			
+			local allianceScore, hordeScore
+			if( playerFaction == "Alliance" ) then
+				Alliance.baseScore = friendlyFinal
+				Horde.baseScore = enemyFinal
+			else
+				Alliance.baseScore = enemyFinal
+				Horde.baseScore = friendlyFinal
+			end
+
+			-- Make sure we want to displays it!
 			if( SSPVP.db.profile.ab.basesWin ) then
+				-- Just show bases to win
 				if( not SSPVP.db.profile.ab.basesScore ) then
-					SSOverlay:UpdateText( "abinfo", L["Bases to win: %d"], SSOverlay:GetFactionColor(), i );
+					SSOverlay:UpdateText("abinfo", L["Bases to win: %d"], SSOverlay:GetFactionColor(), i)
+				
+				-- Show bases to win + score with those bases
 				else
-					local allianceScore, hordeScore;
-					if( UnitFactionGroup( "player" ) == "Alliance" ) then
-						Alliance.baseScore = friendlyFinal;
-						Horde.baseScore = enemyFinal;
-					else
-						Alliance.baseScore = enemyFinal;
-						Horde.baseScore = friendlyFinal;
-					end
-					
-					SSOverlay:UpdateText( "abinfo", L["Bases to win: %d (A:%d/H:%d)"], SSOverlay:GetFactionColor(), i, Alliance.baseScore, Horde.baseScore );
+					SSOverlay:UpdateText("abinfo", L["Bases to win: %d (A:%d/H:%d)"], SSOverlay:GetFactionColor(), i, Alliance.baseScore, Horde.baseScore)
 				end
 			end
-			break;
+			
+			break
 		end
 	end
 end
