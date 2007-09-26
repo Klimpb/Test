@@ -77,11 +77,11 @@ local function positionWidgets(columns, parent, widgets, positionGroup, isGroup)
 		local height = 0
 		for i, widget in pairs(widgets) do
 			widget:ClearAllPoints()
-
+			
 			if( i > 1 ) then
 				heightUsed = heightUsed + height + 5 + ( widget.yPos or 0 )
 			end
-			
+
 			local xPos = widget.xPos
 			if( widget.infoButton and widget.infoButton.type ) then
 				xPos = ( xPos or 0 ) + 15
@@ -97,6 +97,20 @@ local function positionWidgets(columns, parent, widgets, positionGroup, isGroup)
 			widget:SetPoint("TOPLEFT", parent, "TOPLEFT", xPos or 5, -heightUsed)
 			widget:Show()
 			height = widget:GetHeight() + ( widget.yPos or 0 )
+		end
+				
+		local checkPos = #(widgets)
+		if( checkPos == 1 ) then
+			heightUsed = 8
+		end
+		
+		local widget = widgets[checkPos]
+		if( widget.data and widget.data.type ~= "color" and widget.data.type ~= "check" ) then
+			if( widget:GetHeight() >= 35 ) then
+				heightUsed = heightUsed + widget:GetHeight()
+			else
+				heightUsed = heightUsed + (widget.yPos or 0) + 5
+			end
 		end
 	else
 		local height = 0
@@ -552,7 +566,7 @@ local HouseAuthority = {}
 local configs = {}
 local id = 0
 
-local methods = { "GetFrame", "UpdateDropdown", "CreateConfiguration", "CreateButton", "CreateGroup", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
+local methods = { "GetFrame", "InjectUIObject", "UpdateDropdown", "CreateConfiguration", "CreateButton", "CreateGroup", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
 local widgetList = {["label"] = "CreateLabel", ["check"] = "CreateCheckBox", ["input"] = "CreateInput", ["dropdown"] = "CreateDropdown", ["color"] = "CreateColorPicker", ["slider"] = "CreateSlider", ["group"] = "CreateGroup", ["button"] = "CreateButton",}
 
 -- Extract the configuration obj from a frame
@@ -1030,6 +1044,29 @@ function HouseAuthority.CreateDropdown(config, data)
 	return button
 end
 
+-- Lets you inject a custom UI object so you can use HA along side
+-- some custom configuration widgets
+function HouseAuthority.InjectUIObject(config, UIObj, data)
+	argcheck(UIObj, 2, "table")
+	argcheck(data, 3, "table")
+	argcheck(data.xPos, "xPos", "number", "nil")
+	argcheck(data.yPos, "yPos", "number", "nil")
+	argcheck(data.group, "group", "string", "nil");
+	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateDropdown"))
+	
+	config = configs[config.id]
+	
+	data.type = "inject"
+	
+	UIObj.parent = config
+	UIObj.data = data
+	UIObj.xPos = data.xPos
+	UIObj.yPos = data.yPos
+	UIObj:Hide()
+	
+	table.insert(config.widgets, UIObj)
+end
+
 function HouseAuthority.GetFrame(config)
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "GetFrame"))
 	assert(3, OptionHouse:GetFrame("addon"), L["OH_NOT_INITIALIZED"])
@@ -1140,10 +1177,12 @@ function HouseAuthority:CreateConfiguration(data, frameData)
 	
 	local handler = HouseAuthority:RegisterFrame(frameData)
 	for id, widget in pairs(data) do
-		if( widget.type and widgetList[widget.type] ) then
+		if( widget.type == "inject" ) then
+			handler["InjectUIObject"](handler, widget.widget, widget)
+		elseif( widget.type and widgetList[widget.type] ) then
 			handler[widgetList[widget.type]](handler, widget)
 		else
-			error(string.format(L["INVALID_WIDGETTYPE"], widget.type or "nil", "label, check, input, dropdown, color, slider, group, button"), 3)
+			error(string.format(L["INVALID_WIDGETTYPE"], widget.type or "nil", "inject, label, check, input, dropdown, color, slider, group, button"), 3)
 		end
 	end
 	
