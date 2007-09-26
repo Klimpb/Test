@@ -24,6 +24,7 @@ SSPVPLocals = {
 	["Using %s..."] = "Using %s...",
 	
 	["Unknown"] = "Unknown",
+	["Priorities"] = "Priorities",
 	
 	["You are about to leave the active or queued battlefield %s, are you sure?"] = "You are about to leave the active or queued battlefield %s, are you sure?",
 	["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"] = "You are about to leave the active or queued arena %s (%dvs%d), are you sure?",
@@ -37,6 +38,8 @@ SSPVPLocals = {
 	["Joining"] = "Joining",
 	
 	["Ressurections"] = "Ressurections",
+	
+	["Categories"] = "Categories",
 	
 	["Pet"] = "Pet",
 	["(L) %s"] = "(L) %s",
@@ -314,7 +317,6 @@ SSPVPLocals = {
 	["Flag Captures: %d"] = "Flag Captures: %d",
 	["Towers to win: %d"] = "Towers to win: %d",
 	["Towers to win: %d (A:%d/H:%d)"] = "Towers to win: %d (A:%d/H:%d)",
-	["Captures to win: %d"] = "Captures to win: %d",
 	
 	-- Auto turn in
 	["Removed the quest '%s...' from auto complete."] = "Removed the quest '%s...' from auto complete.",
@@ -363,14 +365,8 @@ SSPVPLocals = {
 	["Color"] = "Color",
 	["Reformat"] = "Reformat",
 	
-	-- Module names
-	["SSPVP-AB"] = "Arathi Basin",
-	["SSPVP-WSG"] = "Warsong Gulch",
-	["SSPVP-EoTS"] = "Eye of the Storm",
-	["SSPVP-AV"] = "Alterac Valley",
-	["SSPVP-Arena"] = "Arena",
-	
-	["Disable module %s"] = "Disable module %s",
+	["Disable %s module"] = "Disable %s module",
+	["Arena"] = "Arena",
 	
 	["None"] = "None",
 	["Lock team report frame"] = "Lock team report frame",
@@ -400,14 +396,17 @@ SSPVPLocals = {
 	["grouped"] = "Grouped in raid or party",
 	["none"] = "Everything else",
 	
-	["Disable %s"] = "Disable %s",
-	
 	["Priority override mode"] = "Priority override mode",
-	["Less than (<)"] = "Less than (<)",
-	["Less than/equal(<=)"] = "Less than/equal(<=)",
+	["Less than"] = "Less than",
+	["Less than/equal"] = "Less than/equal",
 	
-	["Show talents next to name (requires ArenaEnemyInfo)"] = "Show talents next to name (requires ArenaEnemyInfo)",
+	["Show talents next to name"] = "Show talents next to name",
+	["Requires ArenaEnemyInfo or Tattle"] = "Requires ArenaEnemyInfo or Tattle",
 	["Show team name/rating in chat after game ends"] = "Show team name/rating in chat after game ends",
+	
+	["Delay"] = "Delay",
+	["Confirmation"] = "Confirmation",
+	["Disable %s"] = "Disable %s",
 	
 	["Row padding"] = "Row padding",
 	["Spacing in between rows in the overlay"] = "Spacing in between rows in the overlay",
@@ -421,7 +420,8 @@ SSPVPLocals = {
 	["Block raid join/leave spam in battlegrounds"] = "Block raid join/leave spam in battlegrounds",
 	["Enable modified player/inspect pvp screens"] = "Enable modified player/inspect pvp screens",
 	["Enable auto leave"] = "Enable auto leave",
-	["Enable confirmation when leaving"] = "Enable confirmation when leaving",
+	["Enable confirmation when leaving a battlefield queue"] = "Enable confirmation when leaving a battlefield queue",
+	["Enable confirmation when leaving a finished battlefield"] = "Enable confirmation when leaving a finished battlefield",
 	["Battleground leave delay"] = "Battleground leave delay",
 	["Arena leave delay"] = "Arena leave delay",
 	["Auto accept corpse ressurects inside a battlefield"] = "Auto accept corpse ressurects inside a battlefield",
@@ -432,7 +432,7 @@ SSPVPLocals = {
 	["Show player levels next to names on score board"] = "Show player levels next to names on score board",
 	
 	["Enable enemy team report"] = "Enable enemy team report",
-	["Targetting frame scale: %d%%"] = "Targetting frame scale: %d%%",
+	["Target frame scale: %d%%"] = "Target frame scale: %d%%",
 	
 	["Enable estimated final score overlay"] = "Enable estimated final score overlay",
 	["Enable capture timers"] = "Enable capture timers",
@@ -445,7 +445,6 @@ SSPVPLocals = {
 	["Enable carrier names"] = "Enable carrier names",
 	["Show border around carrier names"] = "Show border around carrier names",
 	["Time until flag respawns"] = "Time until flag respawns",
-	["Show captures to win"] = "Show captures to win",
 	["Show total flag captures for Alliance and Horde"] = "Show total flag captures for Alliance and Horde",
 	["Show carrier health when available"] = "Show carrier health when available",
 	["Overlay frame scale: %d%%"] = "Overlay frame scale: %d%%",
@@ -517,6 +516,13 @@ SSPVPLocals = {
 	
 	["Frame Mover"] = "Frame Mover",
 	["Auto Queue"] = "Auto Queue",
+	["Death"] = "Death",
+	["Scores"] = "Scores",
+	["Frame"] = "Frame",
+	["Item Tracking"] = "Item Tracking",
+	["Alerts"] = "Alerts",
+	["Match Info"] = "Match Info",
+	["Carrier Info"] = "Carrier Info",
 };
 
 BINDING_HEADER_SSPVP = "SSPVP";

@@ -302,12 +302,7 @@ function EoTS:UpdateOverlay()
 		enemy = Alliance
 		friendly = Horde
 	end
-	
-	-- Now figure out captures to win
-	if( SSPVP.db.profile.eots.captureWin ) then
-		SSOverlay:UpdateText("eots", L["Captures to win: %d"], SSOverlay:GetFactionColor(), ceil(friendly.left / 75))
-	end
-	
+		
 	for i=1, 4 do
 		-- Calculate time left with the bases given
 		local enemyTime = enemy.left / towerInfo[4 - i]
