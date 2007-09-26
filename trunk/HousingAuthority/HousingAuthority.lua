@@ -368,10 +368,11 @@ local function inputChanged(self)
 	end
 	
 	setValue(self.parent, self.data, val)
-	
-	if( not self.data.realTime ) then
-		self:ClearFocus()
-	end
+end
+
+local function inputClearAndChange(self)
+	inputClearFocus(self)
+	inputChanged(self)
 end
 
 -- COLOR PICKER
@@ -773,7 +774,7 @@ function HouseAuthority.CreateInput(config, data)
 	
 	if( not data.realTime ) then
 		input:SetScript("OnEditFocusLost", inputChanged)
-		input:SetScript("OnEnterPressed", inputChanged)
+		input:SetScript("OnEnterPressed", inputClearAndChange)
 	else
 		input:SetScript("OnTextChanged", inputChanged)
 		input:SetScript("OnEnterPressed", inputClearFocus)
