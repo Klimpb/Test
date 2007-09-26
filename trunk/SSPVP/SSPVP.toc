@@ -6,6 +6,7 @@
 
 Dongle.lua
 OptionHouse.lua
+HousingAuthority.lua
 
 localization.en.lua
 localization.de.lua

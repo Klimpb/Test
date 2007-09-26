@@ -162,7 +162,8 @@ function SSPVP:Initialize()
 			},
 			leave = {
 				enabled = true,
-				confirm = true,
+				queueConfirm = true,
+				doneConfirm = true,
 				screen = false,
 				arenaDelay = 0,
 				bgDelay = 0,
@@ -269,7 +270,7 @@ end
 -- Confirmation for leaving battlefield queues
 local Orig_AcceptBattlefieldPort = AcceptBattlefieldPort
 function AcceptBattlefieldPort(id, flag, ...)
-	if( not flag and not confirmedPortLeave[id] and SSPVP.db.profile.leave.confirm ) then
+	if( not flag and not confirmedPortLeave[id] and SSPVP.db.profile.leave.queueConfirm ) then
 		local _, map, _, _, _, teamSize = GetBattlefieldStatus(id)
 		if( teamSize > 0 ) then
 			StaticPopupDialogs["CONFIRM_PORT_LEAVE"].text = string.format(L["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"], map, teamSize, teamSize)
@@ -293,7 +294,7 @@ end
 -- Confirmation for leaving a battlefield
 local Orig_LeaveBattlefield = LeaveBattlefield
 function LeaveBattlefield(...)
-	if( not confirmedBFLeave and SSPVP.db.profile.leave.confirm and this:GetName() ~= "WorldStateScoreFrameLeaveButton" ) then
+	if( not confirmedBFLeave and SSPVP.db.profile.leave.doneConfirm and this:GetName() ~= "WorldStateScoreFrameLeaveButton" ) then
 		-- Find an active battlefield
 		local map, status, teamSize
 		for i=1, MAX_BATTLEFIELD_QUEUES do
