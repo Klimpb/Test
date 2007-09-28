@@ -3,6 +3,7 @@
 ## Version: $Revision$
 ## Notes: PvP, Battleground and Arena mod
 ## SavedVariables: SSPVPDB
+## OptionalDeps: LibStub, OptionHouse, HousingAuthority
 
 Dongle.lua
 OptionHouse.lua

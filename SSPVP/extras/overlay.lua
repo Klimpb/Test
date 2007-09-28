@@ -381,7 +381,7 @@ end
 -- Add a new on click handler to a specific row
 function SSOverlay:AddOnClick(rowType, category, text, handler, onClick, ...)
 	for id, row in pairs(rows) do
-		if( not row.OnClick and row.type == rowType and row.category == category and string.match(string.lower(row.addedText), string.lower(text)) ) then
+		if( not row.OnClick and row.type == rowType and row.category == category and (string.match(string.lower(row.addedText), string.lower(text)) or text == row.addedText) ) then
 			if( type(handler) == "table" and type(onClick) == "string" ) then
 				rows[id].handler = handler
 			end
@@ -612,7 +612,7 @@ function SSOverlay:RemoveRow(type, category, text, color)
 			-- Check category
 			if( ( category and row.category == category ) or not category ) then
 				-- Check text
-				if( ( text and string.match(string.lower(row.addedText), string.lower(text)) ) or not text ) then
+				if( ( text and (string.match(string.lower(row.addedText), string.lower(text)) or text == row.addedText) ) or not text ) then
 					-- Check color
 					if( not color or ( color and row.color and color.r == row.color.r and color.g == row.color.g and color.b == row.color.b ) ) then
 						self.frame.highestWidth = 0

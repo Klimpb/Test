@@ -216,8 +216,8 @@ end
 
 -- Block the annoying status messages, or change them into useful ones
 -- Also reformat Herald yells into consitantly colored ones like EOTS/AB/WSG
-local Orig_ChatFrame_MessageEventHandler = ChatFrame_MessageEventHandler
-function ChatFrame_MessageEventHandler(event, ...)
+local Orig_ChatFrame_OnEvent = ChatFrame_OnEvent
+function ChatFrame_OnEvent(event, ...)
 	if( event == "CHAT_MSG_MONSTER_YELL" ) then
 		if( arg2 == L["Herald"] ) then
 			if( string.match(arg1, L["Alliance"]) ) then
@@ -280,7 +280,7 @@ function ChatFrame_MessageEventHandler(event, ...)
 		end
 	end
 	
-	return Orig_ChatFrame_MessageEventHandler(event, ...)
+	return Orig_ChatFrame_OnEvent(event, ...)
 end
 
 -- Start the "X seconds until Blah is captured" messages
@@ -350,7 +350,8 @@ function AV:ParseYell(event, msg, from)
 		-- Node assaulted
 		if( string.match(msg, L["(.+) is under attack!"]) ) then
 			local name = string.match(msg, L["(.+) is under attack!"])
-			name = string.trim(string.gsub(name, "^" .. L["The"], ""))
+			name = string.gsub(name, "^" .. L["The"], "")
+			name = string.trim(name)
 			
 			timers[name] = {faction = faction, endTime = GetTime() + 300}
 			self:StartIntervalAlerts(name, faction, 300)
@@ -359,20 +360,22 @@ function AV:ParseYell(event, msg, from)
 			SSOverlay:AddOnClick("timer", "av", name .. ": %s", SSPVP, "PrintTimer", name, GetTime() + 300, faction)
 		
 		-- Node successfully assaulted
-		elseif( string.match(msg, L["(.+) was taken by the"])) then
+		elseif( string.match(msg, L["(.+) was taken by the"]) ) then
 			local name = string.match(msg, L["(.+) was taken by the"])
-			name = string.trim(string.gsub(name, "^" .. L["The"], ""))
+			name = string.gsub(name, "^" .. L["The"], "")
+			name = string.trim(name)
 			
 			timers[name] = nil
-			SSOverlay:RemoveRow("timer", "av", name .. ": %s")
+			SSOverlay:RemoveRow("timer", "av", name)
 		
 		-- Node successfully destroyed
 		elseif( string.match(msg, L["(.+) was destroyed by the"]) ) then
 			local name = string.match(msg, L["(.+) was destroyed by the"])
-			name = string.trim(string.gsub(name, "^" .. L["The"], ""))
+			name = string.gsub(name, "^" .. L["The"], "")
+			name = string.trim(name)
 			
 			timers[name] = nil
-			SSOverlay:RemoveRow("timer", "av", name .. ": %s")
+			SSOverlay:RemoveRow("timer", "av", name)
 		end
 	
 	-- Ivus the Forest Lord was summoned successfully

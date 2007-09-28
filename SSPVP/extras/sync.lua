@@ -1,14 +1,20 @@
 PVPSync = SSPVP:NewModule("SSPVP-Sync")
 
-local version
-
 function PVPSync:Enable()
 	self:RegisterEvent("CHAT_MSG_ADDON")
-	version = tonumber(string.match(GetAddOnMetadata("SSPVP", "Version"), "(%d+)") or 1)
 end
 
 function PVPSync:SendMessage(msg, type)
 	SendAddonMessage("SSPVP", msg, type or "BATTLEGROUND")
+end
+
+function PVPSync:TestPing(type)
+	SendAddonMessage("SSPVP", "PING", type or "BATTLEGROUND")
+	
+	self:UnregisterMessage("SS_PONG_DATA")
+	self:RegisterMessage("SS_PONG_DATA", function(event, version)
+		DEFAULT_CHAT_FRAME:AddMessage( "VERSION [" .. arg4 .. "] [" .. version .. "]" )
+	end )
 end
 
 function PVPSync:CHAT_MSG_ADDON(event, prefix, msg, type, author)
@@ -19,7 +25,7 @@ function PVPSync:CHAT_MSG_ADDON(event, prefix, msg, type, author)
 		end
 		
 		if( dataType == "PING" ) then
-			self:SendMessage("PONG:" .. version, type)
+			self:SendMessage("PONG:" .. SSPVP.revision, type)
 		elseif( dataType and not data ) then
 			self:TriggerMessage("SS_" .. dataType .. "_REQ")
 		else
