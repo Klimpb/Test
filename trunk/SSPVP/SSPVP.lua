@@ -7,6 +7,7 @@
 ]]
 
 SSPVP = DongleStub("Dongle-1.1"):New("SSPVP")
+SSPVP.revision = tonumber(string.match("$Revision$", "(%d+)") or 1)
 
 local L = SSPVPLocals
 
@@ -686,7 +687,7 @@ end
 -- screenshot of the loading screen
 function SSPVP:ScreenshotTaken()
 	if( activeBF.screenShot and self.db.profile.leave.screen ) then
-		activeBf.screenShot = nil
+		activeBF.screenShot = nil
 		self:QueueBattlefieldLeave()
 	end
 end
@@ -821,7 +822,7 @@ function SSPVP:AutoJoinBattlefield()
 	joiningAt = nil
 end
 
--- Queues ready, check if we need to queue a timer fori t
+-- Queues ready, check if we need to queue a timer for it
 function SSPVP:QueueReady(id, map)
 	local delayType
 	if( SSPVP:GetBattlefieldAbbrev(map) == "arena" ) then
@@ -843,12 +844,25 @@ function SSPVP:QueueReady(id, map)
 
 	elseif( joiningBF ~= id ) then
 		-- Check if we have a higher priority queue
-		local _, joinMap = GetBattlefieldStatus(joiningBF)
+		local _, joinMap, _, _, _, registeredMatch = GetBattlefieldStatus( i )
 		
 		-- Yes, we could compress this down to a single if statement
 		-- but it's rather ugly/harder to debug
 		local newPriority = self.db.profile.priority[SSPVP:GetBattlefieldAbbrev(map)]
 		local currentPriority = self.db.profile.priority[SSPVP:GetBattlefieldAbbrev(joinMap)]
+		
+		if( currentPriority == "arena" ) then
+			if( registeredMatch ) then
+				currentPriority = "ratedArena"
+			else
+				currentPriority = "skirmArena"
+			end
+		end
+		
+		-- Can't have a higher priority queue if we're already in the same one
+		if( currentPriority == newPriority ) then
+			return
+		end
 		
 		-- This allows us to have two priority modes, one only overrides priorities that are less then the current
 		-- the other only overrides ones that are less then or equal, 
@@ -931,7 +945,7 @@ end
 
 -- Auto release/accept
 function SSPVP:CORPSE_OUT_OF_RANGE()
-	SSPVP:UnregisterTimer(RetrieveCorpse)
+	SSPVP:CancelTimer("SSAUTO_RELEASE")
 end
 
 function SSPVP:CORPSE_IN_RANGE()

@@ -32,7 +32,7 @@ function UI:Initialize()
 	OptionHouse = LibStub("OptionHouse-1.1")
 	HousingAuthority = LibStub("HousingAuthority-1.2")
 	
-	local OHObj = OptionHouse:RegisterAddOn("SSPVP", nil, "Amarand", "r" .. tonumber(string.match("$Revision$", "(%d+)") or 1))
+	local OHObj = OptionHouse:RegisterAddOn("SSPVP", nil, "Amarand", "r" .. SSPVP.revision)
 	OHObj:RegisterCategory(L["General"], self, "General")
 	OHObj:RegisterCategory(L["Battlefield"], self, "Battlefield")
 	OHObj:RegisterCategory(L["Auto Join"], self, "AutoJoin")
