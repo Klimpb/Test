@@ -73,6 +73,12 @@ function Honest:Enable()
 	hooksecurefunc( "PVPFrame_Update", self.PVPFrame_Update )
 	hooksecurefunc( "PVPTeamDetails_OnShow", self.HideHonest )
 	hooksecurefunc( "PVPTeamDetails_OnHide", self.ShowHonest )
+	hooksecurefunc("ChatFrame_RemoveMessageGroup", function(frame, type)
+		if( type == "COMBAT_HONOR_GAIN" ) then
+			RegisteredFrames[frame] = nil
+		end
+	end)
+	
 		
 	PVPHonorTodayHonor:SetWidth( 75 )
 	PVPHonorTodayHonor:ClearAllPoints()
@@ -276,10 +282,10 @@ local Orig_ChatFrame_MessageEventHandler = ChatFrame_MessageEventHandler
 function ChatFrame_MessageEventHandler( event )
 	if( event == "CHAT_MSG_COMBAT_HONOR_GAIN" ) then
 		RegisteredFrames[ this ] = true
-		return not ( string.find(arg1, L["honorable kill"]) )
+		return true
 	end
 	
-	return Orig_ChatFrame_MessageEventHandler( event )
+	return Orig_ChatFrame_MessageEventHandler(event)
 end
 
 function Honest:CheckArenaReset()
@@ -301,16 +307,17 @@ function Honest:CheckArenaReset()
 			teamName, teamSize, teamRating, _, _, _, _, _, _, teamStanding = GetArenaTeam( i )
 
 			if( teamName ) then
-				if( teamRating > 1500 ) then
-					teamPoints = 1426.79 / ( 1 + 918.836 * math.pow( 2.71828, -0.00386405 * teamRating ) )
+				local teamPoints = 0
+				if( rating > 1500 ) then
+					teamPoints = (1511.26 / (1 + 1639.28 * math.exp(1) ^ (-0.00412 * rating))) * penalty
 				else
-					teamPoints = ( 0.38 * teamRating ) - 194
+					teamPoints = ((0.22 * rating ) + 14) * penalty
 				end
 
 				if( teamPoints < 0 ) then
 					teamPoints = 0
 				end
-
+				
 				if( teamSize == 3 ) then
 					teamPoints = teamPoints * 0.80
 				elseif( teamSize == 2 ) then
@@ -490,6 +497,10 @@ function Honest:CHAT_MSG_COMBAT_HONOR_GAIN( event, msg )
 		local honor = string.match( msg, L["BonusString"] )
 		
 		self:AddHonor( honor, "bonus" )
+		
+		for frame, _ in pairs( RegisteredFrames ) do
+			frame:AddMessage( msg, ChatTypeInfo["COMBAT_HONOR_GAIN"].r, ChatTypeInfo["COMBAT_HONOR_GAIN"].g, ChatTypeInfo["COMBAT_HONOR_GAIN"].b )
+		end
 	end
 end
 
