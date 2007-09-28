@@ -1,3 +1,9 @@
+local L = {
+	["DONATE"] = "Donate",
+	["GIVE_DONATE"] = "Give donation",
+}
+
+
 -- Kill the donate field
 local Orig_GetAddOnMetadata = GetAddOnMetadata
 GetAddOnMetadata = function(name, field, ...)
@@ -8,30 +14,16 @@ GetAddOnMetadata = function(name, field, ...)
 	return Orig_GetAddOnMetadata(name, field, ...)
 end
 
-local function print(msg)
-	DEFAULT_CHAT_FRAME:AddMessage(msg)
-end
-
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("ADDON_LOADED")
 frame:SetScript("OnEvent", function(self, event, addon)
-	if( addon == "Scrooge" ) then
-		SLASH_SCROOGE1 = "/scrooge"
-		SlashCmdList["SCROOGE"] = function()
-			local name = GetAddOnInfo(1)		
-			if( name != "Scrooge" ) then
-				print("Scrooge wasn't the first addon that loaded, while this usually isn't a requirement you may see donation buttons still.")
-				print("If you want to be 100% sure that donation buttons are killed, you will need to go into the toc file for ".. name)
-				print("If you see a line that says \"OptionalDeps\" then add \", Scrooge\" at the end of it and do a /console reloadui")
-				print("If you do not see that line, then just add \"## OptionalDeps: Scrooge\" below \"## Title\"")
-			else
-				print("Scrooge is the first addon that loaded, you shouldn't see any pesky donate links!")
-			end
-		end	
+	if( not LibStub ) then
+		return
 	end
-
+	
 	-- Kill the default Rock donation link
-	if( LibStub and LibStub.libs["LibRockConfig-1.0"] ) then
+	-- along with any donate links injected into Rock
+	if( LibStub.libs["LibRockConfig-1.0"] ) then
 		LibStub.libs["LibRockConfig-1.0"].rockOptions.args.donate = nil
 		
 		for addon, rows in pairs(LibStub.libs["LibRockConfig-1.0"].data) do
@@ -42,6 +34,13 @@ frame:SetScript("OnEvent", function(self, event, addon)
 					end
 				end
 			end
+		end
+	end
+	
+	-- Kill the donate field from Ace2 addons
+	if( LibStub.libs["AceAddon-2.0"] ) then
+		for addon, data in pairs(LibStub.libs["AceAddon-2.0"].addons) do
+			data.donate = nil
 		end
 	end
 end)
