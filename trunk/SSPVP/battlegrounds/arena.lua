@@ -3,639 +3,557 @@ Arena.activeIn = "arena"
 
 local L = SSPVPLocals
 local CREATED_ROWS = 0
+
 local enemies = {}
+local enemyPets = {}
 
 local PartySlain
 local SelfSlain
 
 function Arena:Initialize()
-	self:RegisterEvent( "ADDON_LOADED" )
+	if( not IsAddOnLoaded("Blizzard_InpsectUI") ) then
+		self:RegisterEvent("ADDON_LOADED")
+	else
+		hooksecurefunc("InspectPVPTeam_Update", self.InspectPVPTeam_Update)	
+	end
 
-	hooksecurefunc( "PVPTeam_Update", self.PVPTeam_Update )
-	hooksecurefunc( "PVPTeamDetails_Update", self.PVPTeamDetails_Update )
+	hooksecurefunc("PVPTeam_Update", self.PVPTeam_Update)
+	hooksecurefunc("PVPTeamDetails_Update", self.PVPTeamDetails_Update)
 	
-	PartySlain = string.gsub( PARTYKILLOTHER, "%%s", "(.+)" )
-	SelfSlain = string.gsub( SELFKILLOTHER, "%%s", "(.+)" )
+	PartySlain = string.gsub(PARTYKILLOTHER, "%%s", "(.+)")
+	SelfSlain = string.gsub(SELFKILLOTHER, "%%s", "(.+)")
 
-	SSPVP.cmd:RegisterSlashHandler( L["points <rating> - Calculates how much points you will gain with the given rating"], "points (%d+)", self.CalculatePoints )
-	SSPVP.cmd:RegisterSlashHandler( L["rating <points> - Calculates what rating you will need to gain the given points"], "rating (%d+)", self.CalculateRating )
-	SSPVP.cmd:RegisterSlashHandler( L["percent <playedGames> <totalGames> - Calculates how many games you will need to play to reach 30% using the passed played games and total games."], "percent (%d+) (%d+)", self.CalculateGoal )
+	SSPVP.cmd:RegisterSlashHandler(L["points <rating> - Calculates how much points you will gain with the given rating"], "points (%d+)", self.CalculatePoints)
+	SSPVP.cmd:RegisterSlashHandler(L["rating <points> - Calculates what rating you will need to gain the given points"], "rating (%d+)", self.CalculateRating)
+	SSPVP.cmd:RegisterSlashHandler(L["percent <playedGames> <totalGames> - Calculates how many games you will need to play to reach 30% using the passed played games and total games."], "percent (%d+) (%d+)", self.CalculateGoal)
 end
 
 function Arena:EnableModule()
-	self:RegisterEvent( "CHAT_MSG_ADDON" )
-	self:RegisterEvent( "CHAT_MSG_COMBAT_HOSTILE_DEATH" )
-	self:RegisterEvent( "CHAT_MSG_BG_SYSTEM_NEUTRAL" )
-	self:RegisterEvent( "UPDATE_MOUSEOVER_UNIT" )
-	self:RegisterEvent( "UPDATE_BINDINGS", "UpdateEnemyBindings" )
-	self:RegisterEvent( "PLAYER_TARGET_CHANGED" )
-	self:RegisterEvent( "UNIT_HEALTH" )
+	self:RegisterEvent("CHAT_MSG_ADDON")
+	self:RegisterEvent("CHAT_MSG_COMBAT_HOSTILE_DEATH")
+	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL")
+	self:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
+	self:RegisterEvent("PLAYER_FOCUS_CHANGED")
+	--self:RegisterEvent("UPDATE_BINDINGS", "UpdateEnemyBindings")
+	self:RegisterEvent("PLAYER_TARGET_CHANGED")
+	self:RegisterEvent("UNIT_HEALTH")
 	
-	self:RegisterMessage( "SS_ENEMY_DATA", "EnemyData" )
-	self:RegisterMessage( "SS_ENEMYPET_DATA", "PetData" )
+	--self:RegisterMessage("SS_ENEMY_DATA", "EnemyData")
+	--self:RegisterMessage("SS_ENEMYPET_DATA", "PetData")
 	
-	self:RegisterMessage( "SS_ENEMYDIED_DATA", "EnemyDied" )
+	--self:RegisterMessage("SS_ENEMYDIED_DATA", "EnemyDied")
 	
-	SSOverlay:AddCategory( "arena", L["Arena Info"] )
+	SSOverlay:AddCategory("arena", L["Arena Info"])
 	
-	-- Pre create any frames if needed to reduce lag during combat
+	-- Pre create any frames if needed to reduce lag before entering combat
 	if( CREATED_ROWS < SSPVP:MaxBattlefieldPlayers() ) then
 		for i=1, SSPVP:MaxBattlefieldPlayers() do
-			self:CreateTargetRow( i )
+			self:CreateRow()
 		end
 	end
 end
 
 function Arena:DisableModule()
-	enemies = {}
+	-- Clear the table so we can reuse it later
+	for i=#(enemies), 1, -1 do
+		table.remove(enemies, i)
+	end
 	
-	SSOverlay:RemoveCategory( "arena" )
+	for i=#(enemyPets), 1, -1 do
+		table.remove(enemyPets, i)
+	end
+	
+	-- Now hide them all
+	if( self.frame ) then
+		self.frame:Hide()
 
+		for i=1, CREATED_ROWS do
+			self.rows[i].ownerName = nil
+			self.rows[i]:Hide()
+		end
+	end
+	
+	-- Remove timers
+	SSOverlay:RemoveCategory("arena")
+	
+	-- Unregister events!
 	self:UnregisterAllMessages()
 	self:UnregisterAllEvents()
-	self:RegisterEvent( "ADDON_LOADED" )
-
-	self:UpdateTargetFrame()
+	self:RegisterEvent("ADDON_LOADED")
 end
 
 function Arena:Reload()
-	-- Disabled, so clear everything and hide
-	if( not SSPVP.db.profile.arena.target ) then
-		enemies = {}
-		self:UpdateTargetFrame()
-		return
-	end
+	if( not SSPVP.db.profile.arena.locked ) then
+		if( #(enemies) == 0 and #(enemyPets) == 0 ) then
+			table.insert(enemies, {sortID = "", name = UnitName("player"), server = GetRealmName(), race = UnitRace("player"), class = UnitClass("player"), classToken = select(2, UnitClass("player")), health = UnitHealth("player"), maxHealth = UnitHealthMax("player")})
+			table.insert(enemyPets, {sortId = "", name = L["Pet"], owner = UnitName("player"), health = UnitHealth("player"), maxHealth = UnitHealthMax("player")})
 
-	-- Provide a fake entry for moving
-	if( not SSPVP.db.profile.arena.locked and #( enemies ) == 0 ) then
-		table.insert( enemies, { name = UnitName( "player" ), server = GetRealmName(), health = UnitHealth( "player" ) or 100, maxHealth = UnitHealthMax( "player" ) or 100, race = UnitRace( "player" ), classToken = select( 2, UnitClass( "player" ) ) } )
-		table.insert( enemies, { name = L["Pet"], owner = UnitName( "player" ) } )
-		
-	-- Relocked and we still have the fake entry, remove it.
-	elseif( SSPVP.db.profile.arena.locked ) then
-		for _, enemy in pairs( enemies ) do
-			if( enemy.name == UnitName( "player" ) ) then
-				enemies = {}
-				break
-			end
+			self:CreateRow()
+			self:CreateRow()
+			
+			self:UpdateEnemies()
 		end
 	end
-
-	self:UpdateTargetFrame()
-
-	-- Update scale/colors
+	
 	if( self.frame ) then
-		if( SSPVP.db.profile.arena.showHealth ) then
-			self.frame:SetScript( "OnUpdate", self.HealthOnUpdate )
-		else
-			self.frame:SetScript( "OnUpdate", nil )
-		end
-
-		self.frame:SetScale( SSPVP.db.profile.arena.scale )
-		
-		local row, text, texture
-		for i=1, CREATED_ROWS do
-			row = getglobal( self.frame:GetName() .. "Row" .. i )
-			text = getglobal( row:GetName() .. "Text" )
-			texture = getglobal( row:GetName() .. "Icon" )
-			
-			row:SetBackdropColor( SSPVP.db.profile.arena.background.r, SSPVP.db.profile.arena.background.g, SSPVP.db.profile.arena.background.b, SSPVP.db.profile.arena.opacity )
-			row:SetBackdropBorderColor( SSPVP.db.profile.arena.border.r, SSPVP.db.profile.arena.border.g, SSPVP.db.profile.arena.border.b, SSPVP.db.profile.arena.opacity )
-
-			if( SSPVP.db.profile.arena.showIcon ) then
-				text:SetPoint( "TOPLEFT", texture, "TOPLEFT", 17, 5 )
-			else
-				text:SetPoint( "TOPLEFT", row, "TOPLEFT", 3, 3 )
-			end
-			
-			if( enemies[ i ] and not enemies[ i ].owner ) then
-				self:UpdateEnemyHealth( i, enemies[ i ].health, enemies[ i ].maxHealth )
-			end
-		end
+		self.frame:SetMovable(not SSPVP.db.profile.arena.locked)
+		self.frame:EnableMouse(not SSPVP.db.profile.arena.locked)
+	end
+	
+	-- Can't move the frame if the rows all are clickable
+	for i=1, CREATED_ROWS do
+		self.rows[i].button:EnableMouse(SSPVP.db.profile.arena.locked)
 	end
 end
 
-function Arena:UpdateEnemyBindings()
-	if( not self.frame ) then
+function Arena:GetDataFromName(name)
+	for _, enemy in pairs(enemies) do
+		if( enemy.name == name ) then
+			return enemy
+		end
+	end
+	
+	return nil
+end
+
+function Arena:UpdateHealth(enemy, health, maxHealth)
+	-- No data passed (Bad) return quickly
+	if( not enemy ) then
 		return
 	end
 	
-	local bindKey
+	local row, id
 	for i=1, CREATED_ROWS do
-		bindKey = GetBindingKey( "ARENATAR" .. i )
-		
-		if( bindKey ) then
-			SetOverrideBindingClick( getglobal( self.frame:GetName() .. "Row" .. i .. "Button" ), false, bindKey, self.frame:GetName() .. "Row" .. i .. "Button" )
-		else
-			ClearOverrideBindings( getglobal( self.frame:GetName() .. "Row" .. i .. "Button" ) )
-		end
-	end
-end
-
-
-function Arena:StartMoving()
-	ArenaEnemies:StartMoving()
-end
-
-function Arena:StopMoving()
-	ArenaEnemies:StopMovingOrSizing()
-	SSPVP.db.profile.positions.arena.x, SSPVP.db.profile.positions.arena.y = ArenaEnemies:GetLeft(), ArenaEnemies:GetTop()
-end
-
-function Arena:UpdateEnemyText( enemy, rowID, text )
-	local extras = ""
-		
-	if( SSPVP.db.profile.arena.enemyNum ) then
-		extras = extras .. "|cffffffff" .. rowID .. "|r "
-	end
-	
-	if( SSPVP.db.profile.arena.showHealth ) then
-		extras = extras .. "[" .. math.floor( enemy.health / enemy.maxHealth * 100 ) .. "%] "
-	end
-	
-	if( SSPVP.db.profile.arena.showTalents and AEI ) then
-		local tree1, tree2, tree3 = AEI:GetTalents( enemy.name, enemy.server )
-		
-		if( tree1 > 0 or tree2 > 0 or tree3 > 0 ) then
-			extras = extras .. "[" .. tree1 .. "/" .. tree2 .. "/" .. tree3 .. "] "
-		end
-	end
-	
-	text:SetText( extras .. enemy.name )
-end
-
-function Arena:UpdateEnemyHealth( id, health, maxHealth )
-	local text, rowID
-	local enemy = enemies[ id ]
-	
-	for i=1, CREATED_ROWS do
-		text = getglobal( self.frame:GetName() .. "Row" .. i .. "Text" )
-		if( text.usedName and text.usedName == enemy.name ) then
-			rowID = i
+		if( self.rows[i].ownerName == enemy.name ) then
+			row = self.rows[i]
+			id = i
 			break
 		end
 	end
 	
-	if( not rowID ) then
+	-- Unable to find them on the frame, so don't update
+	if( not id ) then
 		return
 	end
 	
-	if( enemy.isDead ) then
-		health = 0
-		maxHealth = 100
-	else
-		health = health or 100
-		maxHealth = maxHealth or 100
+	-- Max health changed (Never really should happen)
+	if( enemy.maxHealth ~= maxHealth ) then
+		row:SetMinMaxValues(0, maxHealth)
+		enemy.maxHealth = maxHealth
 	end
 	
 	enemy.health = health
-	enemy.maxHealth = maxHealth
-	enemies[ id ] = enemy
+	if( enemy.health == 0 ) then
+		enemy.isDead = true
+	end
+
+	self:UpdateRow(enemy, id)
+end
+
+-- Health update, check if it's one of our guys
+function Arena:UNIT_HEALTH(event, unit)
+	if( unit == "focus" or unit == "target" ) then
+		self:UpdateHealth(self:GetDataFromName(UnitName(unit)), UnitHealth(unit), UnitHealthMax(unit))
+	end
+end
+
+-- Basically this handles things that change mid combat
+-- like health or dying
+function Arena:UpdateRow(enemy, id)
+	local health = math.floor((enemy.health / enemy.maxHealth) + 0.5) * 100
+	
+	self.rows[id]:SetValue(health)
+	self.rows[id].healthText:SetText(health)
+
+	if( enemy.isDead ) then
+		self.rows[id]:SetAlpha(0.75)
+	else
+		self.rows[id]:SetAlpha(1.0)
+	end
+end
+
+-- Update the entire frame and everything in it
+function Arena:UpdateEnemies()
+	-- Can't update in combat of course
+	if( InCombatLockdown() ) then
+		SSPVP:RegisterOOCUpdate(Arena, "UpdateEnemies")
+		return
+	end
+	
+	local id = 0
+
+	-- Update enemy players
+	for _, enemy in pairs(enemies) do
+		id = id + 1
+		local row = self.rows[id]
 		
-	if( self.frame ) then
-		if( enemy.isDead or health == 0 ) then
-			getglobal( self.frame:GetName() .. "Row" .. rowID ):SetAlpha( SSPVP.db.profile.arena.deadOpacity )
+		-- Players name
+		local name = enemy.name
+		if( SSPVP.db.profile.showID ) then
+			name = "|cffffff" .. id .. "|r " .. id
+		end
+
+		row.text:SetText(name)
+		row.ownerName = enemy.name
+		
+		-- Show class icon to the left of the players name
+		if( SSPVP.db.profile.showIcon ) then
+			local coords = CLASS_BUTTONS[enemy.classToken]
+
+			row.classTexture:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
+			row.classTexture:Show()
 		else
-			getglobal( self.frame:GetName() .. "Row" .. rowID ):SetAlpha( 1.0 )
+			row.classTexture:Hide()
 		end
 		
-		Arena:UpdateEnemyText( enemy, rowID, text )
-	end
-end
+		row:SetMinMaxValues(0, enemy.maxHealth)
+		row:SetStatusBarColor(RAID_CLASS_COLORS[enemy.classToken].r, RAID_CLASS_COLORS[enemy.classToken].g, RAID_CLASS_COLORS[enemy.classToken].b, 1.0)
+		
+		-- Now do a quick basic update of other info
+		self:UpdateRow(enemy, id)
+		
+		-- Make it so we can target the person
+		row.button:SetAttribute("type", "macro")
+		row.button:SetAttribute("macrotext", "/target " .. enemy.name)
 
-function Arena:ScanHealth( unit )
-	local name = UnitName( unit )
-	for id, enemy in pairs( enemies ) do
-		if( not enemy.owner and enemy.name == name ) then
-			self:UpdateEnemyHealth( id, UnitHealth( unit ), UnitHealthMax( unit ) )
-			break
+		
+		row:Show()
+	end
+	
+	if( not SSPVP.db.profile.arena.showPets ) then
+		self.frame:SetHeight(18 * id)
+		return
+	end
+	
+	-- Update enemy pets
+	for _, enemy in pairs(enemyPets) do
+		id = id + 1
+		local row = self.rows[id]
+		
+		local name = string.format(L["%s's %s"], enemy.owner, (enemy.family or enemy.name))
+		if( SSPVP.db.profile.showID ) then
+			name = "|cffffff" .. id .. "|r " .. id
 		end
+		
+		row.text:SetText(name)
+		row.ownerName = nil
+
+		row.classTexture:Hide()
+		
+		row:SetMinMaxValues(0, enemy.maxHealth)
+		row:SetStatusBarColor(SSPVP.db.profile.arena.petColor.r, SSPVP.db.profile.arena.petColor.g, SSPVP.db.profile.arena.petColor.b, 1.0)
+		
+		-- Quick update
+		self:UpdateRow(enemy, id)
+		
+		-- Make it so we can target the pet
+		row.button:SetAttribute("type", "macro")
+		row.button:SetAttribute("macrotext", "/target " .. enemy.name)
+
+		row:Show()
 	end
+
+	self.frame:SetHeight(18 * id)
 end
 
-function Arena:UNIT_HEALTH( event, unit )
-	if( unit == "target" ) then
-		self:ScanHealth( "target" )
-	end
+-- Quick redirects!
+function Arena:PLAYER_TARGET_CHANGED()
+	self:ScanUnit("target")
 end
 
--- This deals with scanning name plates for health values
-local function HealthValueChanged( ... )
-	if( this.SSValueChanged ) then
-		this.SSValueChanged( ... )
+function Arena:UPDATE_MOUSEOVER_UNIT()
+	self:ScanUnit("mouseover")
+end
+
+function Arena:PLAYER_FOCUS_CHANGED()
+	self:ScanUnit("focus")
+end
+
+-- Sort the enemies by the sortID thing
+local function sortEnemies(a, b)
+	if( not b ) then
+		return false
 	end
 	
-	local _, _, _, _, nameFrame = this:GetParent():GetRegions()
-	local plateName = nameFrame:GetText()
+	return ( a.sortID > b.sortID )
+end
+
+-- Scan unit, see if they're valid as an enemy or enemy pet
+function Arena:ScanUnit(unit)
+	-- 1) Roll a Priest with the name Unknown
+	-- 2) Join an arena team
+	-- 3) ????
+	-- 4) Profit! Because all arena mods check for Unknown names before exiting
+	local name, server = UnitName(unit)
+	if( name == L["Unknown"] ) then
+		return
+	end
 	
-	if( plateName ) then
-		for id, enemy in pairs( enemies ) do
-			if( not enemy.owner and enemy.name == plateName ) then
-				Arena:UpdateEnemyHealth( id, this:GetValue(), select( 2, this:GetMinMaxValues() ) )
-				break
+	if( UnitIsPlayer(unit) and UnitIsEnemy("player", unit) ) then
+		server = server or GetRealmName()
+		
+		for _, player in pairs(enemies) do
+			if( player.name == name and player.server == server ) then
+				return
 			end
 		end
+		
+		local race = UnitRace(unit)
+		local class, classToken = UnitClass(unit)
+		local guild = GetGuildInfo(unit)
+		
+		table.insert(enemies, {sortID = name .. "-" .. server, name = name, server = server, race = race, class = class, classToken = classToken, guild = guild, health = UnitHealth(unit), maxHealth = UnitHealthMax(unit) or 100})
+		
+		if( guild ) then
+			if( SSPVP.db.profile.reportChat ) then
+				SSPVP:ChannelMessage(string.format(L["[%d/%d] %s / %s / %s / %s / %s"], #(enemies), SSPVP:MaxBattlefieldPlayers(), name, server, race, class, guild))
+			end
+			
+			PVPSync:SendMessage("ENEMY:" .. name .. "," .. server .. "," .. race .. "," .. classToken .. "," .. guild)
+		else
+			if( SSPVP.db.profile.reportChat ) then
+				SSPVP:ChannelMessage(string.format(L["[%d/%d] %s / %s / %s / %s"], #(enemies), SSPVP:MaxBattlefieldPlayers(), name, server, race, class))
+			end
+			
+			PVPSync:SendMessage("ENEMY:" .. name .. "," .. server .. "," .. race .. "," .. classToken)
+		end
+		
+		if( (#(enemies) + #(enemyPets)) > CREATED_ROWS ) then
+			self:CreateRow()		
+		end
+		
+		table.sort(enemies, sortEnemies)
+		self:UpdateEnemies()
+		
+	-- Warlock pet or a Water Elemental
+	elseif( UnitIsEnemy("player", unit) and UnitCreatureFamily(unit) or name == L["Water Elemental"] ) then
+		-- Need to find the pets owner
+		if( not self.tooltip ) then
+			self.tooltip = CreateFrame("GameTooltip", "SSArenaTooltip", UIParent, "GameTooltipTemplate")
+			self.tooltip:SetOwner(UIParent, "ANCHOR_NONE")
+		end
+		
+		self.tooltip:SetUnit(unit)
+		
+		-- Exit quickly, no data found
+		if( self.tooltip:NumLines() == 0 ) then
+			return
+		end
+		
+		local owner = string.match(SSArenaTooltipTextLeft2:GetText(), L["([a-zA-Z]+)%'s Minion"])
+		
+		-- Found the pet owner
+		if( owner and owner ~= L["Unknown"] ) then
+			local family = UnitCreatureFamily(unit)
+			for _, pet in pairs(enemyPets) do
+				if( pet.name == name and pet.owner == owner ) then
+					return
+				end
+			end
+			
+			
+			table.insert(enemyPets, {sortID = name .. "-" .. owner, name = name, owner = owner, family = family, health = UnitHealth(unit), maxHealth = UnitHealthMax(unit) or 100})
+			
+			if( family ) then
+				if( SSPVP.db.profile.reportChat ) then
+					SSPVP:ChannelMessage(string.format( L["[%d/%d] %s's pet, %s %s"], #(enemyPets), SSPVP:MaxBattlefieldPlayers(), owner, name, family))
+				end
+				
+				PVPSync:SendMessage("ENEMYPET:" .. name .. "," .. owner .. "," .. family)
+			else
+				if( SSPVP.db.profile.reportChat ) then
+					SSPVP:ChannelMessage(string.format(L["[%d/%d] %s's pet, %s"], #(enemyPets), SSPVP:MaxBattlefieldPlayers(), owner, name))
+				end
+				
+				PVPSync:SendMessage("ENEMYPET:" .. name .. "," .. owner)
+			end
+			
+			if( (#(enemies) + #(enemyPets)) > CREATED_ROWS ) then
+				self:CreateRow()		
+			end
+			
+			table.sort(enemyPets, sortEnemies)
+			self:UpdateEnemies()
+		end
 	end
 end
 
-local function FindUnhookedFrames( ... )
-	for i=1, select( "#", ... ) do
-		local bar = select( i, ... )
+-- Health value updated, rescan our saved enemies
+local function healthValueChanged(self, value, ...)
+	if( self ) then
+		local ownerName = select(5, self:GetParent():GetRegions()):GetText()
+
+		Arena:UpdateHealth(Arena:GetDataFromName(ownerName), value, select(2, self:GetMinMaxValues()))
+
+		if( self.SSValueChanged ) then
+			self.SSValueChanged(self, value, ...)
+		end
+	end
+end
+
+-- Find unhooked anonymous frames
+local function findUnhookedNameplates(...)
+	for i=1, select("#", ...) do
+		local bar = select(i, ...)
 		if( bar and not bar.SSHooked and not bar:GetName() and bar:IsVisible() and bar.GetFrameType and bar:GetFrameType() == "StatusBar" ) then
 			return bar
 		end
 	end
 end
 
-local function HookFrames( ... )
-	for i=1, select( "#", ... ) do
-		local bar = FindUnhookedFrames( select( i, ... ):GetChildren() )
+-- Scan WorldFrame children
+local function scanFrames(...)
+	for i=1, select("#", ...) do
+		local bar = findUnhookedNameplates(select( i, ...):GetChildren())
 		if( bar ) then
-			local health = bar:GetParent():GetChildren()
-
 			bar.SSHooked = true
-			health.SSValueChanged = health:GetScript( "OnValueChanged" )
-			health:SetScript( "OnValueChanged", HealthValueChanged )
+			
+			local health = bar:GetParent():GetChildren()
+			health.SSValueChanged = health:GetScript("OnValueChanged")
+			health:SetScript("OnValueChanged", healthValueChanged)
 		end
 	end
 end
 
-local elapsed = 0
-local numChildren = 0
-function Arena:HealthOnUpdate()
-	elapsed = elapsed + arg1
-
-	if( WorldFrame:GetNumChildren() ~= numChildren ) then
-		numChildren = WorldFrame:GetNumChildren()
-		HookFrames( WorldFrame:GetChildren() )
+function Arena:CreateFrame()
+	if( self.frame ) then
+		return
 	end
 	
-	if( elapsed > 0.25 ) then
-		elapsed = 0
+	if( InCombatLockdown() ) then
+		SSPVP:RegisterOOCUpdate(Arena, "CreateFrame")
+		return
+	end
+	
+	self.frame = CreateFrame("Frame")
+	self.frame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+		edgeFile = "Interface\\ChatFrame\\ChatFrameBackground", edgeSize = 0.6,
+		insets = {left = 1, right = 1, top = 1, bottom = 1}})
+
+	self.frame:SetBackdropColor(0, 0, 0, 1.0)
+	self.frame:SetBackdropBorderColor(0.60, 0.60, 0.60, 1.0)
+	self.frame:SetScale(SSPVP.db.profile.arena.scale)
+	self.frame:SetWidth(180)
+	self.frame:SetMovable(not SSPVP.db.profile.arena.locked)
+	self.frame:EnableMouse(not SSPVP.db.profile.arena.locked)
+
+	-- Moving the frame
+	self.frame:SetScript("OnMouseDown", function(self)
+		if( not SSPVP.db.profile.arena.locked ) then
+			self.isMoving = true
+			self:StartMoving()
+		end
+	end)
+
+	self.frame:SetScript("OnMouseUp", function(self)
+		if( self.isMoving ) then
+			self.isMoving = nil
+			self:StopMovingOrSizing()
+
+			SSPVP.db.profile.positions.arena.x = self:GetLeft()
+			SSPVP.db.profile.positions.arena.y = self:GetTop()
+		end
+	end)
+	
+	-- Health monitoring
+	local timeElapsed = 0
+	local numChildren = -1;
+	self.frame:SetScript("OnUpdate", function(self, elapsed)
+		-- When number of children changes, 99% of the time it's
+		-- due to a new nameplate being added
+		if( WorldFrame:GetNumChildren() ~= numChildren ) then
+			numChildren = WorldFrame:GetNumChildren()
+			scanFrames(WorldFrame:GetChildren())
+		end
 		
-		local name
-		for i=1, GetNumPartyMembers() do
-			if( UnitExists( "party" .. i .. "target" ) ) then
-				Arena:ScanHealth( "party" .. i .. "target" )
+		-- Scan party targets every 0.75 seconds
+		-- Really, nameplate scanning should get the info 99% of the time
+		-- so we don't need to be so aggressive with this
+		timeElapsed = timeElapsed + elapsed
+		if( timeElapsed > 0.75 ) then
+			for i=1, GetNumPartyMembers() do
+				if( UnitExists("party" .. i .. "target" ) ) then
+					Arena:UpdateHealth(Arena:GetDataFromName(UnitName("party" .. i .. "target")), UnitHealth("party" .. i .. "target"), UnitHealthMax("party" .. i .. "target"))
+				end
 			end
 		end
-	end
-end
-
-
-function Arena:CreateTargetFrame()
-	self.frame = CreateFrame( "Frame", "ArenaEnemies", UIParent )
-
-	self.frame:SetClampedToScreen( true )
-	self.frame:SetMovable( true )
+	end)
 	
-	self.frame:SetScale( SSPVP.db.profile.arena.scale )
-	self.frame:SetPoint( "TOPLEFT", UIParent, "BOTTOMLEFT", SSPVP.db.profile.positions.arena.x, SSPVP.db.profile.positions.arena.y )
-	
-	if( SSPVP.db.profile.arena.showHealth ) then
-		self.frame:SetScript( "OnUpdate", self.HealthOnUpdate )
-	end
-	
-	local width = 145
-	
-	if( SSPVP.db.profile.arena.showIcon ) then
-		width = width + 20
-	end
-	if( SSPVP.db.profile.arena.showHealth ) then
-		width = width + 10
-	end
-	if( SSPVP.db.profile.arena.showTalents ) then
-		width = width + 25
-	end
-	
-	self.frame:SetWidth( width )
-end
-
-
-function Arena:CreateTargetRow( id )
-	if( not self.frame or getglobal( self.frame:GetName() .. "Row" .. id ) ) then
-		return
-	end
-	
-	CREATED_ROWS = CREATED_ROWS + 1
-	
-	local row = CreateFrame( "Frame", self.frame:GetName() .. "Row" .. id, self.frame )
-	local text = row:CreateFontString( row:GetName() .. "Text", "BACKGROUND" )
-	local texture = row:CreateTexture( row:GetName() .. "Icon", "OVERLAY" )
-	local button = CreateFrame( "Button", row:GetName() .. "Button", row, "SecureActionButtonTemplate" )
-	
-	row:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-				edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-				tile = true,
-				tileSize = 9,
-				edgeSize = 9,
-				insets = { left = 2, right = 2, top = 2, bottom = 2 } })	
-	
-	row:SetBackdropColor( SSPVP.db.profile.arena.background.r, SSPVP.db.profile.arena.background.g, SSPVP.db.profile.arena.background.b, SSPVP.db.profile.arena.opacity )
-	row:SetBackdropBorderColor( SSPVP.db.profile.arena.border.r, SSPVP.db.profile.arena.border.g, SSPVP.db.profile.arena.border.b, SSPVP.db.profile.arena.opacity )
-	
-	row:SetWidth( self.frame:GetWidth() )
-	row:SetHeight( 19 )
-	
-	button:SetWidth( self.frame:GetWidth() )
-	button:SetHeight( 18 )
-	
-	texture:SetWidth( 16 )
-	texture:SetHeight( 16 )
-
-	text:SetJustifyH( "LEFT" )
-	text:SetHeight( 25 )
-	text:SetWidth( self.frame:GetWidth() - 20 )
-	text:SetFont( GameFontNormal:GetFont(), 13, "OUTLINE" )
-	
-	texture:SetPoint( "TOPLEFT", row, "TOPLEFT", 2, -2 )
-	button:SetPoint( "TOPLEFT", row, "TOPLEFT", 0, 0 )
-	
-	if( SSPVP.db.profile.arena.showIcon ) then
-		text:SetPoint( "TOPLEFT", texture, "TOPLEFT", 17, 5 )
+	-- Position to last saved area
+	if( SSPVP.db.profile.positions.arena ) then
+		self.frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", SSPVP.db.profile.positions.arena.x, SSPVP.db.profile.positions.arena.y)
 	else
-		text:SetPoint( "TOPLEFT", row, "TOPLEFT", 3, 3 )
+		self.frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 	end
 	
-	
-	local bindKey = GetBindingKey( "ARENATAR" .. id )
-	if( bindKey ) then
-		SetOverrideBindingClick( button, false, bindKey, button:GetName() )
-	end
-	
-	if( id > 1 ) then
-		row:SetPoint( "TOPLEFT", getglobal( self.frame:GetName() .. "Row" .. ( id - 1 ) ), "TOPLEFT", 0, -18 )
-	else
-		row:SetPoint( "TOPLEFT", self.frame, "TOPLEFT", 5, -1 )
-	end
+	self.rows = {}
 end
 
-
--- I'll fix this up later
-function Arena:SortEnemies( a, b )
-	if( not a or not b ) then
-		return false
-	end
-	
-	if( a.name < b.name ) then
-		return false
-	end
-	
-	return true
-end
-
-function Arena:UpdateTargetFrame()
+function Arena:CreateRow()
 	if( InCombatLockdown() ) then
-		SSPVP:RegisterOOCUpdate( self, "UpdateTargetFrame" )
-		return
-	end
-
-	if( #( enemies ) == 0 ) then
-		if( self.frame ) then
-			self.frame:Hide()
-		end
+		SSPVP:RegisterOOCUpdate(Arena, "CreateRow")
 		return
 	end
 
 	if( not self.frame ) then
-		self:CreateTargetFrame()
-	end
-
-	for i=1, CREATED_ROWS do
-		getglobal( self.frame:GetName() .. "Row" .. i .. "Text" ).usedName = nil
-		getglobal( self.frame:GetName() .. "Row" .. i ):Hide()
+		self:CreateFrame()
 	end
 	
-	local sepEnemies, sepPets, parsedEnemies
+	CREATED_ROWS = CREATED_ROWS + 1
 	
-	if( SSPVP.db.profile.arena.showPets ) then
-		sepEnemies = {}
-		sepPets = {}
-		parsedEnemies = {}
-
-		-- Seperate the enemies from the pets
-		for _, enemy in pairs( enemies ) do
-			if( not enemy.owner ) then
-				table.insert( sepEnemies, enemy )
-			else
-				table.insert( sepPets, enemy )
-			end
-		end
-
-		-- Sort them all
-		table.sort( sepEnemies, self.SortEnemies )
-		table.sort( sepPets, self.SortEnemies )
-		
-		-- Now merge
-		parsedEnemies = sepEnemies
-		for id, row in pairs( sepPets ) do
-			table.insert( parsedEnemies, row )
-		end
+	-- Health bar
+	local row = CreateFrame("StatusBar", nil, self.frame)
+	row:SetHeight(16)
+	row:SetWidth(178)
+	row:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+	row:Hide()
+	
+	local path, size = GameFontNormalSmall:GetFont()
+	
+	-- Player name text
+	local text = row:CreateFontString(nil, "OVERLAY")
+	text:SetTextColor(1, 1, 1, 1.0)
+	text:SetFont(path, size, "OUTLINE")
+	text:SetPoint("LEFT", row, "LEFT", 1, 0)
+	
+	-- Health percent text
+	local healthText = row:CreateFontString(nil, "OVERLAY")
+	healthText:SetTextColor(1, 1, 1, 1.0)
+	healthText:SetFont(path, size, "OUTLINE")
+	healthText:SetPoint("RIGHT", row, "RIGHT", -1, 0)
+	
+	-- Class icon
+	local texture = row:CreateTexture(nil, "OVERLAY")
+	texture:SetHeight(15)
+	texture:SetWidth(15)
+	texture:SetTexture("Interface\\WorldStateFrame\\Icons-Classes")
+	texture:SetPoint("CENTER", row, "LEFT", -10, 0)
+	
+	-- So we can actually run macro text
+	local button = CreateFrame("Button", nil, row, "SecureActionButtonTemplate")
+	button:SetHeight(16)
+	button:SetWidth(179)
+	button:SetPoint("LEFT", row, "LEFT", 1, 0)
+	button:EnableMouse(SSPVP.db.profile.arena.locked)
+	
+	if( CREATED_ROWS > 1 ) then
+		row:SetPoint("TOPLEFT", self.rows[CREATED_ROWS - 1], "BOTTOMLEFT", 0, -2)
 	else
-		parsedEnemies = enemies
-		table.sort( parsedEnemies, self.SortEnemies )
-	end
-	
-	local coords, row, button, text, texture
-	local num = ""
-	
-	for id, enemy in pairs( parsedEnemies ) do
-		self:CreateTargetRow( id )
-		
-		row = getglobal( self.frame:GetName() .. "Row" .. id )
-		button = getglobal( row:GetName() .. "Button" )
-		text = getglobal( row:GetName() .. "Text" )
-		texture = getglobal( row:GetName() .. "Icon" )
-		
-		-- Is it a player?
-		if( not enemy.owner ) then
-			self: UpdateEnemyText( enemy, id, text )
-			text.usedName = enemy.name
-			text:SetTextColor( RAID_CLASS_COLORS[ enemy.classToken ].r, RAID_CLASS_COLORS[ enemy.classToken ].g, RAID_CLASS_COLORS[ enemy.classToken ].b )
-			
-			if( SSPVP.db.profile.arena.showIcon ) then
-				coords = CLASS_BUTTONS[ enemy.classToken ]
-	
-				texture:SetTexture( "Interface\\WorldStateFrame\\Icons-Classes" )
-				texture:SetTexCoord( coords[1], coords[2], coords[3], coords[4] )
-				texture:Show()
-			else
-				texture:Hide()
-			end
-
-		elseif( SSPVP.db.profile.arena.showPets ) then
-			if( enemy.family ) then
-				text:SetText( num .. enemy.name .. " " .. enemy.family )
-			else
-				text:SetText( num .. string.format( L["%s's %s"], enemy.owner, enemy.name ) )
-			end
-			
-			text:SetTextColor( SSPVP.db.profile.arena.petColor.r, SSPVP.db.profile.arena.petColor.g, SSPVP.db.profile.arena.petColor.b )
-			texture:Hide()
-		end
-		
-		if( not enemy.isDead ) then
-			row:SetAlpha( 1.0 )
-		else
-			row:SetAlpha( SSPVP.db.profile.arena.deadOpacity )
-		end
-
-		if( SSPVP.db.profile.arena.locked ) then
-			button:SetAttribute( "type", "macro" )
-			button:SetAttribute( "macrotext", "/target " .. enemy.name )
-		else
-			button:SetScript( "OnMouseDown", self.StartMoving )
-			button:SetScript( "OnMouseUp", self.StopMoving )
-		end
-		
-		row:Show()
+		row:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 1, -1)
 	end
 
-	self.frame:SetHeight( ( #( enemies ) * 19 ) + 5 )
-	self.frame:Show()
+	self.rows[CREATED_ROWS] = row
+	self.rows[CREATED_ROWS].text = text
+	self.rows[CREATED_ROWS].classTexture = texture
+	self.rows[CREATED_ROWS].button = button
+	self.rows[CREATED_ROWS].healthText = healthText
 end
 
-function Arena:EnemyData( event, name, server, race, classToken, guild )
-	if( SSPVP.db.profile.arena.target ) then
-		for _, enemy in pairs( enemies ) do
-			if( not enemy.owner and enemy.name == name ) then
-				return
-			end
-		end
-		
-		table.insert( enemies, { name = name, health = 100, maxHealth = 100, server = server, race = race, classToken = classToken, guild = guild } )
-		
-		self:UpdateTargetFrame()
-	end
-end
-
-function Arena:PetData( event, name, owner, family )
-	if( SSPVP.db.profile.arena.target ) then
-		for _, enemy in pairs( enemies ) do
-			if( enemy.owner == owner and enemy.name == name ) then
-				return
-			end
-		end
-		
-		table.insert( enemies, { name = name, owner = owner, family = family } )
-		
-		self:UpdateTargetFrame()
-	end
-end
-
-function Arena:EnemyDied( event, name )
-	for id, enemy in pairs( enemies ) do
-		if( not enemy.isDead and enemy.name == name ) then
-			enemies[ id ].isDead = true
-			self:UpdateEnemyHealth( id, 0, 100 )
-			break
-		end
-	end
-end
-
-function Arena:CHAT_MSG_COMBAT_HOSTILE_DEATH( event, msg )
-	if( string.find( msg, PartySlain ) ) then
-		local died = string.match( msg, PartySlain )
-
-		self:EnemyDied( event, died )		
-		PVPSync:SendMessage( "ENEMYDIED:" .. died )
-
-	elseif( string.find( msg, SelfSlain ) ) then
-		local died = string.match( msg, SelfSlain )
-
-		self:EnemyDied( event, died )
-		PVPSync:SendMessage( "ENEMYDIED:" .. died )
-	end
-end
-function Arena:CheckUnit( unit )
-	if( SSPVP.db.profile.arena.target and UnitIsEnemy( unit, "player" ) and UnitIsPVP( unit ) ) then
-		if( UnitIsPlayer( unit ) ) then
-			local name, server = UnitName( unit )
-			server = server or GetRealmName()
-			
-			if( name ~= L["Unknown"] ) then
-				for _, enemy in pairs( enemies ) do
-					if( not enemy.owner and enemy.name == name ) then
-						return
-					end
-				end
-				
-				local race = UnitRace( unit )
-				local class, classToken = UnitClass( unit )
-				local guild = GetGuildInfo( unit )
-				
-				table.insert( enemies, { name = name, server = server, race = race, health = UnitHealth( unit ) or 100, maxHealth = UnitHealthMax( unit ) or 100, classToken = classToken, guild = guild } )
-				self:UpdateTargetFrame()
-				
-				local spec = ""
-				if( AEI ) then
-					spec = AEI:GetSpec( name, server )
-				end
-				
-				-- Print out info message
-				if( guild ) then
-					SSPVP:ChannelMessage( string.format( L["[%d/%d] %s / %s / %s / %s / %s"], #( enemies ), SSPVP:MaxBattlefieldPlayers(), name, class, race, guild, server ) .. spec )
-					PVPSync:SendMessage( "ENEMY:" .. name .. "," .. server .. "," .. race .. "," .. classToken .. "," .. guild )
-				else
-					SSPVP:ChannelMessage( string.format( L["[%d/%d] %s / %s / %s / %s"], #( enemies ), SSPVP:MaxBattlefieldPlayers(), name, class, race, server ) .. spec )				
-					PVPSync:SendMessage( "ENEMY:" .. name .. "," .. server .. "," .. race .. "," .. classToken )
-				end
-			end
-
-		-- No method of finding out the owner unless we mouse over
-		elseif( unit ~= "target" ) then
-			-- Warlock or Mage pet
-			local owner = string.match( GameTooltipTextLeft2:GetText(), L["([a-zA-Z]+)%'s Minion"] )
-			if( owner and owner ~= L["Unknown"] ) then
-				local name =  UnitName( unit )
-				if( name ~= L["Unknown"] ) then
-					for _, enemy in pairs( enemies ) do
-						if( enemy.owner == owner and enemy.name == name ) then
-							return
-						end
-					end
-					
-					local family = UnitCreatureFamily( unit )
-
-					table.insert( enemies, { name = name, owner = owner, family = family } )
-					self:UpdateTargetFrame()
-					
-					-- Warlock pets have a family type, Mage pets do not
-					if( family ) then
-						SSPVP:ChannelMessage( string.format( L["[%d/%d] %s's pet, %s %s"], #( enemies ), SSPVP:MaxBattlefieldPlayers(), owner, name, family ) )
-						PVPSync:SendMessage( "ENEMYPET:" .. name .. "," .. owner .. "," .. family )
-					else
-						SSPVP:ChannelMessage( string.format( L["[%d/%d] %s's pet, %s"], #( enemies ), SSPVP:MaxBattlefieldPlayers(), owner, name ) )
-						PVPSync:SendMessage( "ENEMYPET:" .. name .. "," .. owner )
-					end
-				end
-			end
-		end
-	end
-end
-
-function Arena:UPDATE_MOUSEOVER_UNIT()
-	self:CheckUnit( "mouseover" )
-	self:ScanHealth( "mouseover" )
-end
-
-function Arena:PLAYER_TARGET_CHANGED()
-	self:CheckUnit( "target" )
-end
-
-function Arena:CHAT_MSG_BG_SYSTEM_NEUTRAL( event, message )
-	if( message == L["The Arena battle has begun!"] ) then
-		SSOverlay:UpdateTimer( "arena", L["Stealth buff spawn: %s"], 92 )
-		
-		-- It's possible to mouseover an "enemy" when they're zoning in, so clear it just to be safe
-		enemies = {}
-		self:UpdateTargetFrame()
-	end
-end
-
+-- Inspect/player arena team info changes
 function Arena:ADDON_LOADED( event, addon )
 	if( addon == "Blizzard_InspectUI" ) then
-		hooksecurefunc( "InspectPVPTeam_Update", self.InspectPVPTeam_Update )	
+		hooksecurefunc("InspectPVPTeam_Update", self.InspectPVPTeam_Update)
+		self:UnregisterEvent("ADDON_LOADED")
 	end
 end
 
@@ -810,6 +728,7 @@ function Arena:TranslateClass( class )
 end
 
 function Arena:CHAT_MSG_ADDON( event, prefix, msg, type, author )
+	--[[
 	-- "<name> <class>"
 	if( prefix == "ArenaMaster" ) then
 		local name, class = string.split( " ", msg )
@@ -838,6 +757,7 @@ function Arena:CHAT_MSG_ADDON( event, prefix, msg, type, author )
 		local _, name, server, race, class = string.split( ":", string.sub( msg, 7 ) )
 		self:EnemyData( event, name, server, race, self:TranslateClass( class ) )
 	end
+	]]
 end
 
 -- Slash commands

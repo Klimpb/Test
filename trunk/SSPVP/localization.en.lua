@@ -37,7 +37,9 @@ SSPVPLocals = {
 	["%s's %s"] = "%s's %s",
 	["Joining"] = "Joining",
 	
+	["Unavailable"] = "Unavailable",
 	["Ressurections"] = "Ressurections",
+	["Water Elemental"] = "Water Elemental",
 	
 	["Categories"] = "Categories",
 	

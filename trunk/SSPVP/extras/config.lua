@@ -348,23 +348,23 @@ end
 function UI:Arena()
 	local config = {
 		{ group = L["General"], text = string.format(L["Disable %s module"], L["Arena"]), type = "check", var = {"modules", "SSPVP-Arena"}},
-		{ group = L["General"], text = L["Enable enemy team report"], type = "check", var = {"arena", "target"}},
-		{ group = L["General"], text = L["Show team name/rating in chat after game ends"], type = "check", var = {"arena", "chatInfo"}},
+		{ group = L["General"], text = L["Enable enemy team report"], type = "check", var = {"arena", "reportChat"}},
+		{ group = L["General"], text = L["Show team name/rating in chat after game ends"], type = "check", var = {"arena", "teamInfo"}},
 		
-		{ group = L["Display"], text = L["Show talents next to name"], help = L["Requires ArenaEnemyInfo or Tattle"], type = "check", var = {"arena", "showTalents"}},
-		{ group = L["Display"], text = L["Show enemy number next to name on arena frames"], type = "check", var = {"arena", "enemyNum"}},
-		{ group = L["Display"], text = L["Show enemy health next to name on arena frame"], type = "check", var = {"arena", "showHealth"}},
+		--{ group = L["Display"], text = L["Show talents next to name"], help = L["Requires ArenaEnemyInfo or Tattle"], type = "check", var = {"arena", "showTalents"}},
+		{ group = L["Display"], text = L["Show enemy number next to name on arena frames"], type = "check", var = {"arena", "showID"}},
+		--{ group = L["Display"], text = L["Show enemy health next to name on arena frame"], type = "check", var = {"arena", "showHealth"}},
 		{ group = L["Display"], text = L["Show enemy class icon"], type = "check", var = {"arena", "showIcon"}},
 		{ group = L["Display"], text = L["Show enemy minions on arena enemy frames"], type = "check", var = {"arena", "showPets"}},
 
 		{ group = L["Frame"], text = L["Lock team report frame"], type = "check", var = {"arena", "locked"}},
-		{ group = L["Frame"], format = L["Background opacity: %d%%"], type = "slider", var = {"arena", "opacity"}},
-		{ group = L["Frame"], format = L["Dead enemy opacity: %d%%"], type = "slider", var = {"arena", "deadOpacity"}},
+		--{ group = L["Frame"], format = L["Background opacity: %d%%"], type = "slider", var = {"arena", "opacity"}},
+		--{ group = L["Frame"], format = L["Dead enemy opacity: %d%%"], type = "slider", var = {"arena", "deadOpacity"}},
 		{ group = L["Frame"], format = L["Target frame scale: %d%%"], type = "slider", var = {"arena", "scale"}},
 		
 		{ group = L["Color"], text = L["Enemy pet name color"], type = "color", var = {"arena", "petColor"}},
-		{ group = L["Color"], text = L["Border color"], type = "color", var = {"arena", "border"}},
-		{ group = L["Color"], text = L["Background color"], type = "color", var = {"arena", "background"}},
+		--{ group = L["Color"], text = L["Border color"], type = "color", var = {"arena", "border"}},
+		--{ group = L["Color"], text = L["Background color"], type = "color", var = {"arena", "background"}},
 	}
 
 	return HousingAuthority:CreateConfiguration(config, {set = "Set", get = "Get", onSet = "Reload", handler = UI})

@@ -18,7 +18,7 @@ function SSOverlay:Reload()
 	end
 	
 	-- Position type may have changed, resave
-	SSOVerlay:SavePosition()
+	SSOverlay:SavePosition()
 	
 	
 	-- Enable mouse for moving if need be
