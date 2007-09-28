@@ -86,21 +86,14 @@ function SSPVP:Initialize()
 			},
 			arena = {
 				locked = true,
-				target = true,
-				modify = true,
-				showSpec = true,
-				background = { r = 0, g = 0, b = 0 },
-				border = { r = 0.75, g = 0.75, b = 0.75 },
 				scale = 0.90,
-				opacity = 1.0,
-				deadOpacity = 0.75,
-				enemyNum = true,
 				petColor = { r = 0.20, g = 0.90, b = 0.20 },
+				showID = true,
 				showIcon = true,
 				showPets = true,
-				showHealth = true,
 				showTalents = false,
-				chatInfo = true,
+				reportChat = true,
+				teamInfo = true,
 			},
 			eots = {
 				overlay = true,
@@ -532,6 +525,15 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			activeBF.isRegistered = registeredMatch
 			activeBF.abbrev = SSPVP:GetBattlefieldAbbrev(map)
 			
+			-- Unregister our queue to join incase we joined
+			-- manually instead of automatically
+			if( joiningBF == i ) then
+				self:CancelTimer("SSAUTOJOIN")
+				
+				joiningBF = nil
+				joiningAt = nil
+			end
+			
 			-- Joined, get modules/sound finished up/ready
 			self:StopSound()
 			self:DisableAllModules()
@@ -635,8 +637,16 @@ function SSPVP:UpdateQueueOverlay(id)
 		end
 	elseif( status == "queued" ) then
 		local etaTime = GetBattlefieldEstimatedWaitTime(id) / 1000
+		
+		-- Average time before joining a game
 		if( SSPVP.db.profile.queue.showEta and etaTime > 0 ) then
 			SSOverlay:UpdateElapsed("queue", map .. ": %s (%s)", GetBattlefieldTimeWaited(id) / 1000, SSOverlay:FormatTime(GetBattlefieldEstimatedWaitTime(id) / 1000, SSPVP.db.profile.queue.etaFormat))
+		
+		-- Nobody has played a game yet so no ETA given
+		elseif( SSPVP.db.profile.queue.showEta ) then
+			SSOverlay:UpdateElapsed("queue", map .. ": %s (%s)", GetBattlefieldTimeWaited(id) / 1000, L["Unavailable"])
+		
+		-- Just show time spent in queue
 		else
 			SSOverlay:UpdateElapsed("queue", map .. ": %s", GetBattlefieldTimeWaited(id) / 1000)
 		end
@@ -647,7 +657,7 @@ end
 function SSPVP:LeaveBattlefield()
 	if( GetBattlefieldWinner() ) then
 		local self = SSPVP
-		if( self.db.profile.arena.chatInfo and (IsActiveBattlefieldArena()) and select(2, IsActiveBattlefieldArena()) ) then
+		if( self.db.profile.arena.teamInfo and (IsActiveBattlefieldArena()) and select(2, IsActiveBattlefieldArena()) ) then
 			local winName, winRating, winPoints
 			local loseName, loseRating, losePoints
 			local oldRating
@@ -757,17 +767,14 @@ function SSPVP:AutoJoinBattlefield()
 	-- Figure out our current status
 	if( UnitIsAFK("player") ) then
 		currentType = "afk"
-	elseif( activeBF.id > 0 ) then
-		if( activeBF.abbrev == "arena" ) then
-			if( activeBF.isRegistered ) then
-				currentType = "ratedArena"
-			else
-				currentType = "skirmArena"
-			end
+	elseif( activeBF.id > 0 and activeBF.abbrev == "arena" ) then
+		if( activeBF.isRegistered ) then
+			currentType = "ratedArena"
 		else
-			currentType = activeBF.abbrev
+			currentType = "skirmArena"
 		end
-		
+	elseif( activeBF.id > 0 and activeBF.abbrev ) then
+		currentType = activeBF.abbrev
 	elseif( isInstance and type ~= "pvp" ) then
 		currentType = "instance"
 	elseif( GetNumPartyMembers() > 0 or GetNumRaidMembers() > 0 ) then
@@ -793,11 +800,18 @@ function SSPVP:AutoJoinBattlefield()
 		joiningAt = nil
 		return
 	end
-	
+
+	-- Yes, we could compress this down to a single if statement
+	-- but it's rather ugly/harder to debug
+	local newPriority = self.db.profile.priority[joinAbbrev]
+	local currentPriority = self.db.profile.priority[currentType]
+
 	-- This allows us to have two priority modes, one only overrides priorities that are less then the current
 	-- the other only overrides ones that are less then or equal, 
-	if( ( self.db.profile.join.type == "less" and self.db.profile.priority[ currentType ] < self.db.profile.priority[ joinAbbrev ] ) or
-	( self.db.profile.join.type == "lseql" and self.db.profile.priority[ currentType ] <= self.db.profile.priority[ joinAbbrev ] ) ) then
+	if( ( self.db.profile.join.type == "less" and currentPriority < newPriority ) or ( self.db.profile.join.type == "lseql" and currentPriority <= newPriority ) ) then
+		joiningBF = nil
+		joiningAt = nil
+
 		SSPVP:Print(string.format(L["You're currently inside/doing something that is a higher priority then %s, auto join disabled." ], joinMap))
 		return
 	end
@@ -831,10 +845,14 @@ function SSPVP:QueueReady(id, map)
 		-- Check if we have a higher priority queue
 		local _, joinMap = GetBattlefieldStatus(joiningBF)
 		
+		-- Yes, we could compress this down to a single if statement
+		-- but it's rather ugly/harder to debug
+		local newPriority = self.db.profile.priority[SSPVP:GetBattlefieldAbbrev(map)]
+		local currentPriority = self.db.profile.priority[SSPVP:GetBattlefieldAbbrev(joinMap)]
+		
 		-- This allows us to have two priority modes, one only overrides priorities that are less then the current
 		-- the other only overrides ones that are less then or equal, 
-		if( ( self.db.profile.join.type == "less" and self.db.profile.priority[ SSPVP:GetBattlefieldAbbrev( map ) ] < self.db.profile.priority[ SSPVP:GetBattlefieldAbbrev( joinMap ) ] ) or
-		( self.db.profile.join.type == "lseql" and self.db.profile.priority[ SSPVP:GetBattlefieldAbbrev( map ) ] <= self.db.profile.priority[ SSPVP:GetBattlefieldAbbrev( joinMap ) ] ) ) then
+		if( ( self.db.profile.join.type == "less" and currentPriority < newPriority ) or ( self.db.profile.join.type == "lseql" and currentPriority <= newPriority ) ) then
 			joiningBF = id
 			joiningAt = GetTime() + self.db.profile.join[delayType]
 			
@@ -940,40 +958,47 @@ function SSPVP:PLAYER_DEAD()
 end
 
 -- I'm sure i'll have to extend this at some point to add argument passing.
-function SSPVP:PLAYER_REGEN_ENABLED( event )
-	for func, handler in pairs( queuedUpdates ) do
-		if( type(handler) == "table" ) then
-			handler[func ](handler)
-		elseif( type(func) == "function" ) then
-			func()
-		elseif( type(func) == "string" ) then
-			getglobal(func)()
+function SSPVP:PLAYER_REGEN_ENABLED(event)
+	for _, row in pairs(queuedUpdates) do
+		if( row.handler ) then
+			row.handler[row.func](row.handler)
+		elseif( type(row.func) == "string" ) then
+			getglobal(row.func)()
+		elseif( type(row.func) == "function" ) then
+			row.func()
 		end
-		
-		queuedUpdates[func] = nil
 	end
+	
+	for i=#(queuedUpdates), 1, -1 do
+		table.remove(queuedUpdates, i)
+	end
+	
 end
 
 function SSPVP:UnregisterOOCUpdate(func)
-	queuedUpdates[func] = nil
+	for i=#(queuedUpdates), 1, -1 do
+		if( queuedUpdates[i].func == func ) then
+			table.remove(queuedUpdates, i)
+		end
+	end
 end
 
 function SSPVP:RegisterOOCUpdate(handler, func)
 	if( type(handler) == "table" and type(func) == "string" ) then
-		queuedUpdates[func] = handler
+		table.insert(queuedUpdates, {func = func, handler = handler})
 	elseif( type(handler) == "function" or type(handler) == "string" ) then
-		queuedUpdates[handler] = true
+		table.insert(queuedUpdates, {func = handler})
 	end
 end
 
 -- Confirmation popups
 StaticPopupDialogs["CONFIRM_PORT_LEAVE"] = {
 	text = "",
-	button1 = TEXT( YES ),
-	button2 = TEXT( NO ),
-	OnAccept = function( id )
-		confirmedPortLeave[ id ] = true
-		AcceptBattlefieldPort( id, nil )
+	button1 = TEXT(YES),
+	button2 = TEXT(NO),
+	OnAccept = function(id)
+		confirmedPortLeave[id] = true
+		AcceptBattlefieldPort(id, nil)
 	end,
 	timeout = 0,
 	whileDead = 1,
@@ -983,8 +1008,8 @@ StaticPopupDialogs["CONFIRM_PORT_LEAVE"] = {
 
 StaticPopupDialogs["CONFIRM_BATTLEFIELD_LEAVE"] = {
 	text = "",
-	button1 = TEXT( YES ),
-	button2 = TEXT( NO ),
+	button1 = TEXT(YES),
+	button2 = TEXT(NO),
 	OnAccept = function()
 		confirmedBFLeave = true
 		LeaveBattlefield()

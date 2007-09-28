@@ -33,7 +33,7 @@ function TurnIn:GossipOnClick()
 		-- If it's not a quest, it can't have any item requirements
 		for id, gossip in pairs({GetGossipOptions()}) do
 			if( ( select(1, gossip) ) == self:GetText() ) then
-				table.insert(SSPVP.db.profile.quests, {name = se;f:GetText(), type = "manual", noItems = true})
+				table.insert(SSPVP.db.profile.quests, {name = self:GetText(), type = "manual", noItems = true})
 				return
 			end
 		end
