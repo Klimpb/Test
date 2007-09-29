@@ -949,13 +949,13 @@ function SSPVP:CORPSE_OUT_OF_RANGE()
 end
 
 function SSPVP:CORPSE_IN_RANGE()
-	if( SSPVP.db.profile.bf.autoAccept and GetCorpseRecoveryDelay() ~= nil and GetCorpseRecoveryDelay() > 0 ) then
+	if( activeBF.id > 0 and SSPVP.db.profile.bf.autoAccept and GetCorpseRecoveryDelay() ~= nil and GetCorpseRecoveryDelay() > 0 ) then
 		self:ScheduleTimer("SSAUTO_RELEASE", RetrieveCorpse, GetCorpseRecoveryDelay() + 1)
 	end
 end
 
 function SSPVP:PLAYER_DEAD()
-	if( SSPVP.db.profile.bf.release ) then
+	if( activeBF.id > 0 and SSPVP.db.profile.bf.release ) then
 		if( not HasSoulstone() and SSPVP.db.profile.bf.release ) then
 			StaticPopupDialogs["DEATH"].text = L["Releasing..."]
 			RepopMe()	

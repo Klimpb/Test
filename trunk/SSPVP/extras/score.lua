@@ -7,9 +7,26 @@ local friendlies = {}
 
 function Score:Initialize()
 	hooksecurefunc("WorldStateScoreFrame_Update", self.WorldStateScoreFrame_Update)
+	
+	-- So we know when to create the Alliance/Horde info buttons
+	local onShow = WorldStateScoreFrame:GetScript("OnShow")
+	WorldStateScoreFrame:HookScript("OnShow", function(...)
+		Score:CreateInfoButtons()
 
-	WorldStateScoreFrame:HookScript("OnShow", self.CreateInfoButtons)
-	WorldStateScoreFrame:HookScript("OnHide", function() SetBattlefieldScoreFaction(nil) end)
+		if( onShow ) then
+			onShow(...)		
+		end
+	end)
+	
+	-- Reset score faction shown so we get good data
+	local onHide = WorldStateScoreFrame:GetScript("OnHide")
+	WorldStateScoreFrame:SetScript("OnHide", function(...)
+		SetBattlefieldScoreFaction(nil)
+		
+		if( onHide ) then
+			onHide(...)
+		end
+	end)
 	
 	SSOverlay:AddCategory("fact", L["Faction Balance"], 0)
 end
