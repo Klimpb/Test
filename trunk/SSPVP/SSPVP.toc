@@ -9,9 +9,9 @@ Dongle.lua
 OptionHouse.lua
 HousingAuthority.lua
 
-localization.en.lua
-localization.de.lua
-localization.fr.lua
+localization.enUS.lua
+localization.deDE.lua
+localization.frFR.lua
 
 SSPVP.lua
 

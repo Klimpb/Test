@@ -95,6 +95,8 @@ function SSPVP:Initialize()
 				showTalents = false,
 				reportChat = true,
 				teamInfo = true,
+				unitFrames = true,
+				modify = true,
 			},
 			eots = {
 				overlay = true,
@@ -315,7 +317,7 @@ end
 -- Block raid join/leaves
 local Orig_ChatFrame_SystemEventHandler = ChatFrame_SystemEventHandler
 function ChatFrame_SystemEventHandler(event, ...)
-	if( arg1 and SSPVP.db.profile.reformat.blockSpam and (string.match(arg1, JoinedRaid) or string.match(arg1, LeftRaid) ) ) then
+	if( activeBF.id > 0 and arg1 and SSPVP.db.profile.reformat.blockSpam and (string.match(arg1, JoinedRaid) or string.match(arg1, LeftRaid) ) ) then
 		return true
 	end
 	
@@ -325,7 +327,7 @@ end
 -- Auto append server name
 local Orig_SendChatMessage = SendChatMessage
 function SendChatMessage(text, type, language, target, ...)
-	if( target and SSPVP.db.profile.reformat.autoAppend and type == "WHISPER" and not string.match(target, "-") ) then
+	if( activeBF.id > 0 and target and SSPVP.db.profile.reformat.autoAppend and type == "WHISPER" and not string.match(target, "-") ) then
 		local foundName
 		local foundPlayers = 0
 				

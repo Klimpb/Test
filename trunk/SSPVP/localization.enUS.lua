@@ -433,7 +433,8 @@ SSPVPLocals = {
 	["Hide class icon next to names on score board"] = "Hide class icon next to names on score board",
 	["Show player levels next to names on score board"] = "Show player levels next to names on score board",
 	
-	["Enable enemy team report"] = "Enable enemy team report",
+	["Enable enemy team report to chat"] = "Enable enemy team report to chat",
+	["Enable arena unit frames"] = "Enable arena unit frames",
 	["Target frame scale: %d%%"] = "Target frame scale: %d%%",
 	
 	["Enable estimated final score overlay"] = "Enable estimated final score overlay",
