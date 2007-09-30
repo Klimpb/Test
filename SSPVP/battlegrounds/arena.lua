@@ -1,7 +1,12 @@
-local Arena = SSPVP:NewModule( "SSPVP-Arena" )
+Arena = SSPVP:NewModule( "SSPVP-Arena" )
 Arena.activeIn = "arena"
 
 local L = SSPVPLocals
+
+-- Blizzard likes to change this monthly, so lets just
+-- store it here to make it easier
+local pointPenalty = {[5] = 1.0, [3] = 0.88, [2] = 0.76}
+
 local CREATED_ROWS = 0
 
 local enemies = {}
@@ -28,20 +33,20 @@ function Arena:Initialize()
 	SSPVP.cmd:RegisterSlashHandler(L["percent <playedGames> <totalGames> - Calculates how many games you will need to play to reach 30% using the passed played games and total games."], "percent (%d+) (%d+)", self.CalculateGoal)
 end
 
+
 function Arena:EnableModule()
-	self:RegisterEvent("CHAT_MSG_ADDON")
-	self:RegisterEvent("CHAT_MSG_COMBAT_HOSTILE_DEATH")
-	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL")
-	self:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
-	self:RegisterEvent("PLAYER_FOCUS_CHANGED")
-	--self:RegisterEvent("UPDATE_BINDINGS", "UpdateEnemyBindings")
-	self:RegisterEvent("PLAYER_TARGET_CHANGED")
 	self:RegisterEvent("UNIT_HEALTH")
+	self:RegisterEvent("CHAT_MSG_ADDON")
+	self:RegisterEvent("PLAYER_FOCUS_CHANGED")
+	self:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
+	self:RegisterEvent("PLAYER_TARGET_CHANGED")
+	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL")
+	self:RegisterEvent("CHAT_MSG_COMBAT_HOSTILE_DEATH")
+	self:RegisterEvent("UPDATE_BINDINGS", "UpdateBindings")
 	
-	--self:RegisterMessage("SS_ENEMY_DATA", "EnemyData")
-	--self:RegisterMessage("SS_ENEMYPET_DATA", "PetData")
-	
-	--self:RegisterMessage("SS_ENEMYDIED_DATA", "EnemyDied")
+	self:RegisterMessage("SS_ENEMY_DATA", "EnemyData")
+	self:RegisterMessage("SS_ENEMYPET_DATA", "PetData")
+	self:RegisterMessage("SS_ENEMYDIED_DATA", "EnemyDied")
 	
 	SSOverlay:AddCategory("arena", L["Arena Info"])
 	
@@ -82,6 +87,7 @@ function Arena:DisableModule()
 	self:RegisterEvent("ADDON_LOADED")
 end
 
+-- Something in configuration changed
 function Arena:Reload()
 	if( not SSPVP.db.profile.arena.locked ) then
 		if( #(enemies) == 0 and #(enemyPets) == 0 ) then
@@ -92,6 +98,18 @@ function Arena:Reload()
 			self:CreateRow()
 			
 			self:UpdateEnemies()
+		end
+	elseif( #(enemies) == 1 and #(enemyPets) == 1 ) then
+		enemies = {}
+		enemyPets = {}
+		
+		if( self.frame ) then
+			self.frame:Hide()
+			
+			for i=1, CREATED_ROWS do
+				self.rows[i].ownerName = nil
+				self.rows[i]:Hide()
+			end
 		end
 	end
 	
@@ -106,6 +124,25 @@ function Arena:Reload()
 	end
 end
 
+-- Set up bindings
+function Arena:UpdateBindings()
+	if( not self.frame ) then
+		return
+	end
+	
+	for i=1, CREATED_ROWS do
+		local bindKey = GetBindingKey("ARENATAR" .. i)
+				
+		if( bindKey ) then
+			SetOverrideBindingClick(self.rows[i].button, false, bindKey, self.rows[i].button:GetName())	
+		else
+			ClearOverrideBindings(self.rows[i].button)
+		end
+	end
+end
+
+
+-- Grabs the data from the name
 function Arena:GetDataFromName(name)
 	for _, enemy in pairs(enemies) do
 		if( enemy.name == name ) then
@@ -116,6 +153,25 @@ function Arena:GetDataFromName(name)
 	return nil
 end
 
+-- Check if an enemy died
+function Arena:CHAT_MSG_COMBAT_HOSTILE_DEATH(event, msg)
+	-- Check if someone in our party killed them
+	if( string.match(msg, PartySlain) ) then
+		local died = string.match(msg, PartySlain)
+
+		self:EnemyDied(event, died)		
+		PVPSync:SendMessage("ENEMYDIED:" .. died)
+
+	-- Check if we killed them
+	elseif( string.find(msg, SelfSlain) ) then
+		local died = string.match(msg, SelfSlain)
+
+		self:EnemyDied(event, died)
+		PVPSync:SendMessage("ENEMYDIED:" .. died)
+	end
+end
+
+-- Updates all the health info!
 function Arena:UpdateHealth(enemy, health, maxHealth)
 	-- No data passed (Bad) return quickly
 	if( not enemy ) then
@@ -160,11 +216,9 @@ end
 -- Basically this handles things that change mid combat
 -- like health or dying
 function Arena:UpdateRow(enemy, id)
-	local health = math.floor((enemy.health / enemy.maxHealth) + 0.5) * 100
+	self.rows[id]:SetValue(enemy.health)
+	self.rows[id].healthText:SetText(math.floor((enemy.health / enemy.maxHealth) + 0.5) * 100)
 	
-	self.rows[id]:SetValue(health)
-	self.rows[id].healthText:SetText(health)
-
 	if( enemy.isDead ) then
 		self.rows[id]:SetAlpha(0.75)
 	else
@@ -179,7 +233,7 @@ function Arena:UpdateEnemies()
 		SSPVP:RegisterOOCUpdate(Arena, "UpdateEnemies")
 		return
 	end
-	
+		
 	local id = 0
 
 	-- Update enemy players
@@ -215,7 +269,8 @@ function Arena:UpdateEnemies()
 		-- Make it so we can target the person
 		row.button:SetAttribute("type", "macro")
 		row.button:SetAttribute("macrotext", "/target " .. enemy.name)
-
+		
+		--ChatFrame2:AddMessage("UPDATED " .. enemy.name)
 		
 		row:Show()
 	end
@@ -250,6 +305,8 @@ function Arena:UpdateEnemies()
 		row.button:SetAttribute("type", "macro")
 		row.button:SetAttribute("macrotext", "/target " .. enemy.name)
 
+		--ChatFrame2:AddMessage("UPDATED " .. enemy.name)
+
 		row:Show()
 	end
 
@@ -280,16 +337,24 @@ end
 
 -- Scan unit, see if they're valid as an enemy or enemy pet
 function Arena:ScanUnit(unit)
+	-- Mods disabled
+	if( not SSPVP.db.profile.arena.unitFrames ) then
+		return
+	end
+	
+	--ChatFrame2:AddMessage("Scanning unit " .. unit )
+	
 	-- 1) Roll a Priest with the name Unknown
 	-- 2) Join an arena team
 	-- 3) ????
 	-- 4) Profit! Because all arena mods check for Unknown names before exiting
 	local name, server = UnitName(unit)
-	if( name == L["Unknown"] ) then
+	if( name == L["Unknown"] or not UnitIsEnemy("player", unit) ) then
+		--ChatFrame2:AddMessage("Rejected, not an enemy " .. name)
 		return
 	end
 	
-	if( UnitIsPlayer(unit) and UnitIsEnemy("player", unit) ) then
+	if( UnitIsPlayer(unit) ) then
 		server = server or GetRealmName()
 		
 		for _, player in pairs(enemies) do
@@ -305,13 +370,13 @@ function Arena:ScanUnit(unit)
 		table.insert(enemies, {sortID = name .. "-" .. server, name = name, server = server, race = race, class = class, classToken = classToken, guild = guild, health = UnitHealth(unit), maxHealth = UnitHealthMax(unit) or 100})
 		
 		if( guild ) then
-			if( SSPVP.db.profile.reportChat ) then
+			if( SSPVP.db.profile.arena.reportChat ) then
 				SSPVP:ChannelMessage(string.format(L["[%d/%d] %s / %s / %s / %s / %s"], #(enemies), SSPVP:MaxBattlefieldPlayers(), name, server, race, class, guild))
 			end
 			
 			PVPSync:SendMessage("ENEMY:" .. name .. "," .. server .. "," .. race .. "," .. classToken .. "," .. guild)
 		else
-			if( SSPVP.db.profile.reportChat ) then
+			if( SSPVP.db.profile.arena.reportChat ) then
 				SSPVP:ChannelMessage(string.format(L["[%d/%d] %s / %s / %s / %s"], #(enemies), SSPVP:MaxBattlefieldPlayers(), name, server, race, class))
 			end
 			
@@ -326,7 +391,7 @@ function Arena:ScanUnit(unit)
 		self:UpdateEnemies()
 		
 	-- Warlock pet or a Water Elemental
-	elseif( UnitIsEnemy("player", unit) and UnitCreatureFamily(unit) or name == L["Water Elemental"] ) then
+	elseif( UnitCreatureFamily(unit) or name == L["Water Elemental"] ) then
 		-- Need to find the pets owner
 		if( not self.tooltip ) then
 			self.tooltip = CreateFrame("GameTooltip", "SSArenaTooltip", UIParent, "GameTooltipTemplate")
@@ -355,13 +420,13 @@ function Arena:ScanUnit(unit)
 			table.insert(enemyPets, {sortID = name .. "-" .. owner, name = name, owner = owner, family = family, health = UnitHealth(unit), maxHealth = UnitHealthMax(unit) or 100})
 			
 			if( family ) then
-				if( SSPVP.db.profile.reportChat ) then
+				if( SSPVP.db.profile.arena.reportChat ) then
 					SSPVP:ChannelMessage(string.format( L["[%d/%d] %s's pet, %s %s"], #(enemyPets), SSPVP:MaxBattlefieldPlayers(), owner, name, family))
 				end
 				
 				PVPSync:SendMessage("ENEMYPET:" .. name .. "," .. owner .. "," .. family)
 			else
-				if( SSPVP.db.profile.reportChat ) then
+				if( SSPVP.db.profile.arena.reportChat ) then
 					SSPVP:ChannelMessage(string.format(L["[%d/%d] %s's pet, %s"], #(enemyPets), SSPVP:MaxBattlefieldPlayers(), owner, name))
 				end
 				
@@ -415,6 +480,7 @@ local function scanFrames(...)
 	end
 end
 
+-- Create the master frame to hold everything
 function Arena:CreateFrame()
 	if( self.frame ) then
 		return
@@ -436,6 +502,7 @@ function Arena:CreateFrame()
 	self.frame:SetWidth(180)
 	self.frame:SetMovable(not SSPVP.db.profile.arena.locked)
 	self.frame:EnableMouse(not SSPVP.db.profile.arena.locked)
+	self.frame:SetClampedToScreen(true)
 
 	-- Moving the frame
 	self.frame:SetScript("OnMouseDown", function(self)
@@ -480,6 +547,7 @@ function Arena:CreateFrame()
 	end)
 	
 	-- Position to last saved area
+	self.frame:ClearAllPoints()
 	if( SSPVP.db.profile.positions.arena ) then
 		self.frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", SSPVP.db.profile.positions.arena.x, SSPVP.db.profile.positions.arena.y)
 	else
@@ -489,6 +557,7 @@ function Arena:CreateFrame()
 	self.rows = {}
 end
 
+-- Create a single row
 function Arena:CreateRow()
 	if( InCombatLockdown() ) then
 		SSPVP:RegisterOOCUpdate(Arena, "CreateRow")
@@ -500,6 +569,7 @@ function Arena:CreateRow()
 	end
 	
 	CREATED_ROWS = CREATED_ROWS + 1
+	local id = CREATED_ROWS
 	
 	-- Health bar
 	local row = CreateFrame("StatusBar", nil, self.frame)
@@ -530,23 +600,163 @@ function Arena:CreateRow()
 	texture:SetPoint("CENTER", row, "LEFT", -10, 0)
 	
 	-- So we can actually run macro text
-	local button = CreateFrame("Button", nil, row, "SecureActionButtonTemplate")
+	local button = CreateFrame("Button", "SSArenaButton" .. id, row, "SecureActionButtonTemplate")
 	button:SetHeight(16)
 	button:SetWidth(179)
 	button:SetPoint("LEFT", row, "LEFT", 1, 0)
 	button:EnableMouse(SSPVP.db.profile.arena.locked)
 	
-	if( CREATED_ROWS > 1 ) then
-		row:SetPoint("TOPLEFT", self.rows[CREATED_ROWS - 1], "BOTTOMLEFT", 0, -2)
+	-- Position
+	if( id > 1 ) then
+		row:SetPoint("TOPLEFT", self.rows[id - 1], "BOTTOMLEFT", 0, -2)
 	else
 		row:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 1, -1)
 	end
 
-	self.rows[CREATED_ROWS] = row
-	self.rows[CREATED_ROWS].text = text
-	self.rows[CREATED_ROWS].classTexture = texture
-	self.rows[CREATED_ROWS].button = button
-	self.rows[CREATED_ROWS].healthText = healthText
+	self.rows[id] = row
+	self.rows[id].text = text
+	self.rows[id].classTexture = texture
+	self.rows[id].button = button
+	self.rows[id].healthText = healthText
+	
+	-- Add key bindings
+	local bindKey = GetBindingKey("ARENATAR" .. id)
+
+	if( bindKey ) then
+		SetOverrideBindingClick(self.rows[id].button, false, bindKey, self.rows[id].button:GetName())	
+	else
+		ClearOverrideBindings(self.rows[id].button)
+	end
+end
+
+-- Syncing
+function Arena:EnemyData(event, name, server, race, classToken, guild)
+	if( not SSPVP.db.profile.arena.unitFrames ) then
+		return
+	end
+	
+	for _, enemy in pairs( enemies ) do
+		if( not enemy.owner and enemy.name == name ) then
+			return
+		end
+	end
+
+	table.insert(enemies, {sortID = name .. "-" .. server, name = name, health = 100, maxHealth = 100, server = server, race = race, classToken = classToken, guild = guild})
+	self:UpdateEnemies()
+end
+
+-- New pet found
+function Arena:PetData(event, name, owner, family)
+	if( not SSPVP.db.profile.arena.unitFrames or not SSPVP.db.profile.arena.showPets ) then
+		return
+	end
+	
+	for _, enemy in pairs( enemies ) do
+		if( enemy.owner == owner and enemy.name == name ) then
+			return
+		end
+	end
+
+	table.insert(enemyPets, {sortID = name .. "-" .. owner, name = name, owner = owner, family = family, health = 100, maxHealth = 100})
+	self:UpdateEnemies()
+end
+
+-- Someone died, update them to actually be dead
+function Arena:EnemyDied(event, name)
+	if( not SSPVP.db.profile.arena.unitFrames ) then
+		return
+	end
+
+	for id, enemy in pairs(enemies) do
+		if( not enemy.isDead and enemy.name == name ) then
+			enemy.isDead = true
+			enemy.health = 0
+			self:UpdateRow(enemy, id)
+			break
+		end
+	end
+end
+
+-- Most arena mods are incredibly evil, and don't use class token
+-- so, we need to translate it from evil class -> token class
+function Arena:TranslateClass(class)
+	for classToken, className in pairs(L["CLASSES"]) do
+		if( className == class ) then
+			return classToken
+		end
+	end
+	
+	return nil
+end
+
+function Arena:CHAT_MSG_ADDON(event, prefix, msg, type, author)
+	-- <name> <class>
+	if( prefix == "ArenaMaster" ) then
+		local name, class = string.split(" ", msg)
+		self:EnemyData(event, name, nil, nil, string.upper(class))
+
+	-- <name>,<class>
+	elseif( prefix == "ALF_T" ) then
+		local name, class = string.split( ",", msg )
+		self:EnemyData( event, name, nil, nil, self:TranslateClass(class))
+	
+	-- AOP <name>:<class>:<race>
+	--elseif( prefix == "BGGQ" and string.sub(msg, 0, 3) == "AOP" ) then
+	--	local name, class, race = string.split(":", string.sub(msg, 5))
+	--	self:EnemyData(event, name, nil, race, self:TranslateClass(class))
+	
+	-- 0,<name>,<class>
+	-- Yay ArenaUnitFrames plays nicely and uses class Token
+	elseif( prefix == "ArenaUnitFrames" ) then
+		local _, name, class = string.split(",", msg)
+		self:EnemyData(event, name, nil, nil, class)
+	
+	-- Accidentally SSPVP 2.4 uses "RAID" type instead of "BATTLEGROUND", meaning
+	-- most of the time the sync messages from it wont be caught unless you're grouped
+	-- FOUND:<num>:<name>:<server>:<race>:<class>
+	--elseif( prefix == "SSPVP" and string.sub(msg, 0, 5) == "FOUND" ) then
+	--	local _, name, server, race, class = string.split(":", string.sub(msg, 7))
+	--	self:EnemyData(event, name, server, race, self:TranslateClass(class))
+	end
+end
+
+-- Calculates RATING -> POINTS
+local function GetPoints(rating, teamSize)
+	teamSize = teamSize or 5
+	local penalty = pointPenalty[teamSize]
+	
+	local points = 0
+	if( rating > 1500 ) then
+		points = (1511.26 / (1 + 1639.28 * math.exp(1) ^ (-0.00412 * rating))) * penalty
+	else
+		points = ((0.22 * rating ) + 14) * penalty
+	end
+	
+	if( points < 0 ) then
+		points = 0
+	end
+	
+	return points
+end
+
+-- Calculates POINTS -> RATING
+local function GetRating(points, teamSize)
+	teamSize = teamSize or 5
+	local penalty = pointPenalty[teamSize]
+	
+	local rating = 0
+	if( points > GetPoints(1500, teamSize) ) then
+		rating = (math.log(((1511.26 * penalty / points) - 1) / 1639.28) / -0.00412)
+	else
+		rating = ((points / penalty - 14) / 0.22 )
+	end
+	
+	-- Can the new formula go below 0?
+	if( rating < 0 ) then
+		rating = 0
+	end
+	
+	return math.floor(rating + 0.5)
 end
 
 -- Inspect/player arena team info changes
@@ -563,76 +773,48 @@ function Arena:PVPTeamDetails_Update()
 		return
 	end
 	
-	local _, _, _, teamPlayed, _,  seasonTeamPlayed = GetArenaTeam( PVPTeamDetails.team )
-	local name, rank, online, playedText, played, seasonPlayed, percent
-			
-	for i=1, GetNumArenaTeamMembers( PVPTeamDetails.team, 1 ) do
-		playedText = getglobal( "PVPTeamDetailsButton" .. i .. "Played" )
-		
-		name, rank, _, _, online, played, _, seasonPlayed = GetArenaTeamRosterInfo( PVPTeamDetails.team, i )
+	local _, _, _, teamPlayed, _,  seasonTeamPlayed = GetArenaTeam(PVPTeamDetails.team)
+
+	for i=1, GetNumArenaTeamMembers(PVPTeamDetails.team, 1) do
+		local playedText = getglobal("PVPTeamDetailsButton" .. i .. "Played")
+		local name, rank, _, _, online, played, _, seasonPlayed = GetArenaTeamRosterInfo(PVPTeamDetails.team, i)
 		
 		if( rank == 0 and not online ) then
-			getglobal( "PVPTeamDetailsButton" .. i .. "NameText" ):SetText( string.format( L["(L) %s"], name ) )
+			getglobal("PVPTeamDetailsButton" .. i .. "NameText"):SetText(string.format(L["(L) %s"], name))
 		end
 		
-		-- Fix the percentage
+		-- Fix the percentage to calculate correctly
 		if( PVPTeamDetails.season and seasonPlayed > 0 and seasonTeamPlayed > 0 ) then
 			percent = seasonPlayed / seasonTeamPlayed
-			
 		elseif( played > 0 and teamPlayed > 0 ) then
 			percent = played / teamPlayed
 		else
 			percent = 0
 		end
 		
-		playedText.tooltip = string.format( "%.2f%%", percent * 100 )
+		playedText.tooltip = string.format("%.2f%%", percent * 100)
 	end
 end
 
--- Adds the actual rating!
-local function GetPoints(rating, penalty)
-	penalty = penalty or 1.0
-	
-	local points = 0
-	if( rating > 1500 ) then
-		points = (1511.26 / (1 + 1639.28 * math.exp(1) ^ (-0.00412 * rating))) * penalty
-	else
-		points = ((0.22 * rating ) + 14) * penalty
-	end
-	
-	if( points < 0 ) then
-		points = 0
-	end
-	
-	return points
-end
-
-function Arena:SetRating( parent, teamSize, teamRating )
+-- Update the frame with the rating info
+function Arena:SetRating(parent, teamSize, teamRating)
 	if( teamRating == 0 ) then
 		return
 	end
 
-	local penalty = 1.0
-	local ratingText = getglobal( parent .. "DataRating" )
-	local label = getglobal( parent.. "DataRatingLabel" )
-
-	-- Apply the percent reduction from brackets
-	if( teamSize == 3 ) then
-		penalty = 0.88
-	elseif( teamSize == 2 ) then
-		penalty = 0.76
-	end
+	local ratingText = getglobal(parent .. "DataRating")
+	local label = getglobal(parent.. "DataRatingLabel")
 
 	ratingText:ClearAllPoints()
-	ratingText:SetPoint( "LEFT", parent .. "DataRatingLabel", "RIGHT", 2, 0 )
+	ratingText:SetPoint("LEFT", parent .. "DataRatingLabel", "RIGHT", 2, 0)
 
 	label:ClearAllPoints()
-	label:SetPoint( "LEFT", parent .. "DataName", "RIGHT", -19, 0 )
+	label:SetPoint("LEFT", parent .. "DataName", "RIGHT", -19, 0)
 
-	ratingText:SetText( string.format( "%d |cffffffff(%d)|r", teamRating, GetPoints(teamRating, penalty) ) )
-	ratingText:SetWidth( 70 )
+	ratingText:SetText( string.format( "%d |cffffffff(%d)|r", teamRating, GetPoints(teamRating, teamSize) ) )
+	ratingText:SetWidth(70)
 
-	getglobal( parent .. "DataName" ):SetWidth( 160 )
+	getglobal(parent .. "DataName"):SetWidth(160)
 end
 
 -- Add points next to rating
@@ -640,13 +822,12 @@ function Arena:PVPTeam_Update()
 	if( not SSPVP.db.profile.arena.modify ) then
 		return
 	end
-	
-	local teams = { { size = 2 }, { size = 3 }, { size = 5 } }
-	local teamSize, teamName, teamRating, teamPlayed, seasonTeamPlayed, playerPlayed, seasonPlayerPlayed
 
-	for _, value in pairs( teams ) do
+	local teams = {{size = 2}, {size = 3}, {size = 5}}
+	
+	for _, value in pairs(teams) do
 		for i=1, MAX_ARENA_TEAMS do
-			teamName, teamSize = GetArenaTeam( i )
+			local teamName, teamSize = GetArenaTeam(i)
 			if( value.size == teamSize ) then
 				value.index = i
 			end
@@ -654,11 +835,10 @@ function Arena:PVPTeam_Update()
 	end
 
 	local buttonIndex = 0
-	
-	for _, value in pairs( teams ) do
+	for _, value in pairs(teams) do
 		if( value.index ) then
-			buttonIndex = buttonIndex + 1 
-			_, _, teamRating, teamPlayed, _, seasonTeamPlayed, _, playerPlayed, seasonPlayerPlayed = GetArenaTeam( value.index )
+			local buttonIndex = buttonIndex + 1 
+			local _, _, teamRating, teamPlayed, _, seasonTeamPlayed, _, playerPlayed, seasonPlayerPlayed = GetArenaTeam(value.index)
 			
 			if( PVPFrame.season and seasonPlayerPlayed > 0 and seasonTeamPlayed > 0 ) then
 				percent = seasonPlayerPlayed / seasonTeamPlayed
@@ -672,14 +852,13 @@ function Arena:PVPTeam_Update()
 			end
 
 			if( percent < 0.10 ) then
-				getglobal( "PVPTeam" .. buttonIndex .."DataPlayed"):SetVertexColor( 1.0, 0, 0 )
+				getglobal("PVPTeam" .. buttonIndex .."DataPlayed"):SetVertexColor(1.0, 0, 0)
 			else
-				getglobal( "PVPTeam" .. buttonIndex .."DataPlayed"):SetVertexColor( 1.0, 1.0, 1.0 )
+				getglobal("PVPTeam" .. buttonIndex .."DataPlayed"):SetVertexColor(1.0, 1.0, 1.0)
 			end
 
-			getglobal( "PVPTeam" .. buttonIndex .. "DataPlayed" ):SetText( playerPlayed .. " (" ..floor( percent * 100 ) .. "%)" )
-
-			Arena:SetRating( "PVPTeam" .. buttonIndex, value.size, teamRating )
+			getglobal("PVPTeam" .. buttonIndex .. "DataPlayed"):SetText(playerPlayed .. " (" .. math.floor(percent * 100) .. "%)")
+			Arena:SetRating("PVPTeam" .. buttonIndex, value.size, teamRating)
 		end
 	end
 end
@@ -690,86 +869,41 @@ function Arena:InspectPVPTeam_Update()
 		return
 	end
 
-	local teams = { { size = 2 }, { size = 3 }, { size = 5 } }
-	local teamName, teamSize, teamName, teamRating
+	local teams = {{size = 2}, {size = 3}, {size = 5}}
 
-	for _, value in pairs( teams ) do
+	for _, value in pairs(teams) do
 		for i=1, MAX_ARENA_TEAMS do
-			teamName, teamSize = GetInspectArenaTeamData( i )
+			local teamName, teamSize = GetInspectArenaTeamData(i)
 			if( value.size == teamSize ) then
 				value.index = i
 			end
 		end
 	end
-
-	local buttonIndex = 0
 	
-	for _, value in pairs( teams ) do
+	local buttonIndex = 0
+	for _, value in pairs(teams) do
 		if( value.index ) then
-			teamName, teamSize, teamRating = GetInspectArenaTeamData( value.index )
+			local teamName, teamSize, teamRating = GetInspectArenaTeamData(value.index)
 
 			buttonIndex = buttonIndex + 1
-
-			getglobal( "InspectPVPTeam" .. buttonIndex .. "DataName" ):SetText( string.format( L["%s |cffffffff(%dvs%d)|r"], teamName, teamSize, teamSize ) )
-			Arena:SetRating( "InspectPVPTeam" .. buttonIndex, teamSize, teamRating )
+			
+			getglobal("InspectPVPTeam" .. buttonIndex .. "DataName"):SetText(string.format(L["%s |cffffffff(%dvs%d)|r"], teamName, teamSize, teamSize))
+			Arena:SetRating("InspectPVPTeam" .. buttonIndex, teamSize, teamRating)
 		end
 	end
-end
-
--- Deals with catching sync messages from other battleground mods
-function Arena:TranslateClass( class )
-	for classToken, className in pairs( L["CLASSES"] ) do
-		if( className == class ) then
-			return classToken
-		end
-	end
-	
-	return nil
-end
-
-function Arena:CHAT_MSG_ADDON( event, prefix, msg, type, author )
-	--[[
-	-- "<name> <class>"
-	if( prefix == "ArenaMaster" ) then
-		local name, class = string.split( " ", msg )
-		self:EnemyData( event, name, nil, nil, string.upper( class ) )
-
-	-- "<name>,<class>"
-	elseif( prefix == "ALF_T" ) then
-		local name, class = string.split( ",", msg )
-		self:EnemyData( event, name, nil, nil, self:TranslateClass( class ) )
-	
-	-- "AOP <name>:<class>:<race>"
-	elseif( prefix == "BGGQ" and string.sub( msg, 0, 3 ) == "AOP" ) then
-		local name, class, race = string.split( ":", string.sub( msg, 5 ) )
-		self:EnemyData( event, name, nil, race, self:TranslateClass( class ) )
-	
-	-- "0,<name>,<class>"
-	-- Yay ArenaUnitFrames plays nicely and uses class Token
-	elseif( prefix == "ArenaUnitFrames" ) then
-		local _, name, class = string.split( ",", msg )
-		self:EnemyData( event, name, nil, nil, class )
-	
-	-- Accidentally SSPVP 2.4 uses "RAID" type instead of "BATTLEGROUND", meaning
-	-- most of the time the sync messages from it wont be caught unless you're grouped
-	-- "FOUND:<num>:<name>:<server>:<race>:<class>"
-	elseif( prefix == "SSPVP" and string.sub( msg, 0, 5 ) == "FOUND" ) then
-		local _, name, server, race, class = string.split( ":", string.sub( msg, 7 ) )
-		self:EnemyData( event, name, server, race, self:TranslateClass( class ) )
-	end
-	]]
 end
 
 -- Slash commands
 -- Games required to get 30%
-function Arena.CalculateGoal( currentGames, currentTotal )
-	currentGames = tonumber( currentGames )
-	currentTotal = tonumber( currentTotal )
+-- soo very hackish
+function Arena.CalculateGoal(currentGames, currentTotal)
+	currentGames = tonumber(currentGames)
+	currentTotal = tonumber(currentTotal)
 		
 	local percentage = currentGames / currentTotal
 	
 	if( percentage >= 0.30 ) then
-		SSPVP:Print( string.format( L["%d games is already 30%% of %d."], currentGames, currentTotal ) )
+		SSPVP:Print(string.format(L["%d games is already 30%% of %d."], currentGames, currentTotal))
 		return
 	end
 	
@@ -783,7 +917,7 @@ function Arena.CalculateGoal( currentGames, currentTotal )
 		percentage = games / totalGames
 	end
 	
-	SSPVP:Print( string.format( L["You have played %d games and need to play %d more (%d played games, %d total games) to reach 30%%"], currentGames, totalGames - currentTotal, games, totalGames ) )
+	SSPVP:Print(string.format(L["You have played %d games and need to play %d more (%d played games, %d total games) to reach 30%%"], currentGames, totalGames - currentTotal, games, totalGames))
 end
 
 -- Rating -> Points
@@ -791,33 +925,15 @@ function Arena.CalculatePoints(rating)
 	rating = tonumber(rating)
 
 	SSPVP:Print(string.format(L["[%d vs %d] %d rating = %d points"], 5, 5, rating, GetPoints(rating)))
-	SSPVP:Print(string.format(L["[%d vs %d] %d rating = %d points - %d%% = %d points"], 3, 3, rating, GetPoints(rating), 80, GetPoints(rating, 0.88)))
-	SSPVP:Print(string.format(L["[%d vs %d] %d rating = %d points - %d%% = %d points"], 2, 2, rating, GetPoints(rating), 70, GetPoints(rating, 0.76)))
+	SSPVP:Print(string.format(L["[%d vs %d] %d rating = %d points - %d%% = %d points"], 3, 3, rating, GetPoints(rating), pointPenalty[3] * 100, GetPoints(rating, 3)))
+	SSPVP:Print(string.format(L["[%d vs %d] %d rating = %d points - %d%% = %d points"], 2, 2, rating, GetPoints(rating), pointPenalty[2] * 100, GetPoints(rating, 2)))
 end
 
 -- Points -> Rating
-local function GetRating(points, penalty)
-	penalty = penalty or 1.0
-	
-	local rating = 0
-	if( points > GetPoints(1500, penalty) ) then
-		rating = (math.log(((1511.26 * penalty / points) - 1) / 1639.28) / -0.00412)
-	else
-		rating = ((points / penalty - 14) / 0.22 )
-	end
-	
-	-- Can the new formula go below 0?
-	if( rating < 0 ) then
-		rating = 0
-	end
-	
-	return math.floor(rating + 0.5)
-end
-
 function Arena.CalculateRating(points)
 	points = tonumber(points)
 
 	SSPVP:Print(string.format(L["[%d vs %d] %d points = %d rating"], 5, 5, points, GetRating(points)))
-	SSPVP:Print(string.format(L["[%d vs %d] %d points = %d rating"], 3, 3, points, GetRating(points, 0.88)))
-	SSPVP:Print(string.format(L["[%d vs %d] %d points = %d rating"], 2, 2, points, GetRating(points, 0.76)))
+	SSPVP:Print(string.format(L["[%d vs %d] %d points = %d rating"], 3, 3, points, GetRating(points, 3)))
+	SSPVP:Print(string.format(L["[%d vs %d] %d points = %d rating"], 2, 2, points, GetRating(points, 2)))
 end

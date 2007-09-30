@@ -317,7 +317,7 @@ function UI:Overlay()
 		{ group = L["Frame"], text = L["Category padding"], type = "input", numeric = true, width = 30, var = {"overlay", "catPad"}},
 		{ group = L["Frame"], format = L["Background opacity: %d%%"], type = "slider", var = {"overlay", "opacity"}},
 		{ group = L["Frame"], format = L["Text opacity: %d%%"], type = "slider", var = {"overlay", "textOpacity"}},
-		{ group = L["Frame"], format = L["Overlay frame scale: %d%%"], type = "slider", var = {"overlay", "scale"}},
+		{ group = L["Frame"], format = L["Overlay frame scale: %d%%"], min = 0.0, max = 2.0, type = "slider", var = {"overlay", "scale"}},
 
 		{ group = L["Color"], text = L["Background color"], type = "color", var = {"overlay", "background"}},
 		{ group = L["Color"], text = L["Border color"], type = "color", var = {"overlay", "border"}},
@@ -348,9 +348,11 @@ end
 function UI:Arena()
 	local config = {
 		{ group = L["General"], text = string.format(L["Disable %s module"], L["Arena"]), type = "check", var = {"modules", "SSPVP-Arena"}},
-		{ group = L["General"], text = L["Enable enemy team report"], type = "check", var = {"arena", "reportChat"}},
+		{ group = L["General"], text = L["Enable enemy team report to chat"], type = "check", var = {"arena", "reportChat"}},
+		{ group = L["General"], text = L["Enable arena unit frames"], type = "check", var = {"arena", "unitFrames"}},
 		{ group = L["General"], text = L["Show team name/rating in chat after game ends"], type = "check", var = {"arena", "teamInfo"}},
-		
+		{ group = L["General"], text = L["Enable modified player/inspect pvp screens"], type = "check", var = {"arena", "modify"}},
+				
 		--{ group = L["Display"], text = L["Show talents next to name"], help = L["Requires ArenaEnemyInfo or Tattle"], type = "check", var = {"arena", "showTalents"}},
 		{ group = L["Display"], text = L["Show enemy number next to name on arena frames"], type = "check", var = {"arena", "showID"}},
 		--{ group = L["Display"], text = L["Show enemy health next to name on arena frame"], type = "check", var = {"arena", "showHealth"}},
@@ -360,7 +362,7 @@ function UI:Arena()
 		{ group = L["Frame"], text = L["Lock team report frame"], type = "check", var = {"arena", "locked"}},
 		--{ group = L["Frame"], format = L["Background opacity: %d%%"], type = "slider", var = {"arena", "opacity"}},
 		--{ group = L["Frame"], format = L["Dead enemy opacity: %d%%"], type = "slider", var = {"arena", "deadOpacity"}},
-		{ group = L["Frame"], format = L["Target frame scale: %d%%"], type = "slider", var = {"arena", "scale"}},
+		{ group = L["Frame"], format = L["Target frame scale: %d%%"], min = 0.0, max = 2.0, type = "slider", var = {"arena", "scale"}},
 		
 		{ group = L["Color"], text = L["Enemy pet name color"], type = "color", var = {"arena", "petColor"}},
 		--{ group = L["Color"], text = L["Border color"], type = "color", var = {"arena", "border"}},
