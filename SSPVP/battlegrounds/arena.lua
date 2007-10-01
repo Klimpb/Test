@@ -56,9 +56,27 @@ function Arena:EnableModule()
 			self:CreateRow()
 		end
 	end
+	
 end
 
 function Arena:DisableModule()
+	-- Can't hide frames in combat =(
+	if( InCombatLockdown() ) then
+		SSPVP:RegisterOOCUpdate(Arena, "ResetFrames")
+	else
+		self:ResetFrames()
+	end
+	
+	-- Remove timers
+	SSOverlay:RemoveCategory("arena")
+	
+	-- Unregister events!
+	self:UnregisterAllMessages()
+	self:UnregisterAllEvents()
+	self:RegisterEvent("ADDON_LOADED")
+end
+
+function Arena:ResetFrames()
 	-- Clear the table so we can reuse it later
 	for i=#(enemies), 1, -1 do
 		table.remove(enemies, i)
@@ -77,14 +95,6 @@ function Arena:DisableModule()
 			self.rows[i]:Hide()
 		end
 	end
-	
-	-- Remove timers
-	SSOverlay:RemoveCategory("arena")
-	
-	-- Unregister events!
-	self:UnregisterAllMessages()
-	self:UnregisterAllEvents()
-	self:RegisterEvent("ADDON_LOADED")
 end
 
 -- Something in configuration changed
@@ -94,9 +104,6 @@ function Arena:Reload()
 			table.insert(enemies, {sortID = "", name = UnitName("player"), server = GetRealmName(), race = UnitRace("player"), class = UnitClass("player"), classToken = select(2, UnitClass("player")), health = UnitHealth("player"), maxHealth = UnitHealthMax("player")})
 			table.insert(enemyPets, {sortId = "", name = L["Pet"], owner = UnitName("player"), health = UnitHealth("player"), maxHealth = UnitHealthMax("player")})
 
-			self:CreateRow()
-			self:CreateRow()
-			
 			self:UpdateEnemies()
 		end
 	elseif( #(enemies) == 1 and #(enemyPets) == 1 ) then
@@ -198,7 +205,7 @@ function Arena:UpdateHealth(enemy, health, maxHealth)
 		enemy.maxHealth = maxHealth
 	end
 	
-	enemy.health = health
+	enemy.health = health or enemy.health
 	if( enemy.health == 0 ) then
 		enemy.isDead = true
 	end
@@ -217,7 +224,7 @@ end
 -- like health or dying
 function Arena:UpdateRow(enemy, id)
 	self.rows[id]:SetValue(enemy.health)
-	self.rows[id].healthText:SetText(math.floor((enemy.health / enemy.maxHealth) + 0.5) * 100)
+	self.rows[id].healthText:SetText((enemy.health / enemy.maxHealth) * 100)
 	
 	if( enemy.isDead ) then
 		self.rows[id]:SetAlpha(0.75)
@@ -239,12 +246,16 @@ function Arena:UpdateEnemies()
 	-- Update enemy players
 	for _, enemy in pairs(enemies) do
 		id = id + 1
+		if( not self.rows[id] ) then
+			self:CreateRow()
+		end
+
 		local row = self.rows[id]
 		
 		-- Players name
 		local name = enemy.name
 		if( SSPVP.db.profile.showID ) then
-			name = "|cffffff" .. id .. "|r " .. id
+			name = "|cffffff" .. id .. "|r " .. name
 		end
 
 		row.text:SetText(name)
@@ -270,24 +281,27 @@ function Arena:UpdateEnemies()
 		row.button:SetAttribute("type", "macro")
 		row.button:SetAttribute("macrotext", "/target " .. enemy.name)
 		
-		--ChatFrame2:AddMessage("UPDATED " .. enemy.name)
-		
 		row:Show()
 	end
 	
 	if( not SSPVP.db.profile.arena.showPets ) then
 		self.frame:SetHeight(18 * id)
+		self.frame:Show()
 		return
 	end
 	
 	-- Update enemy pets
 	for _, enemy in pairs(enemyPets) do
 		id = id + 1
+		if( not self.rows[id] ) then
+			self:CreateRow()
+		end
+		
 		local row = self.rows[id]
 		
 		local name = string.format(L["%s's %s"], enemy.owner, (enemy.family or enemy.name))
 		if( SSPVP.db.profile.showID ) then
-			name = "|cffffff" .. id .. "|r " .. id
+			name = "|cffffff" .. id .. "|r " .. name
 		end
 		
 		row.text:SetText(name)
@@ -305,12 +319,11 @@ function Arena:UpdateEnemies()
 		row.button:SetAttribute("type", "macro")
 		row.button:SetAttribute("macrotext", "/target " .. enemy.name)
 
-		--ChatFrame2:AddMessage("UPDATED " .. enemy.name)
-
 		row:Show()
 	end
 
 	self.frame:SetHeight(18 * id)
+	self.frame:Show()
 end
 
 -- Quick redirects!
@@ -341,16 +354,13 @@ function Arena:ScanUnit(unit)
 	if( not SSPVP.db.profile.arena.unitFrames ) then
 		return
 	end
-	
-	--ChatFrame2:AddMessage("Scanning unit " .. unit )
-	
+		
 	-- 1) Roll a Priest with the name Unknown
 	-- 2) Join an arena team
 	-- 3) ????
 	-- 4) Profit! Because all arena mods check for Unknown names before exiting
 	local name, server = UnitName(unit)
 	if( name == L["Unknown"] or not UnitIsEnemy("player", unit) ) then
-		--ChatFrame2:AddMessage("Rejected, not an enemy " .. name)
 		return
 	end
 	
@@ -383,10 +393,6 @@ function Arena:ScanUnit(unit)
 			PVPSync:SendMessage("ENEMY:" .. name .. "," .. server .. "," .. race .. "," .. classToken)
 		end
 		
-		if( (#(enemies) + #(enemyPets)) > CREATED_ROWS ) then
-			self:CreateRow()		
-		end
-		
 		table.sort(enemies, sortEnemies)
 		self:UpdateEnemies()
 		
@@ -411,11 +417,10 @@ function Arena:ScanUnit(unit)
 		if( owner and owner ~= L["Unknown"] ) then
 			local family = UnitCreatureFamily(unit)
 			for _, pet in pairs(enemyPets) do
-				if( pet.name == name and pet.owner == owner ) then
+				if( pet.name == name ) then
 					return
 				end
 			end
-			
 			
 			table.insert(enemyPets, {sortID = name .. "-" .. owner, name = name, owner = owner, family = family, health = UnitHealth(unit), maxHealth = UnitHealthMax(unit) or 100})
 			
@@ -433,10 +438,6 @@ function Arena:ScanUnit(unit)
 				PVPSync:SendMessage("ENEMYPET:" .. name .. "," .. owner)
 			end
 			
-			if( (#(enemies) + #(enemyPets)) > CREATED_ROWS ) then
-				self:CreateRow()		
-			end
-			
 			table.sort(enemyPets, sortEnemies)
 			self:UpdateEnemies()
 		end
@@ -444,15 +445,13 @@ function Arena:ScanUnit(unit)
 end
 
 -- Health value updated, rescan our saved enemies
-local function healthValueChanged(self, value, ...)
-	if( self ) then
-		local ownerName = select(5, self:GetParent():GetRegions()):GetText()
+local function healthValueChanged(...)
+	local ownerName = select(5, this:GetParent():GetRegions()):GetText()
 
-		Arena:UpdateHealth(Arena:GetDataFromName(ownerName), value, select(2, self:GetMinMaxValues()))
+	Arena:UpdateHealth(Arena:GetDataFromName(ownerName), value, select(2, this:GetMinMaxValues()))
 
-		if( self.SSValueChanged ) then
-			self.SSValueChanged(self, value, ...)
-		end
+	if( this.SSValueChanged ) then
+		this.SSValueChanged(...)
 	end
 end
 

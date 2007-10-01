@@ -846,7 +846,7 @@ function SSPVP:QueueReady(id, map)
 
 	elseif( joiningBF ~= id ) then
 		-- Check if we have a higher priority queue
-		local _, joinMap, _, _, _, registeredMatch = GetBattlefieldStatus( i )
+		local _, joinMap, _, _, _, registeredMatch = GetBattlefieldStatus(id)
 		
 		-- Yes, we could compress this down to a single if statement
 		-- but it's rather ugly/harder to debug

@@ -19,14 +19,24 @@ function Score:Initialize()
 	end)
 	
 	-- Reset score faction shown so we get good data
+	-- For some reason, the hook prevents it from hiding I have no idea why
+	--[[
 	local onHide = WorldStateScoreFrame:GetScript("OnHide")
 	WorldStateScoreFrame:SetScript("OnHide", function(...)
+		if( InCombatLockdown() ) then
+			SSPVP:RegisterOOCUpdate(WorldStateScoreFrame, "Hide")
+		else
+			WorldStateScoreFrame:Hide()
+		end
+		
+		
 		SetBattlefieldScoreFaction(nil)
 		
 		if( onHide ) then
 			onHide(...)
 		end
 	end)
+	]]
 	
 	SSOverlay:AddCategory("fact", L["Faction Balance"], 0)
 end
