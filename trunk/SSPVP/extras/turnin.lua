@@ -50,7 +50,7 @@ end
 
 -- Check if we need to auto skip
 function TurnIn:GOSSIP_SHOW()
-	if( not SSPVP.db.profile.turnin.enabled ) then
+	if( not SSPVP.db.profile.turnin.enabled or not GossipFrame.buttonIndex ) then
 		return
 	end
 	
