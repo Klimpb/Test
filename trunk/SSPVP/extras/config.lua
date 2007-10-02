@@ -270,9 +270,9 @@ function UI:AutoJoin()
 	
 	local config = {
 		{ group = L["General"], text = L["Enable auto join"], type = "check", var = {"join", "enabled"}},
-		{ group = L["General"], text = L["Battleground join delay"], type = "input", forceType = "int", width = 30, var = {"join", "bgDelay"}},
-		{ group = L["General"], text = L["AFK battleground join delay"], type = "input", forceType = "int", width = 30, var = {"join", "bgAfk"}},
-		{ group = L["General"], text = L["Arena join delay"], type = "input", forceType = "int", width = 30, var = {"join", "arenaDelay"}},
+		{ group = L["General"], text = L["Battleground join delay"], type = "input", numeric = true, width = 30, var = {"join", "bgDelay"}},
+		{ group = L["General"], text = L["AFK battleground join delay"], type = "input", numeric = true, width = 30, var = {"join", "bgAfk"}},
+		{ group = L["General"], text = L["Arena join delay"], type = "input", numeric = true, width = 30, var = {"join", "arenaDelay"}},
 		{ group = L["General"], text = L["Priority check mode"], type = "dropdown", list = {{"less", L["Less than"]}, {"lseql", L["Less than/equal"]}},  var = {"join", "type"}},
 		{ group = L["Battlefield auto joining priorities"], type = "inject", widget = UI:CreatePriority(frame, priorityList, {"priority"}), yPos = 0, xPos = 0 }
 	}
