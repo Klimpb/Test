@@ -262,7 +262,7 @@ function Arena:UpdateEnemies()
 		row.ownerName = enemy.name
 		
 		-- Show class icon to the left of the players name
-		if( SSPVP.db.profile.showIcon ) then
+		if( SSPVP.db.profile.arena.showIcon ) then
 			local coords = CLASS_BUTTONS[enemy.classToken]
 
 			row.classTexture:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
