@@ -195,7 +195,6 @@ function SSPVP:Initialize()
 	for key, rows in pairs(keys) do
 		for _, subKey in pairs(rows) do
 			SSPVP.db.profile[key][subKey] = tonumber(SSPVP.db.profile[key][subKey])
-			DEFAULT_CHAT_FRAME:AddMessage("Number " .. tostring(SSPVP.db.profile[key][subKey]) .. "," .. key .. "," .. subKey)
 		end
 	end
 end
