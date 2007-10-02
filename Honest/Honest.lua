@@ -153,7 +153,7 @@ end
 
 
 function Honest:CreateUI()
-	local frame = CreateFrame("Frame", nil, OptionHouse:GetFrame("addon"))
+	local frame = CreateFrame("Frame", nil, OH:GetFrame("addon"))
 	frame:SetScript("OnShow", function()
 		Honest.actualCheck:SetChecked( Honest.db.profile.showActual )	
 		Honest.estimateCheck:SetChecked( Honest.db.profile.showEstimated )	
