@@ -571,8 +571,15 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 		
 		-- We left the battlefield
 		elseif( status ~= "active" and i == activeBF.id ) then
-			activeBF.id = -1
-
+			-- Reset
+			for k, _ in pairs(activeBF) do
+				if( k == "id" ) then
+					activeBF[k] = -1
+				else
+					activeBF[k] = nil
+				end
+			end
+			
 			self:DisableAllModules()
 			SSOverlay:RemoveRow("timer", "general", L["Starting In: %s"])
 
@@ -734,38 +741,6 @@ function SSPVP:QueueBattlefieldLeave()
 	end
 end
 
--- Simplifies checks
-function SSPVP:GetBattlefieldAbbrev( map )
-	if( map == L["Warsong Gulch"] ) then
-		return "wsg"
-	elseif( map == L["Arathi Basin"]  ) then
-		return "ab"
-	elseif( map == L["Alterac Valley"] ) then
-		return "av"
-	elseif( map == L["Eye of the Storm"] ) then
-		return "eots"
-	elseif( map == L["Blade's Edge Arena"] or map == L["Nagrand Arena"] or map == L["Ruins of Lordaeron"] ) then
-		return "arena"
-	end
-	
-	return "none"
-end
-
-function SSPVP:MaxBattlefieldPlayers()
-	if( activeBF.map == L["Blade's Edge Arena"] or activeBF.map == L["Nagrand Arena"] or activeBF.map == L["Ruins of Lordaeron"] ) then
-		return activeBF.teamSize
-	elseif( activeBF.map == L["Warsong Gulch"] ) then
-		return 10
-	elseif( activeBF.map == L["Eye of the Storm"] or activeBF.map == L["Arathi Basin"] ) then
-		return 15
-	elseif( activeBF.map == L["Alterac Valley"] ) then
-		return 40
-		
-	end
-	
-	return 0
-end
-
 -- Make sure we can actually auto join still
 function SSPVP:AutoJoinBattlefield()
 	local self = SSPVP
@@ -795,8 +770,8 @@ function SSPVP:AutoJoinBattlefield()
 		currentType = "none"
 	end
 	
-	local _, joinMap, _, _, _, teamSize, isRated = GetBattlefieldStatus( joiningBF )
-	local joinAbbrev = SSPVP:GetBattlefieldAbbrev( joinMap )
+	local _, joinMap, _, _, _, teamSize, isRated = GetBattlefieldStatus(joiningBF)
+	local joinAbbrev = SSPVP:GetBattlefieldAbbrev(joinMap)
 	
 	if( joinAbbrev == "arena" ) then
 		if( isRated ) then
@@ -887,6 +862,38 @@ function SSPVP:QueueReady(id, map)
 	end
 	
 	SSPVP:UpdateQueueOverlay(id)
+end
+
+-- Simplifies checks
+function SSPVP:GetBattlefieldAbbrev( map )
+	if( map == L["Warsong Gulch"] ) then
+		return "wsg"
+	elseif( map == L["Arathi Basin"]  ) then
+		return "ab"
+	elseif( map == L["Alterac Valley"] ) then
+		return "av"
+	elseif( map == L["Eye of the Storm"] ) then
+		return "eots"
+	elseif( map == L["Blade's Edge Arena"] or map == L["Nagrand Arena"] or map == L["Ruins of Lordaeron"] ) then
+		return "arena"
+	end
+	
+	return "none"
+end
+
+function SSPVP:MaxBattlefieldPlayers()
+	if( activeBF.map == L["Blade's Edge Arena"] or activeBF.map == L["Nagrand Arena"] or activeBF.map == L["Ruins of Lordaeron"] ) then
+		return activeBF.teamSize
+	elseif( activeBF.map == L["Warsong Gulch"] ) then
+		return 10
+	elseif( activeBF.map == L["Eye of the Storm"] or activeBF.map == L["Arathi Basin"] ) then
+		return 15
+	elseif( activeBF.map == L["Alterac Valley"] ) then
+		return 40
+		
+	end
+	
+	return 0
 end
 
 -- For modules
