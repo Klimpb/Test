@@ -836,7 +836,7 @@ function Arena:PVPTeam_Update()
 	local buttonIndex = 0
 	for _, value in pairs(teams) do
 		if( value.index ) then
-			local buttonIndex = buttonIndex + 1 
+			buttonIndex = buttonIndex + 1 
 			local _, _, teamRating, teamPlayed, _, seasonTeamPlayed, _, playerPlayed, seasonPlayerPlayed = GetArenaTeam(value.index)
 			
 			if( PVPFrame.season and seasonPlayerPlayed > 0 and seasonTeamPlayed > 0 ) then
