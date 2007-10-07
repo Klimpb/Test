@@ -2573,11 +2573,6 @@ local function runMainAddonLoadedChunk(name)
 	if IsLoggedIn() then
 		collectgarbage('collect')
 	end
-	
-	if checkBadness() or (name and name:match("[Ss][Cc][Rr][Oo][Oo][Gg][Ee]")) then
-		Rock:NewLibrary(MAJOR_VERSION, 1e14-1)
-		error(("Your copy of %q has been tainted. Please disable Scrooge to fix this."):format(MAJOR_VERSION))
-	end
 end
 
 frame:Show()
