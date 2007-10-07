@@ -1,4 +1,4 @@
-﻿--[[
+--[[
 Name: LibRock-1.0
 Revision: $Rev$
 Developed by: ckknight (ckknight@gmail.com)
@@ -89,114 +89,114 @@ elseif GetLocale() == "frFR" then
 	}
 elseif GetLocale() == "koKR" then
 	CATEGORIES = {
-		["Action Bars"] = "액션바",
-		["Auction"] = "경매",
-		["Audio"] = "음향",
-		["Battlegrounds/PvP"] = "전장/PvP",
-		["Buffs"] = "버프",
-		["Chat/Communication"] = "대화/의사소통",
-		["Druid"] = "드루이드",
-		["Hunter"] = "사냥꾼",
-		["Mage"] = "마법사",
-		["Paladin"] = "성기사",
-		["Priest"] = "사제",
-		["Rogue"] = "도적",
-		["Shaman"] = "주술사",
-		["Warlock"] = "흑마법사",
-		["Warrior"] = "전사",
-		["Healer"] = "힐러",
-		["Tank"] = "탱커",
-		["Caster"] = "캐스터",
-		["Combat"] = "전투",
-		["Compilations"] = "복합",
-		["Data Export"] = "자료 출력",
-		["Development Tools"] = "개발 도구",
-		["Guild"] = "길드",
-		["Frame Modification"] = "구조 변경",
-		["Interface Enhancements"] = "인터페이스 강화",
-		["Inventory"] = "인벤토리",
-		["Library"] = "라이브러리",
-		["Map"] = "지도",
-		["Mail"] = "우편",
-		["Miscellaneous"] = "기타",
-		["Quest"] = "퀘스트",
-		["Raid"] = "공격대",
-		["Tradeskill"] = "전문기술",
-		["UnitFrame"] = "유닛 프레임",
+		["Action Bars"] = "???",
+		["Auction"] = "??",
+		["Audio"] = "??",
+		["Battlegrounds/PvP"] = "??/PvP",
+		["Buffs"] = "??",
+		["Chat/Communication"] = "??/????",
+		["Druid"] = "????",
+		["Hunter"] = "???",
+		["Mage"] = "???",
+		["Paladin"] = "???",
+		["Priest"] = "??",
+		["Rogue"] = "??",
+		["Shaman"] = "???",
+		["Warlock"] = "????",
+		["Warrior"] = "??",
+		["Healer"] = "??",
+		["Tank"] = "??",
+		["Caster"] = "???",
+		["Combat"] = "??",
+		["Compilations"] = "??",
+		["Data Export"] = "?? ??",
+		["Development Tools"] = "?? ??",
+		["Guild"] = "??",
+		["Frame Modification"] = "?? ??",
+		["Interface Enhancements"] = "????? ??",
+		["Inventory"] = "????",
+		["Library"] = "?????",
+		["Map"] = "??",
+		["Mail"] = "??",
+		["Miscellaneous"] = "??",
+		["Quest"] = "???",
+		["Raid"] = "???",
+		["Tradeskill"] = "????",
+		["UnitFrame"] = "?? ???",
 	}
 elseif GetLocale() == "zhTW" then
 	CATEGORIES = {
-		["Action Bars"] = "動作條",
-		["Auction"] = "拍賣",
-		["Audio"] = "音效",
-		["Battlegrounds/PvP"] = "戰場/PvP",
-		["Buffs"] = "增益",
-		["Chat/Communication"] = "聊天/通訊",
-		["Druid"] = "德魯伊",
-		["Hunter"] = "獵人",
-		["Mage"] = "法師",
-		["Paladin"] = "聖騎士",
-		["Priest"] = "牧師",
-		["Rogue"] = "盜賊",
-		["Shaman"] = "薩滿",
-		["Warlock"] = "術士",
-		["Warrior"] = "戰士",
-		["Healer"] = "治療者",
-		["Tank"] = "坦克",
-		["Caster"] = "施法者",
-		["Combat"] = "戰鬥",
-		["Compilations"] = "整合",
-		["Data Export"] = "資料匯出",
-		["Development Tools"] = "開發工具",
-		["Guild"] = "公會",
-		["Frame Modification"] = "框架修改",
-		["Interface Enhancements"] = "介面增強",
-		["Inventory"] = "庫存",
-		["Library"] = "程式庫",
-		["Map"] = "地圖",
-		["Mail"] = "郵件",
-		["Miscellaneous"] = "雜項",
-		["Quest"] = "任務",
-		["Raid"] = "團隊",
-		["Tradeskill"] = "交易技能",
-		["UnitFrame"] = "單位框架",
+		["Action Bars"] = "???",
+		["Auction"] = "??",
+		["Audio"] = "??",
+		["Battlegrounds/PvP"] = "??/PvP",
+		["Buffs"] = "??",
+		["Chat/Communication"] = "??/??",
+		["Druid"] = "???",
+		["Hunter"] = "??",
+		["Mage"] = "??",
+		["Paladin"] = "???",
+		["Priest"] = "??",
+		["Rogue"] = "??",
+		["Shaman"] = "??",
+		["Warlock"] = "??",
+		["Warrior"] = "??",
+		["Healer"] = "???",
+		["Tank"] = "??",
+		["Caster"] = "???",
+		["Combat"] = "??",
+		["Compilations"] = "??",
+		["Data Export"] = "????",
+		["Development Tools"] = "????",
+		["Guild"] = "??",
+		["Frame Modification"] = "????",
+		["Interface Enhancements"] = "????",
+		["Inventory"] = "??",
+		["Library"] = "???",
+		["Map"] = "??",
+		["Mail"] = "??",
+		["Miscellaneous"] = "??",
+		["Quest"] = "??",
+		["Raid"] = "??",
+		["Tradeskill"] = "????",
+		["UnitFrame"] = "????",
 	}
 elseif GetLocale() == "zhCN" then
 	CATEGORIES = {
-		["Action Bars"] = "动作条",
-		["Auction"] = "拍卖",
-		["Audio"] = "音频",
-		["Battlegrounds/PvP"] = "战场/PvP",
-		["Buffs"] = "增益魔法",
-		["Chat/Communication"] = "聊天/交流",
-		["Druid"] = "德鲁伊",
-		["Hunter"] = "猎人",
-		["Mage"] = "法师",
-		["Paladin"] = "圣骑士",
-		["Priest"] = "牧师",
-		["Rogue"] = "盗贼",
-		["Shaman"] = "萨满祭司",
-		["Warlock"] = "术士",
-		["Warrior"] = "战士",
-		["Healer"] = "治疗",
-		["Tank"] = "坦克",
-		["Caster"] = "远程输出",
-		["Combat"] = "战斗",
-		["Compilations"] = "编译",
-		["Data Export"] = "数据导出",
-		["Development Tools"] = "开发工具",
-		["Guild"] = "公会",
-		["Frame Modification"] = "框架修改",
-		["Interface Enhancements"] = "界面增强",
-		["Inventory"] = "背包",
-		["Library"] = "库",
-		["Map"] = "地图",
-		["Mail"] = "邮件",
-		["Miscellaneous"] = "杂项",
-		["Quest"] = "任务",
-		["Raid"] = "团队",
-		["Tradeskill"] = "商业技能",
-		["UnitFrame"] = "头像框架",
+		["Action Bars"] = "???",
+		["Auction"] = "??",
+		["Audio"] = "??",
+		["Battlegrounds/PvP"] = "??/PvP",
+		["Buffs"] = "????",
+		["Chat/Communication"] = "??/??",
+		["Druid"] = "???",
+		["Hunter"] = "??",
+		["Mage"] = "??",
+		["Paladin"] = "???",
+		["Priest"] = "??",
+		["Rogue"] = "??",
+		["Shaman"] = "????",
+		["Warlock"] = "??",
+		["Warrior"] = "??",
+		["Healer"] = "??",
+		["Tank"] = "??",
+		["Caster"] = "????",
+		["Combat"] = "??",
+		["Compilations"] = "??",
+		["Data Export"] = "????",
+		["Development Tools"] = "????",
+		["Guild"] = "??",
+		["Frame Modification"] = "????",
+		["Interface Enhancements"] = "????",
+		["Inventory"] = "??",
+		["Library"] = "?",
+		["Map"] = "??",
+		["Mail"] = "??",
+		["Miscellaneous"] = "??",
+		["Quest"] = "??",
+		["Raid"] = "??",
+		["Tradeskill"] = "????",
+		["UnitFrame"] = "????",
 	}
 elseif GetLocale() == "esES" then
 	CATEGORIES = {
@@ -302,76 +302,6 @@ local collectgarbage = _G.collectgarbage
 local table_sort = _G.table.sort
 local table_concat = _G.table.concat
 local IsAddOnLoaded = _G.IsAddOnLoaded
-local sanityChecks = {}
-
-local function checkBadness()
-	for i = 1, GetNumAddOns() do
-		local name,_,_,enabled = GetAddOnInfo(i)
-		if name:find("[Ss][Cc][Rr][Oo][Oo][Gg][Ee]") and enabled then
-			return true
-		end
-	end
-	if IsAddOnLoaded("Scrooge") then
-		return true
-	end
-	local _,_,_,enabled = GetAddOnInfo("Scrooge")
-	if enabled then
-		return true
-	end
-	if IsAddOnLoaded("!Scrooge") then
-		return true
-	end
-	local _,_,_,enabled = GetAddOnInfo("!Scrooge")
-	if enabled then
-		return true
-	end
-	local _, x = issecurevariable("GetAddOnMetadata")
-	if x and x:match("[Ss][Cc][Rr][Oo][Oo][Gg][Ee]") then
-		return true
-	end
-	local _, x = issecurevariable("IsAddOnLoaded")
-	if x and x:match("[Ss][Cc][Rr][Oo][Oo][Gg][Ee]") then
-		return true
-	end
-	local _, x = issecurevariable("GetAddOnInfo")
-	if x and x:match("[Ss][Cc][Rr][Oo][Oo][Gg][Ee]") then
-		return true
-	end
-	local _, x = issecurevariable("GetAddOnMemoryUsage")
-	if x and x:match("[Ss][Cc][Rr][Oo][Oo][Gg][Ee]") then
-		return true
-	end
-	if GetAddOnMemoryUsage("Scrooge") > 0 or GetAddOnMemoryUsage("!Scrooge") > 0 then
-		return true
-	end
-	for k in pairs(sanityChecks) do
-		if not k() then
-			return true
-		end
-	end
-	for k in pairs(_G.SlashCmdList) do
-		local i = 0
-		while true do
-			i = i + 1
-			local cmd = _G["SLASH_" .. k .. i]
-			if cmd then
-				if cmd:match("^/[Ss][Cc][Rr][Oo][Oo][Gg][Ee]") then
-					return true
-				end
-			else
-				break
-			end
-		end
-	end
-	-- clearly, Scrooge doesn't exist, so no harm in disabling it.
-	DisableAddOn("!Scrooge")
-	DisableAddOn("Scrooge")
-	return false
-end
-
-if checkBadness() then
-	error(("Your copy of %q has been tainted. Please disable Scrooge to fix this."):format(MAJOR_VERSION))
-end
 
 -- #AUTODOC_NAMESPACE Rock
 
@@ -1000,19 +930,7 @@ function Rock:OnLibraryLoad(major, library)
 			end,
 			order = -2,
 		}
-		Rock.donate = "Paypal:ckknight AT gmail DOT com"
-		library.rockOptions.args.donate = {
-			type = 'execute',
-			name = L["Give donation"],
-			buttonText = L["Donate"],
-			desc = L["Give a much-needed donation to the author of this addon."],
-			func = OpenDonationFrame,
-			passValue = Rock,
-			order = -3,
-		}
-		sanityChecks[function()
-			return library.rockOptions and library.rockOptions.args and library.rockOptions.args.donate and not library.rockOptions.args.donate.hidden and Rock.donate
-		end] = true
+		
 		Rock.issueTracker = "Wowace:10027"
 		library.rockOptions.args.issue = {
 			type = 'execute',
@@ -2264,44 +2182,6 @@ local function makeURLFrame()
 	}
 end
 
-function OpenDonationFrame(self)
-	if makeURLFrame then
-		makeURLFrame()
-	end
-
-	local donate = self.donate
-	if type(donate) ~= "string" then
-		donate = "Wowace"
-	end
-	local style, data = (":"):split(donate, 2)
-	style = style:lower()
-	if style ~= "website" and style ~= "paypal" then
-		style = "wowace"
-	end
-	if style == "wowace" then
-		url = "http://www.wowace.com/wiki/Donations"
-	elseif style == "website" then
-		url = data
-	else -- PayPal
-		local text = "https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=" .. urlencode(unobfuscateEmail(data))
-		local name
-		if type(self.title) == "string" then
-			name = self.title
-		elseif type(self.name) == "string" then
-			name = self.name
-		end
-		if name == MAJOR_VERSION then
-			name = "Rock"
-		end
-		if name then
-			name = name:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
-			text = text .. "&item_name=" .. urlencode(name)
-		end
-		url = text
-	end
-	
-	StaticPopup_Show("ROCK_SHOW_URL")
-end
 function OpenIssueFrame(self)
 	if makeURLFrame then
 		makeURLFrame()
@@ -2324,34 +2204,13 @@ function OpenIssueFrame(self)
 	
 	StaticPopup_Show("ROCK_SHOW_URL")
 end
-local function donate_hidden(addon)
-	return type(addon.donate) ~= "string"
-end
 
 local function issue_hidden(addon)
 	return type(addon.issueTracker) ~= "string"
 end
 
-local addonsWithConfig = {}
-sanityChecks[function()
-	local RockConfig = Rock("LibRockConfig-1.0", true, true)
-	if not RockConfig or not RockConfig.data then
-		return true
-	end
-	for k in pairs(addonsWithConfig) do
-		if not RockConfig.data[k].extraArgs then
-			return false
-		end
-		if not RockConfig.data[k].extraArgs.donate then
-			return false
-		end
-		RockConfig.data[k].extraArgs.donate.hidden = donate_hidden
-	end
-	return true
-end] = true
 -- #NODOC
 function Rock:GetRockConfigOptions(addon)
-	addonsWithConfig[addon] = true
 	return 'active', {
 		type = 'boolean',
 		name = L["Enabled"],
@@ -2360,15 +2219,6 @@ function Rock:GetRockConfigOptions(addon)
 		set = 'ToggleActive',
 		handler = addon,
 		order = -1,
-	}, 'donate', {
-		type = 'execute',
-		name = L["Give donation"],
-		buttonText = L["Donate"],
-		desc = L["Give a much-needed donation to the author of this addon."],
-		func = OpenDonationFrame,
-		hidden = donate_hidden,
-		passValue = addon,
-		order = -2,
 	}, 'issue', {
 		type = 'execute',
 		name = L["File issue"],
@@ -2413,12 +2263,6 @@ local function initAddon(addon, name)
 	end
 	if type(addon.credits) == "string" then
 		addon.credits = addon.credits:trim()
-	end
-	if addon.donate == nil then
-		addon.donate = GetAddOnMetadata(name, "X-Donate")
-	end
-	if type(addon.donate) == "string" then
-		addon.donate = addon.donate:trim()
 	end
 	if addon.issueTracker == nil then
 		addon.issueTracker = GetAddOnMetadata(name, "X-IssueTracker")
