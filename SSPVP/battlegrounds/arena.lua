@@ -15,6 +15,9 @@ local enemyPets = {}
 local PartySlain
 local SelfSlain
 
+local TattleEnabled
+local AEIEnabled
+
 function Arena:Initialize()
 	if( not IsAddOnLoaded("Blizzard_InpsectUI") ) then
 		self:RegisterEvent("ADDON_LOADED")
@@ -57,6 +60,11 @@ function Arena:EnableModule()
 		end
 	end
 	
+	if( IsAddOnLoaded("ArenaEnemyInfo") ) then
+		AEIEnabled = true
+	elseif( IsAddOnLoaded("Tattle") ) then
+		TattleEnabled = true
+	end
 end
 
 function Arena:DisableModule()
@@ -255,6 +263,20 @@ function Arena:UpdateEnemies()
 		
 		-- Players name
 		local name = enemy.name
+		
+		-- Enemy talents
+		if( SSPVP.db.profile.arena.showTalents ) then
+			if( AEIEnabled ) then
+				name = "|cffffff" .. AEI:GetSpec(enemy.name, enemy.server) .. "|r " .. name
+			elseif( TattleEnabled ) then
+				local data = Tattle:GetPlayerData(enemy.name, enemy.server)
+				if( data ) then
+					name = "|cffffff[" .. data.tree1 .. "/" .. data.tree2 .. "/" .. data.tree3 .. "]|r " .. name
+				end
+			end
+		end
+		
+		-- Enemy ID
 		if( SSPVP.db.profile.arena.showID ) then
 			name = "|cffffff" .. id .. "|r " .. name
 		end
