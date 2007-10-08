@@ -451,7 +451,7 @@ end
 
 local buttonTbl = { func = dropdownClicked }
 local function initDropdown(frame)
-	if( string.match(this:GetName(), "Button$") ) then
+	if( this:GetName() and string.match(this:GetName(), "Button$") ) then
 		frame = getglobal(string.gsub(this:GetName(), "Button$", ""))
 	elseif( not frame ) then
 		frame = this
