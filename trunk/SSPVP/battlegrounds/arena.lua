@@ -127,6 +127,7 @@ function Arena:Reload()
 	
 	-- Can't move the frame if the rows all are clickable
 	for i=1, CREATED_ROWS do
+		self.rows[i]:SetStatusBarTexture(SSPVP.db.profile.arena.statusBar)
 		self.rows[i].button:EnableMouse(SSPVP.db.profile.arena.locked)
 	end
 end
@@ -254,7 +255,7 @@ function Arena:UpdateEnemies()
 		
 		-- Players name
 		local name = enemy.name
-		if( SSPVP.db.profile.showID ) then
+		if( SSPVP.db.profile.arena.showID ) then
 			name = "|cffffff" .. id .. "|r " .. name
 		end
 
@@ -574,7 +575,7 @@ function Arena:CreateRow()
 	local row = CreateFrame("StatusBar", nil, self.frame)
 	row:SetHeight(16)
 	row:SetWidth(178)
-	row:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar")
+	row:SetStatusBarTexture(SSPVP.db.profile.arena.statusBar)
 	row:Hide()
 	
 	local path, size = GameFontNormalSmall:GetFont()

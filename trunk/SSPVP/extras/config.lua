@@ -345,6 +345,16 @@ function UI:QueueOverlay()
 end
 
 -- ARENA
+local function arenaOnShow(self)
+	local textures = {}
+	local SML = LibStub:GetLibrary("LibSharedMedia-2.0")
+	for _, name in pairs(SML:List(SML.MediaType.STATUSBAR)) do
+		table.insert(textures, {SML:Fetch(SML.MediaType.STATUSBAR, name), name})
+	end
+	
+	HousingAuthority:GetObject(self):UpdateDropdown({var = {"arena", "statusBar"}, list = textures})
+end
+
 function UI:Arena()
 	local config = {
 		{ group = L["General"], text = string.format(L["Disable %s module"], L["Arena"]), type = "check", var = {"modules", "SSPVP-Arena"}},
@@ -353,23 +363,22 @@ function UI:Arena()
 		{ group = L["General"], text = L["Show team name/rating in chat after game ends"], type = "check", var = {"arena", "teamInfo"}},
 		{ group = L["General"], text = L["Enable modified player/inspect pvp screens"], type = "check", var = {"arena", "modify"}},
 				
-		--{ group = L["Display"], text = L["Show talents next to name"], help = L["Requires ArenaEnemyInfo or Tattle"], type = "check", var = {"arena", "showTalents"}},
 		{ group = L["Display"], text = L["Show enemy number next to name on arena frames"], type = "check", var = {"arena", "showID"}},
-		--{ group = L["Display"], text = L["Show enemy health next to name on arena frame"], type = "check", var = {"arena", "showHealth"}},
 		{ group = L["Display"], text = L["Show enemy class icon"], type = "check", var = {"arena", "showIcon"}},
 		{ group = L["Display"], text = L["Show enemy minions on arena enemy frames"], type = "check", var = {"arena", "showPets"}},
+		{ group = L["Display"], text = L["Health bar texture"], type = "dropdown", list = {{"Interface\\TargetingFrame\\UI-StatusBar", "Blizzard"}},  var = {"arena", "statusBar"}},
 
 		{ group = L["Frame"], text = L["Lock team report frame"], type = "check", var = {"arena", "locked"}},
-		--{ group = L["Frame"], format = L["Background opacity: %d%%"], type = "slider", var = {"arena", "opacity"}},
-		--{ group = L["Frame"], format = L["Dead enemy opacity: %d%%"], type = "slider", var = {"arena", "deadOpacity"}},
 		{ group = L["Frame"], format = L["Target frame scale: %d%%"], min = 0.0, max = 2.0, type = "slider", var = {"arena", "scale"}},
 		
-		{ group = L["Color"], text = L["Enemy pet name color"], type = "color", var = {"arena", "petColor"}},
-		--{ group = L["Color"], text = L["Border color"], type = "color", var = {"arena", "border"}},
-		--{ group = L["Color"], text = L["Background color"], type = "color", var = {"arena", "background"}},
+		{ group = L["Color"], text = L["Enemy pet health bar color"], type = "color", var = {"arena", "petColor"}},
 	}
 
-	return HousingAuthority:CreateConfiguration(config, {set = "Set", get = "Get", onSet = "Reload", handler = UI})
+	local frame = HousingAuthority:CreateConfiguration(config, {set = "Set", get = "Get", onSet = "Reload", handler = UI})
+	frame:SetScript("OnShow", arenaOnShow)
+	
+	arenaOnShow(frame)
+	return frame
 end
 
 -- ALTERAC VALLEY

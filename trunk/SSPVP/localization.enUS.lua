@@ -37,6 +37,10 @@ SSPVPLocals = {
 	["%s's %s"] = "%s's %s",
 	["Joining"] = "Joining",
 	
+	["Health bar texture"] = "Health bar texture",
+	
+	["Enemy pet health bar color"] = "Enemy pet health bar color",
+	
 	["Unavailable"] = "Unavailable",
 	["Ressurections"] = "Ressurections",
 	["Water Elemental"] = "Water Elemental",
