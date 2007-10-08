@@ -97,6 +97,7 @@ function SSPVP:Initialize()
 				teamInfo = true,
 				unitFrames = true,
 				modify = true,
+				statusBar = "Interface\\TargetingFrame\\UI-StatusBar",
 			},
 			eots = {
 				overlay = true,

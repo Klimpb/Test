@@ -5,9 +5,10 @@
 ## SavedVariables: SSPVPDB
 ## OptionalDeps: LibStub, OptionHouse, HousingAuthority
 
-Dongle.lua
-OptionHouse.lua
-HousingAuthority.lua
+lib\Dongle.lua
+lib\OptionHouse.lua
+lib\HousingAuthority.lua
+lib\LibSharedMedia-2.0.lua
 
 localization.enUS.lua
 localization.deDE.lua
