@@ -267,18 +267,18 @@ function Arena:UpdateEnemies()
 		-- Enemy talents
 		if( SSPVP.db.profile.arena.showTalents ) then
 			if( AEIEnabled ) then
-				name = "|cffffff" .. AEI:GetSpec(enemy.name, enemy.server) .. "|r " .. name
+				name = "|cffffffff" .. AEI:GetSpec(enemy.name, enemy.server) .. "|r " .. name
 			elseif( TattleEnabled ) then
 				local data = Tattle:GetPlayerData(enemy.name, enemy.server)
 				if( data ) then
-					name = "|cffffff[" .. data.tree1 .. "/" .. data.tree2 .. "/" .. data.tree3 .. "]|r " .. name
+					name = "|cffffffff[" .. data.tree1 .. "/" .. data.tree2 .. "/" .. data.tree3 .. "]|r " .. name
 				end
 			end
 		end
 		
 		-- Enemy ID
 		if( SSPVP.db.profile.arena.showID ) then
-			name = "|cffffff" .. id .. "|r " .. name
+			name = "|cffffffff" .. id .. "|r " .. name
 		end
 
 		row.text:SetText(name)
