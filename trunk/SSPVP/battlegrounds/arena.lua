@@ -1,4 +1,4 @@
-Arena = SSPVP:NewModule( "SSPVP-Arena" )
+local Arena = SSPVP:NewModule( "SSPVP-Arena" )
 Arena.activeIn = "arena"
 
 local L = SSPVPLocals
@@ -17,6 +17,7 @@ local SelfSlain
 
 local TattleEnabled
 local AEIEnabled
+
 
 function Arena:Initialize()
 	if( not IsAddOnLoaded("Blizzard_InpsectUI") ) then
@@ -137,6 +138,10 @@ function Arena:Reload()
 	for i=1, CREATED_ROWS do
 		self.rows[i]:SetStatusBarTexture(SSPVP.db.profile.arena.statusBar)
 		self.rows[i].button:EnableMouse(SSPVP.db.profile.arena.locked)
+	end
+	
+	if( self.moduleEnabled ) then
+		self:UpdateEnemies()
 	end
 end
 
@@ -368,7 +373,7 @@ local function sortEnemies(a, b)
 		return false
 	end
 	
-	return ( a.sortID > b.sortID )
+	return ( a.sortID < b.sortID )
 end
 
 -- Scan unit, see if they're valid as an enemy or enemy pet
@@ -469,6 +474,10 @@ end
 
 -- Health value updated, rescan our saved enemies
 local function healthValueChanged(...)
+	if( not Arena.moduleEnabled ) then
+		return
+	end
+	
 	local ownerName = select(5, this:GetParent():GetRegions()):GetText()
 
 	Arena:UpdateHealth(Arena:GetDataFromName(ownerName), value, select(2, this:GetMinMaxValues()))
@@ -481,9 +490,9 @@ end
 -- Find unhooked anonymous frames
 local function findUnhookedNameplates(...)
 	for i=1, select("#", ...) do
-		local bar = select(i, ...)
-		if( bar and not bar.SSHooked and not bar:GetName() and bar:IsVisible() and bar.GetFrameType and bar:GetFrameType() == "StatusBar" ) then
-			return bar
+		local health = select(i, ...)
+		if( health and not health.SSPVPHooked and not health:GetName() and health:IsVisible() and health.GetFrameType and health:GetFrameType() == "StatusBar" ) then
+			return health
 		end
 	end
 end
@@ -491,11 +500,9 @@ end
 -- Scan WorldFrame children
 local function scanFrames(...)
 	for i=1, select("#", ...) do
-		local bar = findUnhookedNameplates(select( i, ...):GetChildren())
-		if( bar ) then
-			bar.SSHooked = true
-			
-			local health = bar:GetParent():GetChildren()
+		local health = findUnhookedNameplates(select( i, ...):GetChildren())
+		if( health ) then
+			health.SSPVPHooked = true
 			health.SSValueChanged = health:GetScript("OnValueChanged")
 			health:SetScript("OnValueChanged", healthValueChanged)
 		end
