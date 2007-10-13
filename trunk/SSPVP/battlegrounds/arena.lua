@@ -3,8 +3,7 @@ Arena.activeIn = "arena"
 
 local L = SSPVPLocals
 
--- Blizzard likes to change this monthly, so lets just
--- store it here to make it easier
+-- Blizzard likes to change this monthly, so lets just store it here to make it easier
 local pointPenalty = {[5] = 1.0, [3] = 0.88, [2] = 0.76}
 
 local CREATED_ROWS = 0
@@ -328,7 +327,7 @@ function Arena:UpdateEnemies()
 		local row = self.rows[id]
 		
 		local name = string.format(L["%s's %s"], enemy.owner, (enemy.family or enemy.name))
-		if( SSPVP.db.profile.showID ) then
+		if( SSPVP.db.profile.arena.showID ) then
 			name = "|cffffff" .. id .. "|r " .. name
 		end
 		
@@ -444,9 +443,15 @@ function Arena:ScanUnit(unit)
 		-- Found the pet owner
 		if( owner and owner ~= L["Unknown"] ) then
 			local family = UnitCreatureFamily(unit)
-			for _, pet in pairs(enemyPets) do
-				if( pet.name == name ) then
-					return
+			for i=#(enemyPets), 1, -1 do
+				if( enemyPets[i].owner == owner ) then
+					-- Check to see if the pet changed
+					if( enemyPets[i].name ~= name ) then
+						table.remove(enemyPets, i)
+						break
+					else
+						return
+					end
 				end
 			end
 			
@@ -664,7 +669,7 @@ function Arena:EnemyData(event, name, server, race, classToken, guild)
 		return
 	end
 	
-	for _, enemy in pairs( enemies ) do
+	for _, enemy in pairs(enemies) do
 		if( not enemy.owner and enemy.name == name ) then
 			return
 		end
@@ -680,7 +685,7 @@ function Arena:PetData(event, name, owner, family)
 		return
 	end
 	
-	for _, enemy in pairs( enemies ) do
+	for _, enemy in pairs(enemyPets) do
 		if( enemy.owner == owner and enemy.name == name ) then
 			return
 		end
@@ -780,12 +785,14 @@ local function GetRating(points, teamSize)
 		rating = ((points / penalty - 14) / 0.22 )
 	end
 	
+	rating = math.floor(rating + 0.5)
+	
 	-- Can the new formula go below 0?
 	if( rating < 0 ) then
 		rating = 0
 	end
 	
-	return math.floor(rating + 0.5)
+	return rating
 end
 
 -- Inspect/player arena team info changes
