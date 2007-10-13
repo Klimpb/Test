@@ -144,6 +144,23 @@ function Arena:Reload()
 	end
 end
 
+function Arena:CHAT_MSG_BG_SYSTEM_NEUTRAL(event, message)
+	if( message == L["The Arena battle has begun!"] ) then
+		-- Stealth buff timer
+		SSOverlay:UpdateTimer("arena", L["Stealth buff: %s"], 92)
+		
+		-- It's possible to mouseover an "enemy" when they're zoning in, so clear it just to be safe
+		for i=#(enemies), 1, -1 do
+			table.remove(enemies, i)
+		end
+		for i=#(enemyPets), 1, -1 do
+			table.remove(enemyPets, i)
+		end
+		
+		self:UpdateEnemies()
+	end
+end
+
 -- Set up bindings
 function Arena:UpdateBindings()
 	if( not self.frame ) then
