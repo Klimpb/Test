@@ -178,7 +178,7 @@ SSPVPLocals = {
 
 	-- Arenas
 	["Arena Info"] = "Arena Info",
-	["Stealth buff spawn: %s"] = "Stealth buff spawn: %s",
+	["Stealth buff: %s"] = "Stealth buff: %s",
 	["The Arena battle has begun!"] = "The Arena battle has begun!",
 	
 	["([a-zA-Z]+)%'s Minion"] = "([a-zA-Z]+)%'s Minion",
