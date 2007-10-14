@@ -70,9 +70,9 @@ end
 function Arena:DisableModule()
 	-- Can't hide frames in combat =(
 	if( InCombatLockdown() ) then
-		SSPVP:RegisterOOCUpdate(Arena, "ResetFrames")
+		SSPVP:RegisterOOCUpdate(Arena, "ClearEnemies")
 	else
-		self:ResetFrames()
+		self:ClearEnemies()
 	end
 	
 	-- Remove timers
@@ -82,27 +82,6 @@ function Arena:DisableModule()
 	self:UnregisterAllMessages()
 	self:UnregisterAllEvents()
 	self:RegisterEvent("ADDON_LOADED")
-end
-
-function Arena:ResetFrames()
-	-- Clear the table so we can reuse it later
-	for i=#(enemies), 1, -1 do
-		table.remove(enemies, i)
-	end
-	
-	for i=#(enemyPets), 1, -1 do
-		table.remove(enemyPets, i)
-	end
-	
-	-- Now hide them all
-	if( self.frame ) then
-		self.frame:Hide()
-
-		for i=1, CREATED_ROWS do
-			self.rows[i].ownerName = nil
-			self.rows[i]:Hide()
-		end
-	end
 end
 
 -- Something in configuration changed
@@ -115,17 +94,7 @@ function Arena:Reload()
 			self:UpdateEnemies()
 		end
 	elseif( #(enemies) == 1 and #(enemyPets) == 1 ) then
-		enemies = {}
-		enemyPets = {}
-		
-		if( self.frame ) then
-			self.frame:Hide()
-			
-			for i=1, CREATED_ROWS do
-				self.rows[i].ownerName = nil
-				self.rows[i]:Hide()
-			end
-		end
+		self:ClearEnemies()
 	end
 	
 	if( self.frame ) then
@@ -144,20 +113,34 @@ function Arena:Reload()
 	end
 end
 
+function Arena:ClearEnemies()
+	for i=#(enemies), 1, -1 do
+		table.remove(enemies, i)
+	end
+	for i=#(enemyPets), 1, -1 do
+		table.remove(enemyPets, i)
+	end
+	
+	if( self.rows ) then
+		for i=1, CREATED_ROWS do
+			self.rows[i].ownerName = nil
+			self.rows[i]:Hide()
+		end
+	end
+	
+	if( self.frame ) then
+		self.frame:Hide()
+	end
+end
+
+-- Timers/reset things
 function Arena:CHAT_MSG_BG_SYSTEM_NEUTRAL(event, message)
 	if( message == L["The Arena battle has begun!"] ) then
 		-- Stealth buff timer
 		SSOverlay:UpdateTimer("arena", L["Stealth buff: %s"], 92)
 		
 		-- It's possible to mouseover an "enemy" when they're zoning in, so clear it just to be safe
-		for i=#(enemies), 1, -1 do
-			table.remove(enemies, i)
-		end
-		for i=#(enemyPets), 1, -1 do
-			table.remove(enemyPets, i)
-		end
-		
-		self:UpdateEnemies()
+		self:ClearEnemies()
 	end
 end
 
