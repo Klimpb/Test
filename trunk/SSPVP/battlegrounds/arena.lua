@@ -248,6 +248,10 @@ end
 
 -- Update the entire frame and everything in it
 function Arena:UpdateEnemies()
+	if( not self.frame ) then
+		return
+	end
+	
 	-- Can't update in combat of course
 	if( InCombatLockdown() ) then
 		SSPVP:RegisterOOCUpdate(Arena, "UpdateEnemies")
