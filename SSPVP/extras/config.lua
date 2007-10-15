@@ -367,7 +367,7 @@ function UI:Arena()
 		{ group = L["General"], text = L["Show team name/rating in chat after game ends"], type = "check", var = {"arena", "teamInfo"}},
 		{ group = L["General"], text = L["Enable modified player/inspect pvp screens"], type = "check", var = {"arena", "modify"}},
 				
-		{ group = L["Display"], text = L["Show talents next to name"], help = L["Requires ArenaEnemyInfo or Tattle"], type = "check", var = {"arena", "showTalents"}},
+		{ group = L["Display"], text = L["Show talents next to name"], help = L["Requires Remembrance, ArenaEnemyInfo or Tattle"], type = "check", var = {"arena", "showTalents"}},
 		{ group = L["Display"], text = L["Show enemy number next to name on arena frames"], type = "check", var = {"arena", "showID"}},
 		{ group = L["Display"], text = L["Show enemy class icon"], type = "check", var = {"arena", "showIcon"}},
 		{ group = L["Display"], text = L["Show enemy minions on arena enemy frames"], type = "check", var = {"arena", "showPets"}},

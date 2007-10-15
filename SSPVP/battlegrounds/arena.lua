@@ -16,7 +16,7 @@ local SelfSlain
 
 local TattleEnabled
 local AEIEnabled
-
+local RemembranceEnabled
 
 function Arena:Initialize()
 	if( not IsAddOnLoaded("Blizzard_InpsectUI") ) then
@@ -64,6 +64,10 @@ function Arena:EnableModule()
 		AEIEnabled = true
 	elseif( IsAddOnLoaded("Tattle") ) then
 		TattleEnabled = true
+	end
+	
+	if( IsAddOnLoaded("Remembrance") ) then
+		RemembranceEnabled = true
 	end
 end
 
@@ -274,12 +278,26 @@ function Arena:UpdateEnemies()
 		
 		-- Enemy talents
 		if( SSPVP.db.profile.arena.showTalents ) then
+			local found
 			if( AEIEnabled ) then
-				name = "|cffffffff" .. AEI:GetSpec(enemy.name, enemy.server) .. "|r " .. name
+				local data = AEI:GetSpec(enemy.name, enemy.server)
+				if( data ~= "" ) then
+					found = true
+					name = "|cffffffff" .. data .. "|r " .. name
+				end
+				
 			elseif( TattleEnabled ) then
 				local data = Tattle:GetPlayerData(enemy.name, enemy.server)
 				if( data ) then
+					found = true
 					name = "|cffffffff[" .. data.tree1 .. "/" .. data.tree2 .. "/" .. data.tree3 .. "]|r " .. name
+				end
+			end
+			
+			if( RemembranceEnabled and not found ) then
+				local tree1, tree2, tree3 = Remembrance:GetTalents(enemy.name, enemy.server)
+				if( tree1 and tree2 and tree3 ) then
+					name = "|cffffffff[" .. tree1 .. "/" .. tree2 .. "/" .. tree3 .. "]|r " .. name
 				end
 			end
 		end

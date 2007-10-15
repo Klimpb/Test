@@ -407,7 +407,7 @@ SSPVPLocals = {
 	["Less than/equal"] = "Less than/equal",
 	
 	["Show talents next to name"] = "Show talents next to name",
-	["Requires ArenaEnemyInfo or Tattle"] = "Requires ArenaEnemyInfo or Tattle",
+	["Requires Remembrance, ArenaEnemyInfo or Tattle"] = "Requires Remembrance, ArenaEnemyInfo or Tattle",
 	["Show team name/rating in chat after game ends"] = "Show team name/rating in chat after game ends",
 	
 	["Delay"] = "Delay",
