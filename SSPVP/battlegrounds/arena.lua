@@ -350,7 +350,7 @@ function Arena:UpdateEnemies()
 		
 		local name = string.format(L["%s's %s"], enemy.owner, (enemy.family or enemy.name))
 		if( SSPVP.db.profile.arena.showID ) then
-			name = "|cffffff" .. id .. "|r " .. name
+			name = "|cffffffff" .. id .. "|r " .. name
 		end
 		
 		row.text:SetText(name)
