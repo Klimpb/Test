@@ -50,7 +50,10 @@ function SSPVP:Initialize()
 			},
 			positions = {
 				overlay = { x = 300, y = 600 },
-				arena = { x = 300, y = 600 },
+			},
+			arena = {
+				teamInfo = true,
+				modify = true,
 			},
 			reformat = {
 				blockSpam = true,
@@ -84,20 +87,6 @@ function SSPVP:Initialize()
 				etaFormat = "min",
 				autoSolo = true,
 				autoGroup = false,
-			},
-			arena = {
-				locked = true,
-				scale = 0.90,
-				petColor = { r = 0.20, g = 0.90, b = 0.20 },
-				showID = true,
-				showIcon = true,
-				showPets = true,
-				showTalents = false,
-				reportChat = true,
-				teamInfo = true,
-				unitFrames = true,
-				modify = true,
-				statusBar = "Interface\\TargetingFrame\\UI-StatusBar",
 			},
 			eots = {
 				overlay = true,

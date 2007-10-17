@@ -8,7 +8,6 @@
 lib\Dongle.lua
 lib\OptionHouse.lua
 lib\HousingAuthority.lua
-lib\LibSharedMedia-2.0.lua
 
 localization.enUS.lua
 localization.deDE.lua
@@ -22,9 +21,9 @@ extras\overlay.lua
 extras\sync.lua
 extras\turnin.lua
 extras\score.lua
+extras\arena.lua
 
 battlegrounds\ab.lua
 battlegrounds\av.lua
 battlegrounds\eots.lua
 battlegrounds\wsg.lua
-battlegrounds\arena.lua
