@@ -345,45 +345,13 @@ function UI:QueueOverlay()
 end
 
 -- ARENA
-local SML
-local function arenaOnShow(self)
-	if( not SML ) then
-		SML = LibStub:GetLibrary("LibSharedMedia-2.0")
-	end
-
-	local textures = {}
-	for _, name in pairs(SML:List(SML.MediaType.STATUSBAR)) do
-		table.insert(textures, {SML:Fetch(SML.MediaType.STATUSBAR, name), name})
-	end
-	
-	HousingAuthority:GetObject(self):UpdateDropdown({var = {"arena", "statusBar"}, list = textures})
-end
-
 function UI:Arena()
 	local config = {
-		{ group = L["General"], text = string.format(L["Disable %s module"], L["Arena"]), type = "check", var = {"modules", "SSPVP-Arena"}},
-		{ group = L["General"], text = L["Enable enemy team report to chat"], type = "check", var = {"arena", "reportChat"}},
-		{ group = L["General"], text = L["Enable arena unit frames"], type = "check", var = {"arena", "unitFrames"}},
 		{ group = L["General"], text = L["Show team name/rating in chat after game ends"], type = "check", var = {"arena", "teamInfo"}},
 		{ group = L["General"], text = L["Enable modified player/inspect pvp screens"], type = "check", var = {"arena", "modify"}},
-				
-		{ group = L["Display"], text = L["Show talents next to name"], help = L["Requires Remembrance, ArenaEnemyInfo or Tattle"], type = "check", var = {"arena", "showTalents"}},
-		{ group = L["Display"], text = L["Show enemy number next to name on arena frames"], type = "check", var = {"arena", "showID"}},
-		{ group = L["Display"], text = L["Show enemy class icon"], type = "check", var = {"arena", "showIcon"}},
-		{ group = L["Display"], text = L["Show enemy minions on arena enemy frames"], type = "check", var = {"arena", "showPets"}},
-		{ group = L["Display"], text = L["Health bar texture"], type = "dropdown", list = {{"Interface\\TargetingFrame\\UI-StatusBar", "Blizzard"}},  var = {"arena", "statusBar"}},
-
-		{ group = L["Frame"], text = L["Lock team report frame"], type = "check", var = {"arena", "locked"}},
-		{ group = L["Frame"], format = L["Target frame scale: %d%%"], min = 0.0, max = 2.0, type = "slider", var = {"arena", "scale"}},
-		
-		{ group = L["Color"], text = L["Enemy pet health bar color"], type = "color", var = {"arena", "petColor"}},
 	}
 
-	local frame = HousingAuthority:CreateConfiguration(config, {set = "Set", get = "Get", onSet = "Reload", handler = UI})
-	frame:SetScript("OnShow", arenaOnShow)
-	
-	arenaOnShow(frame)
-	return frame
+	return HousingAuthority:CreateConfiguration(config, {set = "Set", get = "Get", onSet = "Reload", handler = UI})
 end
 
 -- ALTERAC VALLEY
