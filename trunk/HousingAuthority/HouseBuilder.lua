@@ -28,6 +28,20 @@ function HouseBuild:Test()
 	HA:GetObject(HATest):UpdateDropdown({ var = { "foo", "bar" }, list = {{ "dog", "Dog" }, { "bunny", "Bunny" }, { "rawr", "RAWRCAT" }}})
 end
 
+-- Edit box test
+function HouseBuild:EditTest()
+	local config = {
+		{	type = "editbox",
+			text = "Test Edit Box",
+			default = "Foo Bar",
+			var = { "foo", "text" },
+		}
+	}
+	
+	local HouseAuthority = LibStub:GetLibrary("HousingAuthority-1.2")
+	return HouseAuthority:CreateConfiguration(config, { handler = self, set = "Set", get = "Get", columns = 1 } )
+end
+
 -- NO GROUPS SINGLE COLUMN
 function HouseBuild:NoGroupSingleCol()
 	local config = {
@@ -338,6 +352,7 @@ function HouseBuild:Load()
 	OHObj:RegisterCategory("Groups 2 Col", self, "GroupTwoCol")
 	OHObj:RegisterCategory("Group Single Col", self, "GroupSingleCol")
 	OHObj:RegisterCategory("No Group 2 Col", self, "NoGroupTwoCol")
+	OHObj:RegisterCategory("Edit Box", self, "EditTest")
 	OHObj:RegisterCategory("No Group Single Col", self, "NoGroupSingleCol")
 end
 
