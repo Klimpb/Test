@@ -4,9 +4,11 @@
 ## OptionalDeps: Dongle
 ## SavedVariables: BishopDB
 
+Dongle.lua
+
 localization.enUS.lua
 localization.deDE.lua
 localization.frFR.lua
 
 Bishop.lua
-BishopUtil.lua
+BishopSpellData.lua
