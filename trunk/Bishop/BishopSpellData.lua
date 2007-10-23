@@ -5,11 +5,11 @@ local L = BishopLocals
 function BishopData:LoadDRUID()
 	local spells = {
 		[L["Lifebloom"]] = {
-			[0] = { type = "ddhot", duration = 7, maxStack = 3, dotFactor = 1.115 },
+			[0] = { type = "ddhot", duration = 7, totalTicks = 7, maxStack = 3, dotFactor = 1.115 },
 			[1] = { healed = 273, level = 64 },
 		},
 		[L["Rejuvenation"]] = {
-			[0] = { type = "hot", duration = 12, maxStack = 1 },
+			[0] = { type = "hot", totalTicks = 4, duration = 12, maxStack = 1 },
 			[1] = { healed = 32, level = 4 },
 			[2] = { healed = 56, level = 10 },
 			[3] = { healed = 116, level = 16 },
@@ -25,7 +25,7 @@ function BishopData:LoadDRUID()
 			[13] = { healed = 1060, level = 69 },
 		},
 		[L["Regrowth"]] = {
-			[0] = { type = "ddhot", maxStack = 1, duration = 21, hotFactor = 0.499 },
+			[0] = { type = "ddhot", totalTicks = 7, maxStack = 1, duration = 21, hotFactor = 0.499 },
 			[1] = { healed = 98, level = 12 },
 			[2] = { healed = 175, level = 18 },
 			[3] = { healed = 259, level = 24 },

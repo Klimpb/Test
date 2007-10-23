@@ -4,7 +4,10 @@
 ## OptionalDeps: Dongle
 ## SavedVariables: BishopDB
 
-Dongle.lua
+lib\Dongle.lua
+lib\OptionHouse.lua
+lib\HousingAuthority.lua
+lib\LibSharedMedia-2.0.lua
 
 localization.enUS.lua
 localization.deDE.lua
