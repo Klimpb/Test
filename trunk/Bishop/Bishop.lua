@@ -71,9 +71,15 @@ function Bishop:Disable()
 	self:UnregisterAllEvents()
 end
 
+function Bishop:Debug()
+	for spell, data in pairs(healData) do
+		DEFAULT_CHAT_FRAME:AddMessage(string.format("[%s] %d (%d overheal, %d ticks/casts)", spell, data.totalHealed, data.overheal, data.totalCasts))
+	end
+end
+
 function Bishop:HealedPlayer(spell, amount, crtHealth, maxHealth, type)
 	if( not healData[spell] ) then
-		healData[spell] = { totalHealed = 0, overheal = 0 }
+		healData[spell] = { totalHealed = 0, overheal = 0, totalCasts = 0 }
 	end	
 
 	-- HoT, so subtract it from our current overheal
@@ -83,7 +89,8 @@ function Bishop:HealedPlayer(spell, amount, crtHealth, maxHealth, type)
 		if( (crtHealth + amount) > maxHealth ) then
 			overheal = maxHealth - crtHealth
 		end
-
+		
+		healData[spell].totalTicks = ( healData[spell].totalTicks or 0 ) + 1
 		healData[spell].overheal = healData[spell].overheal - overheal
 	
 	-- Direct heal, check overheal amount
@@ -96,6 +103,7 @@ function Bishop:HealedPlayer(spell, amount, crtHealth, maxHealth, type)
 			overheal = 0
 		end
 
+		healData[spell].totalCasts = healData[spell].totalCasts + 1
 		healData[spell].totalHealed = healData[spell].totalHealed + amount
 		healData[spell].overheal = healData[spell].overheal + overheal
 	end
@@ -110,16 +118,14 @@ end
 function Bishop:CHAT_MSG_SPELL_PERIODIC_SELF_BUFFS(event, msg)
 	if( string.match(msg, hotYourself) ) then
 		local amount, spell = string.match(msg, hotYourself)
-		
-		self:HealedPlayer(spell, amount, UnitHealth("player"), UnitHealthMax("player"), "hot")
+		self:HealedPlayer(L["HOT"][spell] or spell, amount, UnitHealth("player"), UnitHealthMax("player"), "hot")
 	end
 end
 
 function Bishop:CHAT_MSG_SPELL_PERIODIC_FRIENDLYPLAYER_BUFFS(event, msg)
 	if( string.match(msg, hotOther) ) then
 		local target, amount, spell = string.match(msg, hotOther)
-
-		self:HealedPlayer(spell, amount, UnitHealth(target), UnitHealthMax(target), "hot")
+		self:HealedPlayer(L["HOT"][spell] or spell, amount, UnitHealth(target), UnitHealthMax(target), "hot")
 	end
 end
 
@@ -127,19 +133,19 @@ function Bishop:CHAT_MSG_SPELL_SELF_BUFF(event, msg)
 	if( string.match(msg, healCritYourself) ) then
 		local spell, amount = string.match(msg, healCritYourself)
 	
-		self:HealedPlayer(spell, amount, UnitHealth("player"), UnitHealthMax("player"), "heal")
+		self:HealedPlayer(L["HEAL"][spell] or spell, amount, UnitHealth("player"), UnitHealthMax("player"), "heal")
 	elseif( string.match(msg, healYourself) ) then
 		local spell, amount = string.match(msg, healYourself)
 		
-		self:HealedPlayer(spell, amount, UnitHealth("player"), UnitHealthMax("player"), "heal")
+		self:HealedPlayer(L["HEAL"][spell] or spell, amount, UnitHealth("player"), UnitHealthMax("player"), "heal")
 	elseif( string.match(msg, healCritOther) ) then
 		local spell, target, amount = string.match(msg, healCritOther)
 
-		self:HealedPlayer(spell, amount, UnitHealth(target), UnitHealthMax(target), "heal")
+		self:HealedPlayer(L["HEAL"][spell] or spell, amount, UnitHealth(target), UnitHealthMax(target), "heal")
 	elseif( string.match(msg, healOther) ) then
 		local spell, target, amount = string.match(msg, healOther)
 		
-		self:HealedPlayer(spell, amount, UnitHealth(target), UnitHealthMax(target), "heal")
+		self:HealedPlayer(L["HEAL"][spell] or spell, amount, UnitHealth(target), UnitHealthMax(target), "heal")
 	end
 end
 
@@ -148,8 +154,10 @@ function Bishop:UNIT_SPELLCAST_SUCCEEDED(event, unit, spell, rank)
 		return
 	end
 	
+	-- Regrowth has a cast time before the HoT lands so we have to check it once
+	-- it goes off, instead of on sent
 	if( spell == L["Regrowth"] ) then
-		self:HealedPlayer(spell, self:CalculateHOTHeal(spell, rank, regrowthHealing))
+		self:HealedPlayer(L["HOT"][spell], self:CalculateHOTHeal(spell, rank, regrowthHealing))
 	end
 end
 
@@ -176,8 +184,8 @@ function Bishop:UNIT_SPELLCAST_SENT(event, unit, spell, rank, target)
 			
 			i = i + 1
 		end
-			
-		self:HealedPlayer(spell, self:CalculateHOTHeal(spell, rank, nil, spellStack), 0, 0, "heal")
+		
+		self:HealedPlayer(L["HOT"][spell], self:CalculateHOTHeal(spell, rank, nil, spellStack), 0, 0, "heal")
 	
 	-- Also figure out rejuvenation heal now for sanity
 	elseif( spell == L["Rejuvenation"] ) then
