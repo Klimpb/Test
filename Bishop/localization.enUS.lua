@@ -44,6 +44,8 @@ BishopLocals = {
 	["Frame"] = "Frame",
 	["Color"] = "Color",
 	
+	["Format numbers in healing meter"] = "Format numbers in healing meter",
+	
 	["Bar texture"] = "Bar texture",
 	["Bar color"] = "Bar color",
 	["Show frame"] = "Show frame",

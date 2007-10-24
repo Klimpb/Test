@@ -8,16 +8,16 @@ local spellData
 local talentData
 local rangedData
 
-local groupMembers = {}
-local trackStack = {}
-
 local healData = {}
+
+local partyMembers = {}
 
 local talentsLoaded
 local playerTalents = {}
 local equippedBonus = {}
 
 local spellHealing = {}
+local spellTarget = {}
 
 local playerLevel = 0
 
@@ -36,6 +36,8 @@ function Bishop:Initialize()
 		profile = {
 			scale = 1.0,
 			locked = false,
+			syncSpirit = true,
+			formatNumber = true,
 			barTexture = "Interface\\TargetingFrame\\UI-StatusBar",
 			barColor = { r = 0.20, g = 1.0, b = 0.20 },
 			position = { x = 300, y = 600 },
@@ -66,6 +68,8 @@ function Bishop:Enable()
 	self:RegisterEvent("UNIT_SPELLCAST_SENT")
 	--self:RegisterEvent("UNIT_SPELLCAST_STOP")
 	--self:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
+	
+	self:RegisterEvent("RAID_ROSTER_UPDATED", "UpdateGroupMembers")
 
 	self:RegisterEvent("CONFIRM_TALENT_WIPE", "ScanPlayerTalents")
 	self:RegisterEvent("CHARACTER_POINTS_CHANGED", "ScanPlayerTalents")
@@ -108,6 +112,37 @@ end
 
 function Bishop:Disable()
 	self:UnregisterAllEvents()
+end
+
+function Bishop:UpdateGroupMembers()
+	for i=1, GetNumPartyMembers() do
+		local name, server = UnitName("party" .. i)
+		if( server and server ~= "" ) then
+			name = name .. "-" .. server
+		end
+		
+		partyMembers[name] = true
+	end
+end
+
+function Bishop:FormatNumber(number)
+	local length = string.len(number)
+	-- No formatting needed
+	if( length < 4 ) then
+		return number
+	end
+	
+	-- Hackish!
+	local chars = 0
+	for i=length, 1, -1 do
+		chars = chars + 1
+		if( chars >= 3 and i ~= 1 ) then
+			chars = 0
+			number = string.sub(number, 0, i-1) .. "," .. string.sub(number, i)
+		end
+	end
+	
+	return number
 end
 
 function Bishop:HealedPlayer(spell, amount, crtHealth, maxHealth, type)
@@ -159,6 +194,7 @@ function Bishop:HealedPlayer(spell, amount, crtHealth, maxHealth, type)
 	--self:Echo(spell, healData[spell].totalHealed, healData[spell].overheal)
 end
 
+
 function Bishop:CHAT_MSG_SPELL_PERIODIC_SELF_BUFFS(event, msg)
 	if( string.match(msg, hotYourself) ) then
 		local amount, spell = string.match(msg, hotYourself)
@@ -196,20 +232,13 @@ end
 function Bishop:UNIT_SPELLCAST_SUCCEEDED(event, unit, spell, rank)
 	-- We have information on the spell so it's a HoT
 	if( unit == "player" and spellData[spell] ) then
-		self:HealedPlayer(L["HOT"][spell] or spell, self:CalculateHOTHeal(spell, rank, spellHealing[spell], trackStack[spell]), 0, 0, "heal")
-
-		trackStack[spell] = nil
-		spellHealing[spell] = nil
-	end
-end
-
-function Bishop:UNIT_SPELLCAST_SENT(event, unit, spell, rank, target)
-	if( unit == "player" and spellData[spell] ) then
+		local target = spellTarget[spell]
+		
 		-- Check spell stack if need be
+		local spellStack = 1
 		if( spellData[spell][0].maxStack > 1 ) then
 			local i = 1		
-			local spellStack = 1
-
+		
 			while( true ) do
 				local name, rank, _, stack, totalTime, duration = UnitBuff(target, i)
 				if( not name ) then
@@ -223,10 +252,33 @@ function Bishop:UNIT_SPELLCAST_SENT(event, unit, spell, rank, target)
 
 				i = i + 1
 			end
-			
-			trackStack[spell] = spellStack
 		end
 		
+		-- Calculate any additional +healing the person may have
+		--[[
+		local i = 1
+		while( true ) do
+			local name = UnitBuff(target, i)
+			if( not name ) then
+				break
+			end
+
+			if( partyMembers[target] and name == L["Tree of Life"] ) then
+				healingMod = healingMod * 0.25
+			end
+		end
+		]]
+
+		self:HealedPlayer(L["HOT"][spell] or spell, self:CalculateHOTHeal(spell, rank, spellHealing[spell], spellStack), 0, 0, "heal")
+
+		spellTarget[spell] = nil
+		spellHealing[spell] = nil
+	end
+end
+
+function Bishop:UNIT_SPELLCAST_SENT(event, unit, spell, rank, target)
+	if( unit == "player" and spellData[spell] ) then
+		spellTarget[spell] = target
 		spellHealing[spell] = GetSpellBonusHealing()
 	end
 end
@@ -355,13 +407,12 @@ end
 
 -- METER GUI
 function Bishop:ResetMeter()
-	healData = {}
-
-	if( self.frame ) then
-		self.frame:Hide()
-		for i=1, CREATED_ROWS do
-			self.rows[i]:Hide()
-		end
+	for k in pairs(healData) do
+		healData[k] = nil
+	end
+	
+	if( self.frame and self.frame:IsVisible() ) then
+		self:ShowMeterUI()
 	end
 	
 	self:Print(L["All healing information has been reset!"])
@@ -383,42 +434,46 @@ function Bishop:ShowMeterUI()
 	local rowID = 0
 	for spell, data in pairs(healData) do
 		rowID = rowID + 1
-		if( CREATED_ROWS < rowID ) then
-			self:CreateRow()
-		end
-		
-		local row = self.rows[rowID]
-		row.text:SetText(spell)
-		--row.percentText:SetText(string.format("(%.2f%%)", (data.overheal / data.totalHealed) * 100))
-		row.percentText:SetText(string.format("%d (%.2f%%)", data.totalHealed, (data.overheal / data.totalHealed) * 100))
-		
-		row:SetMinMaxValues(0, data.totalHealed)
-		row:SetValue(data.overheal)
-		row:SetStatusBarColor(self.db.profile.barColor.r, self.db.profile.barColor.g, self.db.profile.barColor.b)
-		row:Show()
-		
+		self:UpdateRow(rowID, spell, data.totalHealed, data.overheal)
+	
 		totalHealed = totalHealed + data.totalHealed
 		totalOverheal = totalOverheal + data.overheal
 	end
 	
-	-- Total
 	rowID = rowID + 1
+	
+	if( totalHealed > 0 or totalOverheal > 0 ) then
+		self:UpdateRow(rowID, L["Total"], totalHealed, totalOverheal)
+	else
+		self:UpdateRow(rowID, L["Total"], 1, 1)
+	end
+	
+	for i=rowID + 1, CREATED_ROWS do
+		self.rows[i]:Hide()
+	end
+	
+	self.frame:SetHeight(rowID * 14)
+	self.frame:Show()
+end
+
+function Bishop:UpdateRow(rowID, text, healed, overheal)
 	if( CREATED_ROWS < rowID ) then
 		self:CreateRow()
 	end
 	
 	local row = self.rows[rowID]
-	row.text:SetText(L["Total"])
-	row.percentText:SetText(string.format("%d (%.2f%%)", totalHealed, (totalOverheal / totalHealed) * 100))
-
-	row:SetMinMaxValues(0, totalHealed)
-	row:SetValue(totalOverheal)
-	row:SetStatusBarColor(self.db.profile.barColor.r, self.db.profile.barColor.g, self.db.profile.barColor.b)
+	row.text:SetText(text)
+	row:SetMinMaxValues(0, healed)
+	row:SetValue(overheal)
+	
+	if( self.db.profile.formatNumber ) then
+		row.percentText:SetText(string.format("%s (%.2f%%)", self:FormatNumber(math.floor(healed + 0.5)), (overheal / healed) * 100))
+	else
+		row.percentText:SetText(string.format("%d (%.2f%%)", healed, (overheal / healed) * 100))
+	end
+	
+	--row:SetStatusBarColor(self.db.profile.barColor.r, self.db.profile.barColor.g, self.db.profile.barColor.b)
 	row:Show()
-	
-	
-	self.frame:SetHeight(rowID * 14)
-	self.frame:Show()
 end
 
 function Bishop:CreateMeterUI()
@@ -469,6 +524,7 @@ function Bishop:CreateRow()
 	row:SetHeight(12)
 	row:SetWidth(208)
 	row:SetStatusBarTexture(self.db.profile.barTexture)
+	row:SetStatusBarColor(self.db.profile.barColor.r, self.db.profile.barColor.g, self.db.profile.barColor.b)
 	row:Hide()
 	
 	-- Total health healed
@@ -523,6 +579,8 @@ local SML
 function Bishop:CreateUI()
 	local config = {
 		{ group = L["Display"], text = L["Bar texture"], type = "dropdown", list = {{"Interface\\TargetingFrame\\UI-StatusBar", "Blizzard"}}, var = "barTexture"},
+		{ group = L["Display"], text = L["Format numbers in healing meter"], type = "check", var = "formatNumber"},
+
 		{ group = L["Color"], text = L["Bar color"], type = "color", var = "barColor"},
 				
 		{ group = L["Frame"], text = L["Show frame"], type = "check", var = "showFrame"},
