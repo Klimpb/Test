@@ -8,13 +8,18 @@ local spellData
 local talentData
 local rangedData
 
+local groupMembers = {}
+local trackStack = {}
+
 local healData = {}
 
+local talentsLoaded
 local playerTalents = {}
 local equippedBonus = {}
 
+local spellHealing = {}
+
 local playerLevel = 0
-local regrowthHealing = 0
 
 local healYourself
 local healOther
@@ -64,19 +69,22 @@ function Bishop:Enable()
 
 	self:RegisterEvent("CONFIRM_TALENT_WIPE", "ScanPlayerTalents")
 	self:RegisterEvent("CHARACTER_POINTS_CHANGED", "ScanPlayerTalents")
+	self:RegisterEvent("SPELLS_CHANGED", "ScanPlayerTalents")
 	self:RegisterEvent("UNIT_INVENTORY_CHANGED", "ScanPlayerRanged")
 	
-	spellData, talentData, rangedData = BishopData["Load" .. select(2, UnitClass("player"))]()
-	rangedData = rangedData or {}
-	
-	-- Failed to load any data, exit quickly
-	if( not spellData ) then
-		self:Disable()
-		return
+	local class, classToken = UnitClass("player")
+	if( BishopData["Load" .. classToken] ) then
+		spellData, talentData, rangedData = BishopData["Load" .. classToken]()
 	end
 	
+	if( not spellData and classToken ~= "SHAMAN" and classToken ~= "PALADIN" ) then
+		self:Print(string.format(L["Your class %s, does not have any healing spells, Bishop disabled."], class))
+		self:Disable()
+		return
+	end	
+	
 	self:ScanPlayerTalents()
-	self:ScanPlayerRanged()
+	self:ScanPlayerRanged()	
 	
 	playerLevel = UnitLevel("player")
 	
@@ -102,13 +110,13 @@ function Bishop:Disable()
 	self:UnregisterAllEvents()
 end
 
-function Bishop:Debug()
-	for spell, data in pairs(healData) do
-		DEFAULT_CHAT_FRAME:AddMessage(string.format("[%s] %d (%d overheal, %d ticks/casts)", spell, data.totalHealed, data.overheal, data.totalCasts))
-	end
-end
-
 function Bishop:HealedPlayer(spell, amount, crtHealth, maxHealth, type)
+	-- If you log in with a HoT, don't calculate it
+	-- Or if we have the HoT but no known record of having recorded it
+	if( not spell or ( not healData[spell] and type == "hot" ) ) then
+		return
+	end
+	
 	if( not healData[spell] ) then
 		healData[spell] = { totalHealed = 0, overheal = 0, totalCasts = 0 }
 	end	
@@ -186,51 +194,40 @@ function Bishop:CHAT_MSG_SPELL_SELF_BUFF(event, msg)
 end
 
 function Bishop:UNIT_SPELLCAST_SUCCEEDED(event, unit, spell, rank)
-	if( unit ~= "player" ) then
-		return
-	end
-	
-	-- Regrowth has a cast time before the HoT lands so we have to check it once
-	-- it goes off, instead of on sent
-	if( spell == L["Regrowth"] ) then
-		self:HealedPlayer(L["HOT"][spell], self:CalculateHOTHeal(spell, rank, regrowthHealing), 0, 0, "heal")
+	-- We have information on the spell so it's a HoT
+	if( unit == "player" and spellData[spell] ) then
+		self:HealedPlayer(L["HOT"][spell] or spell, self:CalculateHOTHeal(spell, rank, spellHealing[spell], trackStack[spell]), 0, 0, "heal")
+
+		trackStack[spell] = nil
+		spellHealing[spell] = nil
 	end
 end
 
 function Bishop:UNIT_SPELLCAST_SENT(event, unit, spell, rank, target)
-	if( unit ~= "player" ) then
-		return
-	end
-	
-	-- Figure out Lifebloom stack now for sanity
-	if( spell == L["Lifebloom"] ) then
-		local i = 1		
-		local spellStack = 1
-		
-		while( true ) do
-			local name, rank, _, stack, totalTime, duration = UnitBuff(target, i)
-			if( not name ) then
-				break
-			end
+	if( unit == "player" and spellData[spell] ) then
+		-- Check spell stack if need be
+		if( spellData[spell][0].maxStack > 1 ) then
+			local i = 1		
+			local spellStack = 1
 
-			if( name == spell and duration ) then
-				spellStack = stack + 1
-				break
+			while( true ) do
+				local name, rank, _, stack, totalTime, duration = UnitBuff(target, i)
+				if( not name ) then
+					break
+				end
+
+				if( name == spell and duration ) then
+					spellStack = stack + 1
+					break
+				end
+
+				i = i + 1
 			end
 			
-			i = i + 1
+			trackStack[spell] = spellStack
 		end
 		
-		self:HealedPlayer(L["HOT"][spell], self:CalculateHOTHeal(spell, rank, nil, spellStack), 0, 0, "heal")
-	
-	-- Also figure out rejuvenation heal now for sanity
-	elseif( spell == L["Rejuvenation"] ) then
-		self:HealedPlayer(spell, self:CalculateHOTHeal(spell, rank), 0, 0, "heal")
-	
-	-- As far as I know, Blizzard calculates the +healing by what it when
-	-- the spell was sent to the server, so we have to store it here to calculate it
-	elseif( spell == L["Regrowth"] ) then
-		regrowthHealing = GetSpellBonusHealing()
+		spellHealing[spell] = GetSpellBonusHealing()
 	end
 end
 
@@ -249,6 +246,13 @@ function Bishop:CalculateHOTHeal(spellName, rank, totalHealing, spellStack)
 	local spell = spellData[spellName]
 	local addFactor = 1.0
 	local multiFactor = spell[0].duration / 15
+	
+	-- Load our talents if we haven't
+	-- For some reason, PEW, PL, AL don't have the talent information
+	-- available, so using this method for now.
+	if( not talentsLoaded ) then
+		self:ScanPlayerTalents()
+	end
 	
 	-- For lifebloom mainly
 	if( spellStack > spell[0].maxStack ) then
@@ -302,6 +306,10 @@ end
 
 -- Check if we have any healing bonuses applied
 function Bishop:ScanPlayerRanged()
+	if( not rangedData ) then
+		return
+	end
+	
 	equippedBonus.spell = nil
 	equippedBonus.healing = nil
 	
@@ -322,14 +330,17 @@ end
 
 -- Scan/cache talents
 function Bishop:ScanPlayerTalents()
+	for k, _ in pairs(playerTalents) do
+		playerTalents[k] = nil
+	end
+
 	for tabIndex=1, GetNumTalentTabs() do
 		for i=1, GetNumTalents(tabIndex) do
 			local talentName, _, _, _, pointsSpent = GetTalentInfo(tabIndex, i)	
-			if( not talentName ) then
-				break
+			if( talentName ) then
+				talentsLoaded = true
+				playerTalents[talentName] = pointsSpent
 			end
-			
-			playerTalents[talentName] = pointsSpent
 		end
 	end
 end

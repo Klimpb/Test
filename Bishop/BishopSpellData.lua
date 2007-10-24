@@ -51,3 +51,29 @@ function BishopData:LoadDRUID()
 	
 	return spells, talents, idol
 end
+
+function BishopData:LoadPRIEST()
+	local spells = {
+		[L["Renew"]] = {
+			[0] = { type = "hot", duration = 15, totalTicks = 5, maxStack = 1 },
+			[1] = { healed = 45, level = 8 },
+			[2] = { healed = 100, level = 14 },
+			[3] = { healed = 175, level = 20 },
+			[4] = { healed = 245, level = 26 },
+			[5] = { healed = 315, level = 32 },
+			[6] = { healed = 400, level = 38 },
+			[7] = { healed = 510, level = 44 },
+			[8] = { healed = 650, level = 50 },
+			[9] = { healed = 810, level = 56 },
+			[10] = { healed = 970, level = 60 },
+			[11] = { healed = 1010, level = 65 },
+			[12] = { healed = 1110, level = 70 },
+		},
+	}
+	local talents = {
+		[L["Improved Renew"]] = { mod = 0.05, spell = L["Renew"] },
+		[L["Spiritual Healing"]] = { mod = 0.02 },
+	}
+	
+	return spells, talents
+end
