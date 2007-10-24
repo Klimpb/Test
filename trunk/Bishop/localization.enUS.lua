@@ -1,4 +1,5 @@
 BishopLocals = {
+	-- Druid
 	["Lifebloom"] = "Lifebloom",
 	["Regrowth"] = "Regrowth",
 	["Rejuvenation"] = "Rejuvenation",
@@ -7,7 +8,14 @@ BishopLocals = {
 	["Improved Rejuvenation"] = "Improved Rejuvenation",
 	["Empowered Rejuvenation"] = "Empowered Rejuvenation",
 	
-	-- Spells that do two things at once (Regrowth/Lifebloom)
+	-- Priest
+	["Renew"] = "Renew",
+	["Improved Renew"] = "Improved Renew",
+	["Spiritual Healing"] = "Spiritual Healing",
+	
+	
+	-- Spells that have two effects, so we can broke it down more
+	-- then just counting the direct heal and the hot as one effect
 	["HOT"] = {
 		["Lifebloom"] = "Lifebloom HoT",
 		["Regrowth"] = "Regrowth HoT",
@@ -18,6 +26,8 @@ BishopLocals = {
 		["Regrowth"] = "Regrowth Heal",
 	},
 	
+	["Your class %s, does not have any healing spells, Bishop disabled."] = "Your class %s, does not have any healing spells, Bishop disabled.",
+
 	-- Slash command
 	["Bishop slash commands"] = "Bishop slash commands",
 	
