@@ -104,7 +104,7 @@ function Bishop:Enable()
 	self:UpdateGroupMembers()
 	
 	if( GetNumRaidMembers() > 0 or GetNumPartyMembers() > 0 ) then
-		self:PLAYER_DAMAGE_DONE_MODS()
+		self:UpdateGroupMembers()
 	end
 
 	healYourself = self:FormatLog(HEALEDSELFSELF)
@@ -299,7 +299,7 @@ function Bishop:UNIT_SPELLCAST_SUCCEEDED(event, unit, spell, rank)
 		end
 		
 		-- Calculate additional +healing if they're in our party
-		if( string.match(groupMembers[target], "party") ) then
+		if( groupMembers[target] and string.match(groupMembers[target], "party") ) then
 			local i = 1
 			while( true ) do
 				local name = UnitBuff(target, i)
