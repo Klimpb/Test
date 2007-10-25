@@ -95,7 +95,7 @@ function Bishop:Enable()
 		return
 	end	
 	
-	if( playerClass == "DRUID" and self.db.profile.syncSpirit ) then
+	if( playerClass == "DRUID" ) then
 		self:RegisterEvent("PLAYER_DAMAGE_DONE_MODS")
 	end
 	
@@ -276,6 +276,7 @@ function Bishop:UNIT_SPELLCAST_SUCCEEDED(event, unit, spell, rank)
 	-- We have information on the spell so it's a HoT
 	if( unit == "player" and spellData[spell] ) then
 		local target = spellTarget[spell]
+		local totalHealing = spellHealing[spell]
 		
 		-- Check spell stack if need be
 		local spellStack = 1
@@ -297,22 +298,22 @@ function Bishop:UNIT_SPELLCAST_SUCCEEDED(event, unit, spell, rank)
 			end
 		end
 		
-		-- Calculate any additional +healing the person may have
-		--[[
-		local i = 1
-		while( true ) do
-			local name = UnitBuff(target, i)
-			if( not name ) then
-				break
-			end
+		-- Calculate additional +healing if they're in our party
+		if( string.match(groupMembers[target], "party") ) then
+			local i = 1
+			while( true ) do
+				local name = UnitBuff(target, i)
+				if( not name ) then
+					break
+				end
 
-			if( groupMembers[target] and name == L["Tree of Life"] ) then
-				healingMod = healingMod * 0.25
+				if( name == L["Tree of Life"] ) then
+					totalHealing = totalHealing * ( playersSpirit[playerName] * 0.20 )
+				end
 			end
 		end
-		]]
-
-		self:HealedPlayer(L["HOT"][spell] or spell, self:CalculateHOTHeal(spell, rank, spellHealing[spell], spellStack), 0, 0, "heal")
+		
+		self:HealedPlayer(L["HOT"][spell] or spell, self:CalculateHOTHeal(spell, rank, totalHealing, spellStack), 0, 0, "heal")
 	end
 end
 
@@ -386,10 +387,11 @@ function Bishop:CalculateHOTHeal(spellName, rank, totalHealing, spellStack)
 	if( spell[0].type == "ddhot" ) then
 		multiFactor = multiFactor * (1 - (spell[0].hotFactor or 0)) * (spell[0].dotFactor or 1)
 		healed = addFactor * (multiFactor * totalHealing + spell[rank].healed )
-
 	elseif( spell[0].type == "hot" ) then
 		healed = addFactor * (1 * spell[rank].healed + (totalHealing * multiFactor))
 	end
+		
+	--self:Echo(spellName, rank, totalHealing, spellStack, healed)
 	
 	return healed * spellStack
 end
@@ -654,7 +656,7 @@ function Bishop:Reload()
 		end
 	end
 
-	if( playerClass == "DRUID" and self.db.profile.syncSpirit ) then
+	if( playerClass == "DRUID" ) then
 		self:RegisterEvent("PLAYER_DAMAGE_DONE_MODS")
 		self:PLAYER_DAMAGE_DONE_MODS()
 	else
