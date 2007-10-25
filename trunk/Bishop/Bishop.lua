@@ -10,7 +10,9 @@ local rangedData
 
 local healData = {}
 
-local partyMembers = {}
+local groupMembers = {}
+
+local playersSpirit = {}
 
 local talentsLoaded
 local playerTalents = {}
@@ -20,6 +22,8 @@ local spellHealing = {}
 local spellTarget = {}
 
 local playerLevel = 0
+local playerName
+local playerClass
 
 local healYourself
 local healOther
@@ -57,49 +61,51 @@ function Bishop:Initialize()
 		
 	local OHObj = OptionHouse:RegisterAddOn("Bishop", nil, "Amarand", "r" .. tonumber(string.match("$Revision$", "(%d+)") or 1))
 	OHObj:RegisterCategory(L["General"], self, "CreateUI", nil, 1)
+	
+	playerLevel = UnitLevel("player")
+	playerName = UnitName("player")
+	playerClass = select(2, UnitClass("player"))
 end
 
 function Bishop:Enable()
-	self:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_FRIENDLYPLAYER_BUFFS")
+	self:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_FRIENDLYPLAYER_BUFFS", "COMBATLOG_HOT")
+	self:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_PARTY_BUFFS", "COMBATLOG_HOT")
 	self:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_BUFFS")
 	self:RegisterEvent("CHAT_MSG_SPELL_SELF_BUFF")
+	self:RegisterEvent("CHAT_MSG_ADDON")
 
 	self:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 	self:RegisterEvent("UNIT_SPELLCAST_SENT")
-	--self:RegisterEvent("UNIT_SPELLCAST_STOP")
-	--self:RegisterEvent("UNIT_SPELLCAST_INTERRUPTED")
-	
-	self:RegisterEvent("RAID_ROSTER_UPDATED", "UpdateGroupMembers")
+
+	self:RegisterEvent("RAID_ROSTER_UPDATE", "UpdateGroupMembers")
+	self:RegisterEvent("PARTY_MEMBERS_CHANGED", "UpdateGroupMembers")
 
 	self:RegisterEvent("CONFIRM_TALENT_WIPE", "ScanPlayerTalents")
 	self:RegisterEvent("CHARACTER_POINTS_CHANGED", "ScanPlayerTalents")
 	self:RegisterEvent("SPELLS_CHANGED", "ScanPlayerTalents")
 	self:RegisterEvent("UNIT_INVENTORY_CHANGED", "ScanPlayerRanged")
 	
-	local class, classToken = UnitClass("player")
-	if( BishopData["Load" .. classToken] ) then
-		spellData, talentData, rangedData = BishopData["Load" .. classToken]()
+	if( BishopData["Load" .. playerClass] ) then
+		spellData, talentData, rangedData = BishopData["Load" .. playerClass]()
 	end
 	
-	if( not spellData and classToken ~= "SHAMAN" and classToken ~= "PALADIN" ) then
-		self:Print(string.format(L["Your class %s, does not have any healing spells, Bishop disabled."], class))
+	if( not spellData and playerClass ~= "SHAMAN" and playerClass ~= "PALADIN" ) then
+		self:Print(string.format(L["Your class %s, does not have any healing spells, Bishop disabled."], (UnitClass("player"))))
 		self:Disable()
 		return
 	end	
 	
+	if( playerClass == "DRUID" and self.db.profile.syncSpirit ) then
+		self:RegisterEvent("PLAYER_DAMAGE_DONE_MODS")
+	end
+	
 	self:ScanPlayerTalents()
 	self:ScanPlayerRanged()	
+	self:UpdateGroupMembers()
 	
-	playerLevel = UnitLevel("player")
-	
---[[
-	PERIODICAURAHEALSELFOTHER = "%s gains %d health from your %s.";
-	PERIODICAURAHEALSELF = "You gain %d health from %s.";	
-	HEALEDCRITSELFOTHER = "Your %s critically heals %s for %d.";
-	HEALEDCRITSELFSELF = "Your %s critically heals you for %d.";
-	HEALEDSELFOTHER = "Your %s heals %s for %d.";
-	HEALEDSELFSELF = "Your %s heals you for %d.";
-]]
+	if( GetNumRaidMembers() > 0 or GetNumPartyMembers() > 0 ) then
+		self:PLAYER_DAMAGE_DONE_MODS()
+	end
 
 	healYourself = self:FormatLog(HEALEDSELFSELF)
 	healCritYourself = self:FormatLog(HEALEDCRITSELFSELF)
@@ -115,16 +121,41 @@ function Bishop:Disable()
 end
 
 function Bishop:UpdateGroupMembers()
-	for i=1, GetNumPartyMembers() do
-		local name, server = UnitName("party" .. i)
-		if( server and server ~= "" ) then
-			name = name .. "-" .. server
-		end
+	for i=1, GetNumRaidMembers() do
+		groupMembers[UnitName("raid" .. i)] = "raid" .. i
 		
-		partyMembers[name] = true
+		if( UnitExists("raidpet" .. i) ) then
+			-- Don't overwrite someone elses entry if the names conflict
+			local name = UnitName("raidpet" .. i)
+			if( not groupMembers[name] ) then
+				groupMembers[name] = "raidpet" .. i
+			end
+		end
+	end
+	
+	for i=1, GetNumPartyMembers() do
+		groupMembers[UnitName("party" .. i)] = "party" .. i
+
+		if( UnitExists("partypet" .. i) ) then
+			-- Don't overwrite someone elses entry if the names conflict
+			local name = UnitName("partypet" .. i)
+			if( not groupMembers[name] ) then
+				groupMembers[name] = "partypet" .. i
+			end
+		end
+	end
+
+	groupMembers[playerName] = "player"
+	
+	if( UnitExists("playerpet") ) then
+		local name = UnitName("playerpet")
+		if( not groupMembers[name] ) then
+			groupMembers[name] = "playerpet"
+		end
 	end
 end
 
+-- 1000 -> 1,000 and so on
 function Bishop:FormatNumber(number)
 	local length = string.len(number)
 	-- No formatting needed
@@ -158,12 +189,15 @@ function Bishop:HealedPlayer(spell, amount, crtHealth, maxHealth, type)
 
 	-- HoT, so subtract it from our current overheal
 	if( type == "hot" ) then
-		-- Check overheal
-		local overheal = amount
-		if( (crtHealth + amount) > maxHealth ) then
-			overheal = maxHealth - crtHealth
+		local overheal = amount - ( maxHealth - crtHealth )
+		-- No overheal, so remove the full amount from our estimated overheal
+		if( overheal <= 0 ) then
+			overheal = amount
+		-- Overhealed, so subtract amount overhealed by the total health
+		else
+			overheal = amount - overheal
 		end
-		
+				
 		healData[spell].totalTicks = ( healData[spell].totalTicks or 0 ) + 1
 		healData[spell].overheal = healData[spell].overheal - overheal
 	
@@ -187,13 +221,10 @@ function Bishop:HealedPlayer(spell, amount, crtHealth, maxHealth, type)
 	end
 	
 	-- Update the meter if shown, or if it's enabled
-	if( ( not self.frame and self.db.profile.showFrame ) or ( self.frame and self.frame:IsVisible() ) ) then
+	if( self.db.profile.showFrame or ( self.frame and self.frame:IsVisible() ) ) then
 		self:ShowMeterUI()
 	end
-	
-	--self:Echo(spell, healData[spell].totalHealed, healData[spell].overheal)
 end
-
 
 function Bishop:CHAT_MSG_SPELL_PERIODIC_SELF_BUFFS(event, msg)
 	if( string.match(msg, hotYourself) ) then
@@ -202,10 +233,14 @@ function Bishop:CHAT_MSG_SPELL_PERIODIC_SELF_BUFFS(event, msg)
 	end
 end
 
-function Bishop:CHAT_MSG_SPELL_PERIODIC_FRIENDLYPLAYER_BUFFS(event, msg)
+function Bishop:COMBATLOG_HOT(event, msg)
 	if( string.match(msg, hotOther) ) then
 		local target, amount, spell = string.match(msg, hotOther)
-		self:HealedPlayer(L["HOT"][spell] or spell, amount, UnitHealth(target), UnitHealthMax(target), "hot")
+		target = groupMembers[target]
+		
+		if( target ) then
+			self:HealedPlayer(L["HOT"][spell] or spell, amount, UnitHealth(target), UnitHealthMax(target), "hot")
+		end
 	end
 end
 
@@ -220,12 +255,20 @@ function Bishop:CHAT_MSG_SPELL_SELF_BUFF(event, msg)
 		self:HealedPlayer(L["HEAL"][spell] or spell, amount, UnitHealth("player"), UnitHealthMax("player"), "heal")
 	elseif( string.match(msg, healCritOther) ) then
 		local spell, target, amount = string.match(msg, healCritOther)
-
-		self:HealedPlayer(L["HEAL"][spell] or spell, amount, UnitHealth(target), UnitHealthMax(target), "heal")
+		target = groupMembers[target]
+		
+		-- If we don't have them in the same group, we can't count them towards our healing
+		if( target ) then
+			self:HealedPlayer(L["HEAL"][spell] or spell, amount, UnitHealth(target), UnitHealthMax(target), "heal")
+		end
 	elseif( string.match(msg, healOther) ) then
 		local spell, target, amount = string.match(msg, healOther)
+		target = groupMembers[target]
 		
-		self:HealedPlayer(L["HEAL"][spell] or spell, amount, UnitHealth(target), UnitHealthMax(target), "heal")
+		-- If we don't have them in the same group, we can't count them towards our healing
+		if( target ) then
+			self:HealedPlayer(L["HEAL"][spell] or spell, amount, UnitHealth(target), UnitHealthMax(target), "heal")
+		end
 	end
 end
 
@@ -263,21 +306,18 @@ function Bishop:UNIT_SPELLCAST_SUCCEEDED(event, unit, spell, rank)
 				break
 			end
 
-			if( partyMembers[target] and name == L["Tree of Life"] ) then
+			if( groupMembers[target] and name == L["Tree of Life"] ) then
 				healingMod = healingMod * 0.25
 			end
 		end
 		]]
 
 		self:HealedPlayer(L["HOT"][spell] or spell, self:CalculateHOTHeal(spell, rank, spellHealing[spell], spellStack), 0, 0, "heal")
-
-		spellTarget[spell] = nil
-		spellHealing[spell] = nil
 	end
 end
 
 function Bishop:UNIT_SPELLCAST_SENT(event, unit, spell, rank, target)
-	if( unit == "player" and spellData[spell] ) then
+	if( unit == "player" ) then
 		spellTarget[spell] = target
 		spellHealing[spell] = GetSpellBonusHealing()
 	end
@@ -351,9 +391,47 @@ function Bishop:CalculateHOTHeal(spellName, rank, totalHealing, spellStack)
 		healed = addFactor * (1 * spell[rank].healed + (totalHealing * multiFactor))
 	end
 	
-	--self:Echo(spellName, rank, healed * spellStack, multiFactor, addFactor)
-	
 	return healed * spellStack
+end
+
+-- For syncing spirit, only registering PDDM for Druids
+-- but everyone gets spirit information
+function Bishop:SendAddonMessage(msg)
+	if( not self.db.profile.syncSpirit ) then
+		return
+	end
+	
+	-- Auto switch to battleground type when inside one or an arena
+	local instance = select(2, IsInInstance())
+	local type = "RAID"
+	if( instance == "pvp" or instance == "arena" ) then
+		type = "BATTLEGROUND"
+	end
+	
+	SendAddonMessage("BISHOP", msg, type)
+end
+
+function Bishop:CHAT_MSG_ADDON(event, prefix, msg, type, author)
+	if( prefix == "BISHOP" ) then
+		local dataType, data = string.match(msg, "([^:]+)%:(.+)")
+		if( not dataType ) then
+			dataType = msg
+		end
+				
+		if( dataType == "REQSPI" and playersSpirit[playerName] ) then
+			self:SendAddonMessage("SPIRIT:" .. playersSpirit[playerName])
+		elseif( dataType == "SPIRIT" ) then
+			playersSpirit[author] = tonumber(data)
+		end
+	end
+end
+
+function Bishop:PLAYER_DAMAGE_DONE_MODS()
+	local spirit = UnitStat("player", 5)
+	if( playersSpirit[playerName] ~= spirit ) then
+		playersSpirit[playerName] = spirit
+		self:SendAddonMessage("SPIRIT:" .. spirit)
+	end
 end
 
 -- Check if we have any healing bonuses applied
@@ -411,8 +489,8 @@ function Bishop:ResetMeter()
 		healData[k] = nil
 	end
 	
-	if( self.frame and self.frame:IsVisible() ) then
-		self:ShowMeterUI()
+	if( self.frame ) then
+		self.frame:Hide()
 	end
 	
 	self:Print(L["All healing information has been reset!"])
@@ -440,13 +518,15 @@ function Bishop:ShowMeterUI()
 		totalOverheal = totalOverheal + data.overheal
 	end
 	
+	-- No entries, exit quickly
+	if( rowID == 0 ) then
+		self.frame:Hide()
+		return
+	end
+	
 	rowID = rowID + 1
 	
-	if( totalHealed > 0 or totalOverheal > 0 ) then
-		self:UpdateRow(rowID, L["Total"], totalHealed, totalOverheal)
-	else
-		self:UpdateRow(rowID, L["Total"], 1, 1)
-	end
+	self:UpdateRow(rowID, L["Total"], totalHealed, totalOverheal)
 	
 	for i=rowID + 1, CREATED_ROWS do
 		self.rows[i]:Hide()
@@ -467,7 +547,7 @@ function Bishop:UpdateRow(rowID, text, healed, overheal)
 	row:SetValue(overheal)
 	
 	if( self.db.profile.formatNumber ) then
-		row.percentText:SetText(string.format("%s (%.2f%%)", self:FormatNumber(math.floor(healed + 0.5)), (overheal / healed) * 100))
+		row.percentText:SetText(string.format("%s (%.2f%%)", self:FormatNumber(math.floor(healed)), (overheal / healed) * 100))
 	else
 		row.percentText:SetText(string.format("%d (%.2f%%)", healed, (overheal / healed) * 100))
 	end
@@ -573,12 +653,29 @@ function Bishop:Reload()
 			self.rows[i]:SetStatusBarTexture(self.db.profile.barTexture)
 		end
 	end
+
+	if( playerClass == "DRUID" and self.db.profile.syncSpirit ) then
+		self:RegisterEvent("PLAYER_DAMAGE_DONE_MODS")
+		self:PLAYER_DAMAGE_DONE_MODS()
+	else
+		self:UnregisterEvent("PLAYER_DAMAGE_DONE_MODS")
+	end
 end
 
 local SML
 function Bishop:CreateUI()
+	if( not SML ) then
+		SML = LibStub:GetLibrary("LibSharedMedia-2.0")
+		SML:Register(SML.MediaType.STATUSBAR, "XRaid", "Interface\\Bishop\\Images\\xraid_statusbar.tga")
+	end
+
+	local textures = {}
+	for _, name in pairs(SML:List(SML.MediaType.STATUSBAR)) do
+		table.insert(textures, {SML:Fetch(SML.MediaType.STATUSBAR, name), name})
+	end
+
 	local config = {
-		{ group = L["Display"], text = L["Bar texture"], type = "dropdown", list = {{"Interface\\TargetingFrame\\UI-StatusBar", "Blizzard"}}, var = "barTexture"},
+		{ group = L["Display"], text = L["Bar texture"], type = "dropdown", list = textures, var = "barTexture"},
 		{ group = L["Display"], text = L["Format numbers in healing meter"], type = "check", var = "formatNumber"},
 
 		{ group = L["Color"], text = L["Bar color"], type = "color", var = "barColor"},
@@ -588,15 +685,15 @@ function Bishop:CreateUI()
 		{ group = L["Frame"], format = L["Frame scale: %d%%"], manualInput = true, min = 0.0, max = 2.0, type = "slider", var = "scale"}
 	}
 
+	
+	if( playerClass == "DRUID" ) then
+		table.insert(config, { group = L["Syncing"], text = L["Sync spirit with other Bishop users"], help = L["This enables sending your total spirit, this is only needed if you are a Druid. It's highly recommended that you enable this if you're a Tree of Life Druid, or else other Bishop users cannot calculate HoTs off of people in your group accurately."], type = "check", var = "syncSpirit"})
+	end
+	
 	-- Update the dropdown incase any new textures were added
 	local frame = HouseAuthority:CreateConfiguration(config, {set = "Set", get = "Get", onSet = "Reload", handler = Bishop})
 	frame:Hide()
 	frame:SetScript("OnShow", function(self)
-		if( not SML ) then
-			SML = LibStub:GetLibrary("LibSharedMedia-2.0")
-			SML:Register(SML.MediaType.STATUSBAR, "XRaid", "Interface\\Bishop\\Images\\xraid_statusbar.tga")
-		end
-
 		local textures = {}
 		for _, name in pairs(SML:List(SML.MediaType.STATUSBAR)) do
 			table.insert(textures, {SML:Fetch(SML.MediaType.STATUSBAR, name), name})

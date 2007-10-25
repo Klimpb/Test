@@ -43,6 +43,7 @@ BishopLocals = {
 	["General"] = "General",
 	["Frame"] = "Frame",
 	["Color"] = "Color",
+	["Syncing"] = "Syncing",
 	
 	["Format numbers in healing meter"] = "Format numbers in healing meter",
 	
@@ -51,4 +52,7 @@ BishopLocals = {
 	["Show frame"] = "Show frame",
 	["Lock frame"] = "Lock frame",
 	["Frame scale: %d%%"] = "Frame scale: %d%%",
+	
+	["Sync spirit with other Bishop users"] = "Sync spirit with other Bishop users",
+	["This enables sending your total spirit, this is only needed if you are a Druid. It's highly recommended that you enable this if you're a Tree of Life Druid, or else other Bishop users cannot calculate HoTs off of people in your group accurately."] = "This enables sending your total spirit, this is only needed if you are a Druid. It's highly recommended that you enable this if you're a Tree of Life Druid, or else other Bishop users cannot calculate HoTs off of people in your group accurately.",
 }
