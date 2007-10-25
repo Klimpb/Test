@@ -1,0 +1,235 @@
+------------------------------------------------------------------------
+r285 | shadowed.wow | 2007-10-25 01:28:30 -0700 (Thu, 25 Oct 2007) | 1 line
+
+* Recoded drop downs so they're now fulled unnamed and have less issues with large strings of text being put inside them, they'll also now use a scroll frame when they have more then 10 rows inside so when trying to show something that has a lot of rows like textures or status bars, it'll no longer overflow.
+------------------------------------------------------------------------
+r271 | shadowed.wow | 2007-10-21 18:27:56 -0700 (Sun, 21 Oct 2007) | 1 line
+
+* Added editbox support! Arguments are { type = "editbox", text = "FooBar", height = # or 286, width = # or 85, numeric = false/true, fontObj = obj or GameFontHighlightSmall }
+------------------------------------------------------------------------
+r251 | shadowed.wow | 2007-10-08 10:13:17 -0700 (Mon, 08 Oct 2007) | 1 line
+
+* Fixed a bug with initDropdown where if this:GetName() throws an error the dropdown would break.
+------------------------------------------------------------------------
+r211 | shadowed.wow | 2007-09-26 16:37:48 -0700 (Wed, 26 Sep 2007) | 3 lines
+
+* Added HAObj:InjectUIObject(obj, data) obj is the actual object to display, data is either group, yPos or xPos for manipulating location if need be
+* Added inject type for CreateConfiguration, arguments are { type = "inject", widget = obj, <data>}
+* Hopefully, fixed group height and will no longer have it overlapping on the last widget
+------------------------------------------------------------------------
+r209 | shadowed.wow | 2007-09-26 14:09:28 -0700 (Wed, 26 Sep 2007) | 1 line
+
+* Fixed a stack overflow with ClearFocus on line #332
+------------------------------------------------------------------------
+r200 | shadowed.wow | 2007-09-25 13:57:47 -0700 (Tue, 25 Sep 2007) | 1 line
+
+* Toc updated to 20200
+------------------------------------------------------------------------
+r195 | shadowed.wow | 2007-09-22 11:56:59 -0700 (Sat, 22 Sep 2007) | 1 line
+
+* Updated to OptionHouse-1.1
+------------------------------------------------------------------------
+r188 | shadowed.wow | 2007-09-21 01:22:20 -0700 (Fri, 21 Sep 2007) | 1 line
+
+* Fixed set and onSet being required for CreateButton, this should have been committed already but it didn't for some reason...
+------------------------------------------------------------------------
+r184 | shadowed.wow | 2007-09-21 00:34:28 -0700 (Fri, 21 Sep 2007) | 1 line
+
+* Fixed updateFrameLevels to actually check that the obj has a SetFrameLevel and GetChildren, since FontStrings don't have it apparently
+------------------------------------------------------------------------
+r183 | shadowed.wow | 2007-09-21 00:19:42 -0700 (Fri, 21 Sep 2007) | 1 line
+
+* Changed HA:RegisterFrame to accept no arguments, it'll simply supply a blank table itself
+------------------------------------------------------------------------
+r182 | shadowed.wow | 2007-09-17 15:49:37 -0700 (Mon, 17 Sep 2007) | 6 lines
+
+* Should probably add OptionHouse because we require it now
+* Removed some old error messages
+* Widget creation has been changed (no major bump as this is backwards compatible), removed the idea of stages, when you call HAObj:GetFrame() will return the frame as normal and also save how many widgets were saved. If you call it again and total widgets hasn't changed we simply return the frame without positioning.
+
+If you added more widgets and call HAObj:GetFrame() again then we clear all points/position all the widgets like normal and return the frame.
+
+------------------------------------------------------------------------
+r180 | shadowed.wow | 2007-09-16 23:15:33 -0700 (Sun, 16 Sep 2007) | 1 line
+
+* Fixed a bug where if you didn't specify both a set and onSet for a button it'll error
+------------------------------------------------------------------------
+r179 | shadowed.wow | 2007-09-16 23:09:03 -0700 (Sun, 16 Sep 2007) | 2 lines
+
+* Fixed CreateButton saying you should call CreateLabel instead
+* Added xPos and yPos optional fields to CreateLabel, allows to control how far it is from other widgets
+------------------------------------------------------------------------
+r174 | shadowed.wow | 2007-09-14 03:19:12 -0700 (Fri, 14 Sep 2007) | 3 lines
+
+* Cleaned up a couple of comments/white space
+* Fixed argcheck for CreateGroup so you don't have to pass both background and border
+* Fixed UpdateDropdown to not argcheck for text
+------------------------------------------------------------------------
+r173 | shadowed.wow | 2007-09-13 21:35:25 -0700 (Thu, 13 Sep 2007) | 3 lines
+
+* Moved buttonClicked to the correction location so it's not right 
+* Moved the list of type -> function to it's a single table, no reason to recreate it every time CreateConfiguration is called.
+* A beta wiki page is up! http://www.wowwiki.com/HousingAuthority
+------------------------------------------------------------------------
+r170 | shadowed.wow | 2007-09-08 15:08:59 -0700 (Sat, 08 Sep 2007) | 4 lines
+
+* Fixed some widgets overlapping on the group backdrop
+* New API, HAObj:UpdateDropdown( { var = var, default = default, list = list } ) arguments work the same as CreateDropdown, default and list will be updated to the passed values, var is used to find the specific dropdown
+* New API, HA:GetObject(frame) turns a frame from HAObj:GetFrame() into HAObj
+* Fixed an argcheck that wasn't allowing numbers to be used as the default for dropdowns
+------------------------------------------------------------------------
+r168 | shadowed.wow | 2007-09-06 16:36:24 -0700 (Thu, 06 Sep 2007) | 4 lines
+
+* MAJOR HAS BEEN BUMPED TO HousingAuthority-1.2
+* Added maxChars = # to CreateInput, just calls SetMaxLetters(maxChars)
+* Added manualInput = boolean to CreateSlider, creates an input next to the slider that can have the number entered manually, still a few kinks with this
+* Fixed a couple of argchecks
+------------------------------------------------------------------------
+r167 | shadowed.wow | 2007-09-06 15:34:28 -0700 (Thu, 06 Sep 2007) | 8 lines
+
+* Changed HouseBuilder example to account for sliders messing up positioning, also added 4 total examples for testing instead of just one
+* Fixed positioning issues with sliders
+* Reduced height/width of buttons
+* Fixed entries in the dropdown all appearing as checked
+* Fixed color picker not showing up in front of the OptionHouse frame
+* Fixed column positioning code will work a lot better now
+* API HAS BEEN CHANGED. set, onSet, validate are now called like func(var, value) EVEN if var is a table. get has been changed to be called like func(var)
+
+------------------------------------------------------------------------
+r166 | rophy123 | 2007-09-06 14:44:58 -0700 (Thu, 06 Sep 2007) | 2 lines
+
+HousingAuthority:
+* Refresh frameLevel of dropdown arrow button when changing the dropdown's frameLevel.
+------------------------------------------------------------------------
+r165 | rophy123 | 2007-09-05 22:39:45 -0700 (Wed, 05 Sep 2007) | 4 lines
+
+HousingAuthority:
+* Added OptionHouse as OptDeps.
+* EditBoxes now clear focus on pressing enter.
+
+------------------------------------------------------------------------
+r159 | shadowed.wow | 2007-09-05 00:53:46 -0700 (Wed, 05 Sep 2007) | 1 line
+
+* Updated build script to actually work
+------------------------------------------------------------------------
+r156 | shadowed.wow | 2007-09-05 00:11:40 -0700 (Wed, 05 Sep 2007) | 3 lines
+
+* Removed calls to OptionHouseFrames.*, we now create our own instance of OptionHouse so we can call GetFrame. You MUST make sure OptionHouse loads before HousingAuthority.lua
+* Added CreateButton which, suprisingly enough creates a button table data accepts var, set, text like everything else, you can also add template to change the style, or width to customize the width instead of using the texts size
+* Updated HouseBuilder to use a button as an example too
+------------------------------------------------------------------------
+r155 | shadowed.wow | 2007-09-04 01:37:03 -0700 (Tue, 04 Sep 2007) | 2 lines
+
+* Fixed some typos in CreateGroup that would cause border/backdrop to not be set correctly
+* Fixed dropdown setting incorrect keys
+------------------------------------------------------------------------
+r154 | shadowed.wow | 2007-09-03 18:03:27 -0700 (Mon, 03 Sep 2007) | 1 line
+
+* Changed var to accept a number or a string
+------------------------------------------------------------------------
+r153 | shadowed.wow | 2007-09-02 23:35:08 -0700 (Sun, 02 Sep 2007) | 2 lines
+
+* HousingAuthority now uses LibStub
+* MAJOR HAS BEEN BUMPED, the LibStub version is now HousingAuthority-1.1
+------------------------------------------------------------------------
+r152 | shadowed.wow | 2007-08-31 10:58:52 -0700 (Fri, 31 Aug 2007) | 3 lines
+
+* Added table recycling to color picker and dropdowns
+* When the frame argument isn't passed with frameData then it'll create a new unnamed frame parented to OptionHouse's addon frame.
+* Removed DongleStub, going to play with LibStub
+------------------------------------------------------------------------
+r148 | shadowed.wow | 2007-08-30 11:45:06 -0700 (Thu, 30 Aug 2007) | 2 lines
+
+* Grouping should be fully implemented now and work perfectly
+* Added in columns support, pass columns = # into the frameData table, right now only 1 and 2 will support any mixing of frame types, when you get into 3 you'll need to specifically order the frame types so they fit together
+------------------------------------------------------------------------
+r146 | shadowed.wow | 2007-08-30 00:09:50 -0700 (Thu, 30 Aug 2007) | 1 line
+
+* Added beta grouping code in, positioning/heights still need some tweaking, but the grouping code works
+------------------------------------------------------------------------
+r142 | shadowed.wow | 2007-08-29 15:11:01 -0700 (Wed, 29 Aug 2007) | 5 lines
+
+* Build script (Stolen from OptionHouse and broken horribly I assume now)
+* Added in the grouping code, you can define a group by adding group = "Header text" in each widget, once you define one widget as in a group all the others must be too
+* Changed frame data positionType to columns, 1 shows one by one, 2 uses 2 columns and so on, you really shouldn't go over 3
+* Changed font for help/error to GameFontNormalSmall (trial)
+* Help is now green, error is red (also trial)
+------------------------------------------------------------------------
+r138 | shadowed.wow | 2007-08-28 23:46:44 -0700 (Tue, 28 Aug 2007) | 4 lines
+
+* Basic group code in so I can continue work on it tomorrow
+* Groups can have some small changes, either by calling HAObj:CreateGroup({text = "This is an example group", background = { r = 1, g = 1, b = 1}, border = { r = 0, g = 0, b = 0}}) or calling it as a group type in CreateConfiguration
+
+Group text must match up with all the other widgets in the same group or else they wont be added, they'll wrap around all the widgets in it's group and be given a label/backdrop
+------------------------------------------------------------------------
+r136 | shadowed.wow | 2007-08-28 18:41:32 -0700 (Tue, 28 Aug 2007) | 1 line
+
+* Fixed a setValue error when getValue is called
+------------------------------------------------------------------------
+r131 | shadowed.wow | 2007-08-28 01:02:54 -0700 (Tue, 28 Aug 2007) | 1 line
+
+* When we load a default, will call setValue so the change takes effect with the addon and not just the UI
+------------------------------------------------------------------------
+r128 | shadowed.wow | 2007-08-27 23:07:45 -0700 (Mon, 27 Aug 2007) | 3 lines
+
+* Fixed a couple of argchecks not accepting a string or table for var
+* Fixed a non-existence error message, and the fact that it called string.join not table.concat
+* Fixed onSet never being called due to all the sets returning
+------------------------------------------------------------------------
+r126 | shadowed.wow | 2007-08-27 20:42:40 -0700 (Mon, 27 Aug 2007) | 1 line
+
+* Added Revision keyword
+------------------------------------------------------------------------
+r121 | shadowed.wow | 2007-08-27 16:30:03 -0700 (Mon, 27 Aug 2007) | 1 line
+
+* Fixed a bug where false returns to get would make it use the default value, instead of using the default value when nil
+------------------------------------------------------------------------
+r117 | shadowed.wow | 2007-08-24 21:33:52 -0700 (Fri, 24 Aug 2007) | 5 lines
+
+* Renamed CreateFontString to CreateLabel, it'll increase the yPos between the row above and below it so it can be used as a "category" header
+* Added a basic help/validate display, it'll likely change or be tweaked later but it's usable
+* Fixed up everything
+
+With this, it's beta but not production beta, see HouseBuilder.lua for API examples will get a wiki page up somepoint.
+------------------------------------------------------------------------
+r116 | shadowed.wow | 2007-08-24 17:25:48 -0700 (Fri, 24 Aug 2007) | 6 lines
+
+* Added all widgets to the example
+* Changed code so we can implement the compact mode of formatting
+* Drycoded most of the validate and help code
+* Fixed some argchecking for the functions
+* Added HAObj:CreateFontString
+* Added returns to all the widgets so you can do custom modifications if needed
+------------------------------------------------------------------------
+r115 | shadowed.wow | 2007-08-23 21:33:48 -0700 (Thu, 23 Aug 2007) | 2 lines
+
+* Beta, everything is usable except for the help/validate functions
+* Added numeric argument to inputs, uses SetNumeric(true) and GetNumber instead of SetText/GetText
+------------------------------------------------------------------------
+r114 | shadowed.wow | 2007-08-23 12:08:16 -0700 (Thu, 23 Aug 2007) | 1 line
+
+* Stuff
+------------------------------------------------------------------------
+r113 | shadowed.wow | 2007-08-23 00:10:08 -0700 (Thu, 23 Aug 2007) | 3 lines
+
+* Added example code
+* Implemented the basic API's the more "advance" things aren't tested including scroll frames and dropdowns
+* Added HAObj:CreateConfiguration(data, frameData) will explain about this later, but lets you convert table into GUI if you dont want to call the functions manually
+------------------------------------------------------------------------
+r112 | shadowed.wow | 2007-08-22 19:54:32 -0700 (Wed, 22 Aug 2007) | 2 lines
+
+* Forgot to add DS and a TOC
+* Forgot to commit ConfigHouse removal
+------------------------------------------------------------------------
+r111 | shadowed.wow | 2007-08-22 16:52:40 -0700 (Wed, 22 Aug 2007) | 1 line
+
+* Added in base positioning code
+------------------------------------------------------------------------
+r110 | shadowed.wow | 2007-08-22 16:32:59 -0700 (Wed, 22 Aug 2007) | 1 line
+
+* All of the functions are done except for the final GetFrame/positioning code. 5 hours to do all of it, 10 hours of debugging
+------------------------------------------------------------------------
+r109 | shadowed.wow | 2007-08-22 10:22:24 -0700 (Wed, 22 Aug 2007) | 1 line
+
+
+------------------------------------------------------------------------
