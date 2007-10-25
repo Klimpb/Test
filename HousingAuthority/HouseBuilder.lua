@@ -42,6 +42,32 @@ function HouseBuild:EditTest()
 	return HouseAuthority:CreateConfiguration(config, { handler = self, set = "Set", get = "Get", columns = 1 } )
 end
 
+-- DROPDOWN TEST
+function HouseBuild:Dropdown()
+	local config = {
+	};
+	
+	for i=1, 20 do
+		local listTable = {}
+		for j=1, i do
+			table.insert(listTable, {j, "Row #" .. j})
+		end
+		
+		table.insert(config,
+		{	type = "dropdown",
+			text = "Testing List #" .. i,
+			default = "cat",
+			var = { "foo", "bar" .. i },
+			help = "This is some help information regarding how to use this feature in.",
+			list = listTable,
+		})
+	end
+	
+	HA = LibStub:GetLibrary("HousingAuthority-1.2")
+	HATest = HA:CreateConfiguration(config, { handler = self, set = "Set", get = "Get", columns = 1 } )
+	
+	return HATest
+end
 -- NO GROUPS SINGLE COLUMN
 function HouseBuild:NoGroupSingleCol()
 	local config = {
@@ -52,7 +78,19 @@ function HouseBuild:NoGroupSingleCol()
 			help = "This is some help information regarding how to use this feature in.",
 			list = {{ "foo", "Foo" },
 				{ "apple", "Apple" },
-				{ "cat", "Cat" }}
+				{ "cat", "Cat" },
+				{"dog", "Dog"},
+				{"bunny", "Bunny"},
+				{"bar", "Bar"},
+				{"cow", "Cow"},
+				{"kitty", "Kitty"},
+				{"this", "This"},
+				{"is", "is"},
+				{"boring", "boring"},
+				{"halp", "halp"},
+				{"meee", "meeee"},
+				{"nao", "nao"},
+				}
 		},
 		{	type = "dropdown",
 			text = "Testing List 2",
@@ -121,7 +159,19 @@ function HouseBuild:GroupSingleCol()
 			help = "This is some help information regarding how to use this feature in.",
 			list = {{ "foo", "Foo" },
 				{ "apple", "Apple" },
-				{ "cat", "Cat" }}
+				{ "cat", "Cat" },
+				{"dog", "Dog"},
+				{"bunny", "Bunny"},
+				{"bar", "Bar"},
+				{"cow", "Cow"},
+				{"kitty", "Kitty"},
+				{"this", "This"},
+				{"is", "is"},
+				{"boring", "bogggggggggggggggggggggggggggring"},
+				{"halp", "halp"},
+				{"meee", "meeee"},
+				{"nao", "nao"},
+				}
 		},
 		{	group = "Main Group",
 			type = "dropdown",
@@ -129,9 +179,9 @@ function HouseBuild:GroupSingleCol()
 			var = "foobared",
 			default = "apple",
 			help = "This is some help information regarding how to use this feature in.",
-			list = {{ "Foo", "Foo" },
-				{ "Apple", "Apple" },
-				{ "Cat", "Cat" }}
+			list = {{ "foo", "Foo" },
+				{"nao", "nao"},
+				}
 		},
 		{	group = "Main Group",
 			type = "color",
@@ -353,6 +403,7 @@ function HouseBuild:Load()
 	OHObj:RegisterCategory("Group Single Col", self, "GroupSingleCol")
 	OHObj:RegisterCategory("No Group 2 Col", self, "NoGroupTwoCol")
 	OHObj:RegisterCategory("Edit Box", self, "EditTest")
+	OHObj:RegisterCategory("Dropdown", self, "Dropdown")
 	OHObj:RegisterCategory("No Group Single Col", self, "NoGroupSingleCol")
 end
 
