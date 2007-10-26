@@ -310,6 +310,8 @@ function Bishop:UNIT_SPELLCAST_SUCCEEDED(event, unit, spell, rank)
 				if( name == L["Tree of Life"] ) then
 					totalHealing = totalHealing * ( playersSpirit[playerName] * 0.20 )
 				end
+				
+				i = i + 1
 			end
 		end
 		
