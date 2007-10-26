@@ -342,6 +342,10 @@ local function inputShown(self)
 	end
 end
 
+local function inputSetFocus(self)
+	self:SetFocus()
+end
+
 local function inputClearFocus(self)
 	self:ClearFocus()
 end
@@ -1181,7 +1185,7 @@ function HouseAuthority.UpdateDropdown(config, data)
 				if( matches >= rows ) then
 					widget.data.list = data.list
 					widget.data.default = widget.data.default or data.default
-					updateDropdown(nil, widget)
+					updateDropdownList(nil, widget)
 					break
 				end
 				
@@ -1357,25 +1361,22 @@ function HouseAuthority.CreateEditBox(config, data)
 	scroll.parent = config
 	scroll.data = data
 	
-
-	--scroll:SetPoint("TOPLEFT", OptionHouse:GetFrame("addon"), "TOPLEFT", 190, -105)
-	--scroll:SetPoint("BOTTOMRIGHT", OptionHouse:GetFrame("addon"), "BOTTOMRIGHT", -35, 40)
-
 	-- Create the actual edit box
 	local editBox = CreateFrame("EditBox", nil, scroll)
 	editBox.parent = config
 	editBox.data = data
 	editBox:SetPoint("TOPLEFT", scroll, "TOPLEFT", 3, -3)
-	editBox:SetHeight(data.height or 286)
-	editBox:SetWidth(data.width or 85)
+	editBox:SetWidth(data.height or 286)
+	editBox:SetHeight(data.width or 85)
 	editBox:SetScript("OnShow", inputShown)
 	editBox:SetScript("OnTextChanged", inputChanged)
 	editBox:SetScript("OnEscapePressed", inputClearFocus)
+	editBox:SetScript("OnMouseDown", inputSetFocus)
+	
 	editBox:SetMultiLine(true)
 	editBox:SetAutoFocus(false)
 	editBox:SetNumeric(data.numeric)
 	editBox:SetFontObject(data.fontObj or GameFontHighlightSmall)
-	
 	
 	if( data.maxChars ) then
 		editBox:SetMaxLetters(data.maxLetters)
