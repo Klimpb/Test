@@ -32,10 +32,15 @@ BishopLocals = {
 	["Bishop slash commands"] = "Bishop slash commands",
 	
 	["ui - Pulls up the configuration page"] = "ui - Pulls up the configuration page",
+	["disable - Disables Bishop"] = "disable - Disables Bishop",
+	["enable - Enables Bishop"] = "enable - Enables Bishop",
 	["toggle - Toggles the meter open/closed"] = "toggle - Toggles the meter open/closed",
 	["reset - Resets all saved healing data"] = "reset - Resets all saved healing data",
 	
 	["All healing information has been reset!"] = "All healing information has been reset!",
+	
+	["Enabled, now recording healing data."] = "Enabled, now recording healing data.",
+	["Disabled, reset saved data and stopped recording."] = "Disabled, reset saved data and stopped recording.",
 	
 	-- GUI
 	["Total"] = "Total",

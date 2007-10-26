@@ -38,6 +38,7 @@ local HouseAuthority
 function Bishop:Initialize()
 	self.defaults = {
 		profile = {
+			enabled = true,
 			scale = 1.0,
 			locked = false,
 			syncSpirit = true,
@@ -54,6 +55,8 @@ function Bishop:Initialize()
 	self.cmd:InjectDBCommands(self.db, "delete", "copy", "list", "set")
 	self.cmd:RegisterSlashHandler(L["ui - Pulls up the configuration page"], "ui", function() OptionHouse:Open("Bishop") end)
 	self.cmd:RegisterSlashHandler(L["toggle - Toggles the meter open/closed"], "toggle", "ToggleMeter")
+	self.cmd:RegisterSlashHandler(L["enable - Enables Bishop"], "enable", "CmdEnable")
+	self.cmd:RegisterSlashHandler(L["disable - Disables Bishop"], "disable", "CmdDisable")
 	self.cmd:RegisterSlashHandler(L["reset - Resets all saved healing data"], "reset", "ResetMeter")
 
 	OptionHouse = LibStub("OptionHouse-1.1")
@@ -68,6 +71,10 @@ function Bishop:Initialize()
 end
 
 function Bishop:Enable()
+	if( not self.db.profile.enabled ) then
+		return
+	end
+	
 	self:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_FRIENDLYPLAYER_BUFFS", "COMBATLOG_HOT")
 	self:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_PARTY_BUFFS", "COMBATLOG_HOT")
 	self:RegisterEvent("CHAT_MSG_SPELL_PERIODIC_SELF_BUFFS")
@@ -118,6 +125,14 @@ end
 
 function Bishop:Disable()
 	self:UnregisterAllEvents()
+	
+	for k in pairs(healData) do
+		healData[k] = nil
+	end
+	
+	if( self.frame ) then
+		self.frame:Hide()
+	end
 end
 
 function Bishop:UpdateGroupMembers()
@@ -487,7 +502,25 @@ function Bishop:FormatLog(text)
 	return text
 end
 
--- METER GUI
+-- Slash commands
+function Bishop:CmdEnable()
+	if( not self.db.profile.enabled ) then
+		self.db.profile.enabled = true
+		self:Enable()
+	end
+	
+	self:Print(L["Enabled, now recording healing data."])
+end
+
+function Bishop:CmdDisable()
+	if( self.db.profile.enabled ) then
+		self.db.profile.enabled = false
+		self:Disable()
+	end
+	
+	self:Print(L["Disabled, reset saved data and stopped recording."])
+end
+
 function Bishop:ResetMeter()
 	for k in pairs(healData) do
 		healData[k] = nil
@@ -508,6 +541,7 @@ function Bishop:ToggleMeter()
 	end
 end
 
+-- METER GUI
 function Bishop:ShowMeterUI()
 	self:CreateMeterUI()
 	
