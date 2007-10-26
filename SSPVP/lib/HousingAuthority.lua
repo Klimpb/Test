@@ -336,10 +336,14 @@ end
 -- INPUT BOX
 local function inputShown(self)
 	if( not self.data.numeric ) then
-		self:SetText(getValue(self.parent, self.data))
+		self:SetText(getValue(self.parent, self.data) or "")
 	else
 		self:SetNumber(getValue(self.parent, self.data))
 	end
+end
+
+local function inputSetFocus(self)
+	self:SetFocus()
 end
 
 local function inputClearFocus(self)
@@ -444,51 +448,264 @@ local function openColorPicker(self)
 end
 
 -- DROPDOWNS
-local function dropdownClicked()
-	UIDropDownMenu_SetSelectedValue(this.owner, this.value)
-	setValue(this.owner.parent, this.owner.data, this.value)
+local DROPDOWN_ROWS = 10
+local openedList
+local dropdownBackdrop = {
+	bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+	edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+	edgeSize = 32,
+	tileSize = 32,
+	tile = true,
+	insets = { left = 11, right = 12, top = 12, bottom = 11 },
+}
+
+local function showHighlight(self)
+	self.highlight:Show()
+
+	-- Reset timer before it's hidden
+	self:GetParent().timeElapsed = 0
 end
 
-local buttonTbl = { func = dropdownClicked }
-local function initDropdown(frame)
-	if( this:GetName() and string.match(this:GetName(), "Button$") ) then
-		frame = getglobal(string.gsub(this:GetName(), "Button$", ""))
-	elseif( not frame ) then
-		frame = this
-	end
-	
-	buttonTbl.owner = frame
-	for _, row in pairs(frame.data.list) do
-		buttonTbl.value = row[1]
-		buttonTbl.text = row[2]
-		buttonTbl.checked = nil
-		
-		UIDropDownMenu_AddButton(buttonTbl)
-	end
+local function hideHighlight(self)
+	self.highlight:Hide()
 end
 
-local function updateDropdown(frame, noInit)
-	if( not noInit ) then
-		initDropdown(frame)
-	end
+local function showDropdown(self)
+	self.width = 0
 	
-	-- Select da row
-	local selected = getValue(frame.parent, frame.data)
-	for _, row in pairs(frame.data.list) do
-		if( row[1] == selected ) then
-			UIDropDownMenu_SetSelectedValue(frame, row[1])
-			return
+	-- Calculate the width of the list frame
+	local selectedValues = getValue(self.parent, self.data)
+	if( self.data.multi and ( not selectedValues or type(selectedValues) ~= "table" ) ) then
+		selectedValues = {}
+		setValue(self.parent, self.data, selectedValues)
+	end
+
+	local selectedText
+	for id, info in pairs(self.data.list) do
+		self.text:SetText(info[2])
+		if( self.text:GetStringWidth() > self.width ) then
+			self.width = self.text:GetStringWidth() + 75
+		end
+
+		if( ( not self.data.multi and info[1] == selectedValues ) or ( self.data.multi and selectedValues[info[1]] ) ) then
+			selectedText = info[2]
 		end
 	end
 		
-	-- No entry found, use first one
-	UIDropDownMenu_SetSelectedValue(frame, frame.data.list[1][1])
+	-- Bad, means we couldn't find the selected text so we default to the first row
+	if( not selectedText ) then
+		if( not self.data.multi ) then
+			setValue(self.parent, self.data, self.data.list[1][1])
+		end
+
+		selectedText = self.data.list[1][2]
+	end
+
+	-- Set selected text
+	self.text:SetText(selectedText)
+	
+	-- Auto resize so the text doesn't overflow
+	local textWidth = self.text:GetStringWidth() + 30
+	if( textWidth > self.middleTexture:GetWidth() ) then
+		self.middleTexture:SetWidth(textWidth)
+	end
 end
 
-local function dropdownShown(self)
-	UIDropDownMenu_Initialize(self, initDropdown)
+local function dropdownRowClicked(self)
+	local parent = self:GetParent().parentFrame
+	if( not parent.data.multi ) then
+		setValue(parent.parent, parent.data, self.key)
+		showDropdown(parent)
+
+		self:GetParent():Hide()
+	else
+		local selectedKeys = getValue(parent.parent, parent.data)
+		if( selectedKeys[self.key] ) then
+			selectedKeys[self.key] = nil	
+		else
+			selectedKeys[self.key] = true
+		end
 	
-	updateDropdown(self, true)
+		setValue(parent.parent, parent.data, selectedKeys)
+
+		-- Yes, this is INCREDIBLY hackish
+		self:GetParent():Hide()
+		self:GetParent():Show()
+		
+		showDropdown(parent)
+	end
+end
+
+local function hideDropdown(self)
+	if( self.listFrame ) then
+		self.listFrame:Hide()
+		
+		if( openedList == self.listFrame ) then
+			openedList = nil
+		end
+	end
+end
+
+local function createListRow(parent, id)
+	local button = CreateFrame("Button", nil, parent)
+	button:SetWidth(100)
+	button:SetHeight(16)
+	button:SetScript("OnClick", dropdownRowClicked)
+	button:SetTextFontObject(GameFontHighlightSmall)
+	button:SetTextColor(HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
+	button:SetHighlightTextColor(HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
+	
+	-- GetFontString() returns nil until we SetText
+	button:SetText("")
+	button:GetFontString():SetPoint("LEFT", button, "LEFT", 40, 0)
+
+	local highlight = button:CreateTexture(nil, "BACKGROUND")
+	highlight:ClearAllPoints()
+	highlight:SetPoint("TOPLEFT", button, "TOPLEFT", 12, 0)
+	highlight:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+	highlight:SetAlpha(0.5)
+	highlight:SetBlendMode("ADD")
+	highlight:Hide()
+	button.highlight = highlight
+
+	button.check = button:CreateTexture(nil, "ARTWORK")
+	button.check:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
+	button.check:SetHeight(24)
+	button.check:SetWidth(24)
+	
+	button:SetScript("OnEnter", showHighlight)
+	button:SetScript("OnLeave", hideHighlight)
+	
+	
+	if( id > 1 ) then
+		button:SetPoint("TOPLEFT", parent.rows[id - 1], "TOPLEFT", 0, -16)
+		button.check:SetPoint("TOPLEFT", button, "TOPLEFT", 12, 3)
+	else
+		button:SetPoint("TOPLEFT", parent, "TOPLEFT", -2, -13)
+		button.check:SetPoint("TOPLEFT", button, "TOPLEFT", 12, 3)
+	end
+	
+	parent.rows[id] = button
+	
+	return button
+end
+
+local function updateDropdownList(self, frame)
+	if( self ) then
+		frame = self
+	elseif( not frame ) then
+		frame = openedList
+	end
+	
+	if( not frame or not frame.parentFrame ) then
+		return
+	end
+
+	local parent = frame.parentFrame
+	local selectedValues = getValue(parent.parent, parent.data)
+	local totalRows = #(parent.data.list)
+	local usedRows = 0
+	
+	OptionHouse:UpdateScroll(frame.scroll, totalRows + 1)
+		
+	for id, info in pairs(parent.data.list) do
+		if( id >= frame.scroll.offset and usedRows < DROPDOWN_ROWS ) then
+			usedRows = usedRows + 1
+			
+			if( not frame.rows[usedRows] ) then
+				createListRow(frame, usedRows)
+			end
+			
+			local row = frame.rows[usedRows]
+			row:SetWidth(parent.width)
+			row.highlight:SetWidth(parent.width)
+			row:SetText(info[2])
+			row.key = info[1]
+			
+			if( ( not parent.data.multi and info[1] == selectedValues ) or ( parent.data.multi and selectedValues[info[1]] ) ) then
+				row.check:Show()
+			else
+				row.check:Hide()
+			end
+		end
+	end
+end
+
+local function dropdownListShown(self)
+	updateDropdownList(self)
+
+	self:SetHeight((min(#(self.parentFrame.data.list), DROPDOWN_ROWS) * 16 ) + 25)
+	
+	if( #(self.parentFrame.data.list) <= DROPDOWN_ROWS ) then
+		self:SetWidth(self.parentFrame.width + 20)
+	else
+		self:SetWidth(self.parentFrame.width + 50)
+	end
+end
+
+-- Do we want this? Not sure
+local function dropdownCounter(self, elapsed)
+	self.timeElapsed = self.timeElapsed + elapsed
+	if( self.timeElapsed >= 10 ) then
+		self:Hide()
+	end
+end
+
+local function openDropdown(self)
+	PlaySound("igMainMenuOptionCheckBoxOn")
+	
+	if( not self.listFrame ) then
+		self.listFrame = CreateFrame("Frame", nil, self.parent.frame)
+		self.listFrame.rows = {}
+		self.listFrame.timeElapsed = 0
+		self.listFrame:SetBackdrop(dropdownBackdrop)
+		self.listFrame:SetToplevel(true)
+		self.listFrame:SetFrameStrata("FULLSCREEN")
+		self.listFrame:SetScript("OnShow", dropdownListShown)
+		--self.listFrame:SetScript("OnUpdate", dropdownCounter)
+		self.listFrame:Hide()
+
+		OptionHouse:CreateScrollFrame(self.listFrame, 10, updateDropdownList)
+		
+		self.listFrame.scroll:SetWidth(36)
+		self.listFrame.scroll:SetPoint("TOPLEFT", 10, -12)
+		self.listFrame.scroll:SetPoint("BOTTOMRIGHT", -34, 43)
+		self.listFrame.scroll.barUpTexture:Hide()
+		self.listFrame.scroll.barDownTexture:Hide()
+	end
+
+	-- Toggle it open or close
+	if( self.listFrame:IsVisible() ) then
+		if( openedList == self.listFrame ) then
+			openedList = nil
+		end
+		
+		self.listFrame:Hide()
+	else
+		-- Make sure only one list frame is active at one time
+		if( openedList ) then
+			openedList:Hide()
+		end
+		
+		openedList = self.listFrame
+
+		self.listFrame.timeElapsed = 0
+		self.listFrame.parentFrame = self
+		self.listFrame:ClearAllPoints()
+		self.listFrame:SetPoint("TOPLEFT", self.leftTexture, "BOTTOMLEFT", 8, 22)
+
+		self.listFrame:Show()
+
+		-- Renachor the frame if need be because it's at the bottom of the screen
+		if( self.listFrame:GetBottom() and self.listFrame:GetBottom() <= 300 ) then
+			self.listFrame:ClearAllPoints()
+			self.listFrame:SetPoint("BOTTOMLEFT", self.leftTexture, "TOPLEFT", 8, -22)
+		end
+	end
+end
+
+local function dropdownClickButton(self)
+	openDropdown(self:GetParent())
 end
 
 -- GROUP FRAME
@@ -566,8 +783,8 @@ local HouseAuthority = {}
 local configs = {}
 local id = 0
 
-local methods = { "GetFrame", "InjectUIObject", "UpdateDropdown", "CreateConfiguration", "CreateButton", "CreateGroup", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
-local widgetList = {["label"] = "CreateLabel", ["check"] = "CreateCheckBox", ["input"] = "CreateInput", ["dropdown"] = "CreateDropdown", ["color"] = "CreateColorPicker", ["slider"] = "CreateSlider", ["group"] = "CreateGroup", ["button"] = "CreateButton",}
+local methods = { "CreateEditBox", "GetFrame", "InjectUIObject", "UpdateDropdown", "CreateConfiguration", "CreateButton", "CreateGroup", "CreateLabel", "CreateDropdown", "CreateColorPicker", "CreateInput", "CreateSlider", "CreateCheckBox" }
+local widgetList = {["label"] = "CreateLabel", ["check"] = "CreateCheckBox", ["editbox"] = "CreateEditBox", ["input"] = "CreateInput", ["dropdown"] = "CreateDropdown", ["color"] = "CreateColorPicker", ["slider"] = "CreateSlider", ["group"] = "CreateGroup", ["button"] = "CreateButton",}
 
 -- Extract the configuration obj from a frame
 function HouseAuthority:GetObject(frame)
@@ -609,7 +826,7 @@ function HouseAuthority:RegisterFrame(data)
 	
 	id = id + 1
 	
-	local config = { id = id, columns = data.columns, widgets = {}, handler = data.handler, get = data.get, frame = data.frame, set = data.set, onSet = data.onSet }
+	local config = { id = id, columns = data.columns, widgets = {}, groupOrder = {}, handler = data.handler, get = data.get, frame = data.frame, set = data.set, onSet = data.onSet }
 	config.obj = { id = id }
 	
 	for _, method in pairs(methods) do
@@ -975,6 +1192,7 @@ function HouseAuthority.UpdateDropdown(config, data)
 	
 	for _, widget in pairs(config.widgets) do
 		if( widget.data.type == "dropdown" and type(data.var) == type(widget.data.var) ) then
+			
 			if( type(data.var) == "table" ) then
 				local matches = 0
 				local rows = 0
@@ -991,7 +1209,7 @@ function HouseAuthority.UpdateDropdown(config, data)
 				if( matches >= rows ) then
 					widget.data.list = data.list
 					widget.data.default = widget.data.default or data.default
-					updateDropdown(widget)
+					updateDropdownList(nil, widget)
 					break
 				end
 				
@@ -999,7 +1217,7 @@ function HouseAuthority.UpdateDropdown(config, data)
 				widget.data.list = data.list
 				widget.data.default = widget.data.default or data.default
 
-				updateDropdown(widget)
+				updateDropdownList(nil, widget)
 				break
 			end
 		end
@@ -1013,6 +1231,7 @@ function HouseAuthority.CreateDropdown(config, data)
 	argcheck(data.default, "default", "string", "number", "nil")
 	argcheck(data.help, "help", "string", "nil")
 	argcheck(data.var, "var", "string", "number", "table")
+	argcheck(data.multi, "multi", "boolean", "nil")
 	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateDropdown"))
 	
 	validateFunctions(configs[config.id], data)
@@ -1021,26 +1240,179 @@ function HouseAuthority.CreateDropdown(config, data)
 	config.dropNum = ( config.dropNum or 0 ) + 1
 	
 	data.type = "dropdown"
-
-	local button = CreateFrame("Frame", "HADropdownID" .. config.id .. "Num" .. config.dropNum, config.frame, "UIDropDownMenuTemplate")
-	button.parent = config
-	button.data = data
-	button.xPos = -10
-	button:SetScript("OnShow", dropdownShown)
-	button:Hide()
+	
+	local frame = CreateFrame("Button", nil, config.frame)
+	frame.parent = config
+	frame.data = data
+	frame.xPos = -10
+	--frame.yPos = -4
+	frame:Hide()
+	
+	-- The entire border of the dropdown
+	frame.leftTexture = frame:CreateTexture(nil, "ARTWORK")
+	frame.leftTexture:SetTexture("Interface\\Glues\\CharacterCreate\\CharacterCreate-LabelFrame")
+	frame.leftTexture:SetHeight(64)
+	frame.leftTexture:SetWidth(25)
+	frame.leftTexture:SetPoint("TOPLEFT", 0, 17)
+	frame.leftTexture:SetTexCoord(0, 0.1953125, 0, 1)
+	
+	frame.middleTexture = frame:CreateTexture(nil, "ARTWORK")
+	frame.middleTexture:SetTexture("Interface\\Glues\\CharacterCreate\\CharacterCreate-LabelFrame")
+	frame.middleTexture:SetHeight(64)
+	frame.middleTexture:SetWidth(115)
+	frame.middleTexture:SetPoint("LEFT", frame.leftTexture, "RIGHT")
+	frame.middleTexture:SetTexCoord(0.1953125, 0.8046875, 0, 1)
+	
+	frame.rightTexture = frame:CreateTexture(nil, "ARTWORK")
+	frame.rightTexture:SetTexture("Interface\\Glues\\CharacterCreate\\CharacterCreate-LabelFrame")
+	frame.rightTexture:SetHeight(64)
+	frame.rightTexture:SetWidth(25)
+	frame.rightTexture:SetPoint("LEFT", frame.middleTexture, "RIGHT")
+	frame.rightTexture:SetTexCoord(0.8046875, 1, 0, 1)
+	
+	frame.clickButton = CreateFrame("Button", nil, frame)
+	frame.clickButton:SetHeight(24)
+	frame.clickButton:SetWidth(24)
+	frame.clickButton:SetPoint("TOPRIGHT", frame.rightTexture, -16, -18)
+	frame.clickButton:SetScript("OnClick", dropdownClickButton)
+	
+	-- Click "V" arrow on the right side
+	frame.clickButton:SetNormalTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Up")
+	local normalTexture = frame.clickButton:GetNormalTexture()
+	normalTexture:SetHeight(24)
+	normalTexture:SetWidth(24)
+	normalTexture:SetPoint("RIGHT")
+	
+	frame.clickButton:SetPushedTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Down")
+	local pushedTexture = frame.clickButton:GetPushedTexture()
+	pushedTexture:SetHeight(24)
+	pushedTexture:SetWidth(24)
+	pushedTexture:SetPoint("RIGHT")
+	
+	frame.clickButton:SetDisabledTexture("Interface\\ChatFrame\\UI-ChatIcon-ScrollDown-Disabled")
+	local disabledTexture = frame.clickButton:GetDisabledTexture()
+	disabledTexture:SetHeight(24)
+	disabledTexture:SetWidth(24)
+	disabledTexture:SetPoint("RIGHT")
+	
+	frame.clickButton:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight")
+	local highlightTexture = frame.clickButton:GetHighlightTexture()
+	highlightTexture:SetHeight(24)
+	highlightTexture:SetWidth(24)
+	highlightTexture:SetPoint("RIGHT")
+	highlightTexture:SetBlendMode("ADD")
+	
+	-- Selected text
+	frame:SetHeight(32)
+	frame:SetWidth(40)
+	--frame:SetScript("OnClick", openDropdown)
+	frame:SetScript("OnShow", showDropdown)
+	frame:SetScript("OnHide", hideDropdown)
+	
+	frame.text = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	frame.text:SetJustifyH("RIGHT")
+	frame.text:SetHeight(10)
+	frame.text:SetPoint("RIGHT", frame.rightTexture, -43, 2)
+	
+	frame.testText = frame:CreateFontString(nil, "ARTWORK")
 	
 	if( data.text ) then
-		local text = button:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-		text:SetPoint("LEFT", "HADropdownID" .. config.id .. "Num" .. config.dropNum .. "Button", "RIGHT", 10, 0)
+		local text = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		text:SetPoint("LEFT", frame.clickButton, "RIGHT", 10, 0)
 		text:SetText(data.text)
 	end
 	
 	if( data.help ) then
-		setupWidgetInfo(button, config, "help", data.help)
+		setupWidgetInfo(frame, config, "help", data.help)
+	end
+	
+	table.insert(config.widgets, frame)
+	return frame
+end
+
+local editBackdrop = {
+	bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+	edgeSize = 16,
+	tileSize = 16,
+	tile = true,
+	insets = { left = 5, right = 5, top = 5, bottom = 5 },
+}
+
+function HouseAuthority.CreateEditBox(config, data)
+	argcheck(data, 2, "table")
+	argcheck(data.text, "text", "string", "nil")
+	argcheck(data.var, "var", "string", "number", "table")
+	argcheck(data.default, "default", "number", "string", "nil")
+	argcheck(data.numeric, "numeric", "boolean", "nil")
+	argcheck(data.maxChars, "maxChars", "number", "nil")
+	argcheck(data.maxBytes, "maxBytes", "number", "nil")
+	argcheck(data.error, "error", "string", "nil")
+	argcheck(data.help, "help", "string", "nil")
+	argcheck(data.width, "width", "number", "nil")
+	argcheck(data.height, "height", "number", "nil")
+	assert(3, config and configs[config.id], string.format(L["MUST_CALL"], "CreateEditBox"))
+	
+	validateFunctions(configs[config.id], data)	
+
+	config = configs[config.id]
+	config.editNum = (config.editNum or 0) + 1
+
+	-- Backdrop
+	local frame = CreateFrame("Frame", nil, config.frame)
+	frame:SetWidth((286 or data.width) + 31)
+	frame:SetHeight((85 or data.height) + 9)
+	frame:SetBackdrop(editBackdrop)
+	frame:SetBackdropColor(0.0, 0.0, 0.0, 1.0)
+	frame:SetBackdropBorderColor(0.75, 0.75, 0.75, 1.0)
+
+	frame.yPos = 10
+	frame.parent = config
+	frame.data = data
+	frame:Hide()
+	
+	if( data.text ) then
+		local text = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+		text:SetPoint("TOPLEFT", frame, "TOPLEFT", 2, 12)
+		text:SetText(data.text)
 	end
 
-	table.insert(config.widgets, button)
-	return button
+	-- Scroll frame
+	local scroll = CreateFrame("ScrollFrame", "HAEditScrollID" .. config.id .. "Num" .. config.editNum, frame, "UIPanelScrollFrameTemplate")
+	scroll:SetWidth(286 or data.width)
+	scroll:SetHeight(85 or data.height)
+	scroll:SetPoint("TOPLEFT", frame, "TOPLEFT", 5, -5)
+	
+	scroll.parent = config
+	scroll.data = data
+	
+	-- Create the actual edit box
+	local editBox = CreateFrame("EditBox", nil, scroll)
+	editBox.parent = config
+	editBox.data = data
+	editBox:SetPoint("TOPLEFT", scroll, "TOPLEFT", 3, -3)
+	editBox:SetWidth(data.height or 286)
+	editBox:SetHeight(data.width or 85)
+	editBox:SetScript("OnShow", inputShown)
+	editBox:SetScript("OnTextChanged", inputChanged)
+	editBox:SetScript("OnEscapePressed", inputClearFocus)
+	editBox:SetScript("OnMouseDown", inputSetFocus)
+	
+	editBox:SetMultiLine(true)
+	editBox:SetAutoFocus(false)
+	editBox:SetNumeric(data.numeric)
+	editBox:SetFontObject(data.fontObj or GameFontHighlightSmall)
+	
+	if( data.maxChars ) then
+		editBox:SetMaxLetters(data.maxLetters)
+	end
+	if( data.maxBytes ) then
+		editBox:SetMaxBytes(data.maxBytes)
+	end
+	
+	scroll:SetScrollChild(editBox)
+	table.insert(config.widgets, frame)
+	return frame
 end
 
 -- Lets you inject a custom UI object so you can use HA along side
@@ -1064,6 +1436,26 @@ function HouseAuthority.InjectUIObject(config, UIObj, data)
 	UIObj:Hide()
 	
 	table.insert(config.widgets, UIObj)
+end
+
+local function sortWidgets(a, b)
+	if( not a ) then
+		return true
+	elseif( not b ) then
+		return false
+	end
+		
+	return ( a.data.order < b.data.order )
+end
+
+local function sortGroups(a, b)
+	if( not a ) then
+		return true
+	elseif( not b ) then
+		return false
+	end
+	
+	return ( a.groupOrder < b.groupOrder )
 end
 
 function HouseAuthority.GetFrame(config)
@@ -1098,13 +1490,19 @@ function HouseAuthority.GetFrame(config)
 			table.insert(config.groups[widget.data.group], widget)
 			groupedWidgets = groupedWidgets + 1
 		end
-		
 		-- Need to account for the fact that the height is for the bar itself
 		-- not bar + top and below text
 		if( config.columns > 1 and widget.data.type == "slider" ) then
 			widget.yPos = widget.yPos + 5
 		end
+		
+		-- Add a default order so we don't error
+		if( not widget.data.order ) then
+			widget.data.order = 999999
+		end
 	end
+	
+	table.sort(config.widgets, sortWidgets)
 	
 	-- Grouping is "disabled" so postion it directly to the frame
 	local totalHeight = 0
@@ -1124,6 +1522,8 @@ function HouseAuthority.GetFrame(config)
 			else
 				frame = createGroup(config, config.groupData)
 			end
+			
+			frame.groupOrder = config.groupOrder[text] or 999999
 			
 			-- Reparent/framelevel/position/blah the widgets
 			for i, widget in pairs(widgets) do
@@ -1145,6 +1545,8 @@ function HouseAuthority.GetFrame(config)
 			
 			totalHeight = totalHeight + height + 35
 		end
+		
+		table.sort(frames, sortGroups)
 		
 		-- Now position all of the groups
 		positionWidgets(1, config.frame, frames, nil, true)
@@ -1178,10 +1580,18 @@ function HouseAuthority:CreateConfiguration(data, frameData)
 	for id, widget in pairs(data) do
 		if( widget.type == "inject" ) then
 			handler["InjectUIObject"](handler, widget.widget, widget)
+		elseif( widget.type == "groupOrder" ) then
+			local config = configs[handler.id]
+			if( not config.groupOrder ) then
+				config.groupOrder = {}
+			end
+			
+			config.groupOrder[widget.group] = widget.order
+			
 		elseif( widget.type and widgetList[widget.type] ) then
 			handler[widgetList[widget.type]](handler, widget)
 		else
-			error(string.format(L["INVALID_WIDGETTYPE"], widget.type or "nil", "inject, label, check, input, dropdown, color, slider, group, button"), 3)
+			error(string.format(L["INVALID_WIDGETTYPE"], widget.type or "nil", "inject, label, groupOrder, editbox, check, input, dropdown, color, slider, group, button"), 3)
 		end
 	end
 	

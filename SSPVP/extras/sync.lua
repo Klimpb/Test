@@ -8,6 +8,15 @@ function PVPSync:SendMessage(msg, type)
 	SendAddonMessage("SSPVP", msg, type or "BATTLEGROUND")
 end
 
+function PVPSync:TestPing( type )
+	SendAddonMessage( "SSPVP", "PING", type or "BATTLEGROUND" );
+	
+	self:UnregisterMessage( "SS_PONG_DATA" );
+	self:RegisterMessage( "SS_PONG_DATA", function( event, version )
+		Debug( "VERSION [" .. arg4 .. "] [" .. version .. "]" );
+	end );
+end
+
 function PVPSync:CHAT_MSG_ADDON(event, prefix, msg, type, author)
 	if( prefix == "SSPVP" or prefix == "SSAV" ) then
 		local dataType, data = string.match(msg, "([^:]+)%:(.+)")

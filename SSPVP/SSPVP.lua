@@ -215,7 +215,10 @@ function SSPVP:Disable()
 
 	self:UnregisterAllEvents()
 	self:UnregisterAllMessages()
-	self:UnregisterAllTimers()
+	
+	self:CancelTimer("SSAUTOLEAVE")
+	self:CancelTimer("SSAUTOJOIN")
+	self:CancelTimer("SSAUTO_RELEASE")
 	
 	SSOverlay:RemoveCategory("general")
 	SSOverlay:RemoveCategory("queue")
