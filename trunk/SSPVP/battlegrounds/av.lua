@@ -449,13 +449,19 @@ function AV.StartAVSync(seconds)
 		return
 	end
 	
+	seconds = tonumber(seconds)
+	
+	if( not seconds ) then
+		return
+	end
+	
 	SSPVP:AutoMessage(string.format(L["Queue for Alterac Valley in %d seconds."], seconds))
 		
 	for i=seconds - 1, 1, -1 do
 		SSPVP:ScheduleTimer("SSAUTOMESSAGE" .. i, SSPVP.AutoMessage, seconds - i, string.format(L["Queueing in %d second(s)."], i))
 	end
 		
-	SSPVP:ScheduleTimer("SSQUEUEAV", AV.QueueAv, seconds)
+	SSPVP:ScheduleTimer("SSQUEUEAV", AV.QueueAV, seconds)
 	PVPSync:SendMessage("QUEUECD:" .. seconds, "RAID")
 
 	syncTime = seconds
