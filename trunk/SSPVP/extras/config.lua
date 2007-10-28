@@ -7,6 +7,7 @@ local HousingAuthority
 function UI:Initialize()
 	SSPVP.cmd:RegisterSlashHandler(L["on - Enables SSPVP"], "on", function()
 		SSPVP:Enable()
+		SSPVP:UPDATE_BATTLEFIELD_STATUS()
 		SSPVP:Print(L["Is now enabled."])
 	end)
 	SSPVP.cmd:RegisterSlashHandler(L["off - Disables SSPVP"], "off", function()

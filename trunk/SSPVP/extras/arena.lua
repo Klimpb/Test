@@ -5,6 +5,8 @@ local L = SSPVPLocals
 local pointPenalty = {[5] = 1.0, [3] = 0.88, [2] = 0.76}
 
 function Arena:Initialize()
+	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL")
+	
 	if( not IsAddOnLoaded("Blizzard_InpsectUI") ) then
 		self:RegisterEvent("ADDON_LOADED")
 	else
@@ -14,9 +16,10 @@ function Arena:Initialize()
 	hooksecurefunc("PVPTeam_Update", self.PVPTeam_Update)
 	hooksecurefunc("PVPTeamDetails_Update", self.PVPTeamDetails_Update)
 
-	SSPVP.cmd:RegisterSlashHandler(L["points <rating> - Calculates how much points you will gain with the given rating"], "points (%d+)", self.CalculatePoints)
-	SSPVP.cmd:RegisterSlashHandler(L["rating <points> - Calculates what rating you will need to gain the given points"], "rating (%d+)", self.CalculateRating)
-	SSPVP.cmd:RegisterSlashHandler(L["percent <playedGames> <totalGames> - Calculates how many games you will need to play to reach 30% using the passed played games and total games."], "percent (%d+) (%d+)", self.CalculateGoal)
+	local cmd = self:InitializeSlashCommand(L["SSPVP arena commands"], "SSArena", "ssarena")
+	cmd:RegisterSlashHandler(L["points <rating> - Calculates how much points you will gain with the given rating"], "points (%d+)", "CalculatePoints")
+	cmd:RegisterSlashHandler(L["rating <points> - Calculates what rating you will need to gain the given points"], "rating (%d+)", "CalculateRating")
+	cmd:RegisterSlashHandler(L["percent <playedGames> <totalGames> - Calculates how many games you will need to play to reach 30% using the passed played games and total games."], "percent (%d+) (%d+)", "CalculateGoal")
 end
 
 -- Stealth buff timer
@@ -59,8 +62,7 @@ local function GetRating(points, teamSize)
 	
 	rating = math.floor(rating + 0.5)
 	
-	-- Can the new formula go below 0?
-	if( rating < 0 ) then
+	if( rating < 0 or type(rating) ~= "number" ) then
 		rating = 0
 	end
 	
@@ -204,7 +206,7 @@ end
 -- Slash commands
 -- Games required to get 30%
 -- soo very hackish
-function Arena.CalculateGoal(currentGames, currentTotal)
+function Arena:CalculateGoal(currentGames, currentTotal)
 	currentGames = tonumber(currentGames)
 	currentTotal = tonumber(currentTotal)
 		
@@ -229,7 +231,7 @@ function Arena.CalculateGoal(currentGames, currentTotal)
 end
 
 -- Rating -> Points
-function Arena.CalculatePoints(rating)
+function Arena:CalculatePoints(rating)
 	rating = tonumber(rating)
 
 	SSPVP:Print(string.format(L["[%d vs %d] %d rating = %d points"], 5, 5, rating, GetPoints(rating)))
@@ -238,7 +240,7 @@ function Arena.CalculatePoints(rating)
 end
 
 -- Points -> Rating
-function Arena.CalculateRating(points)
+function Arena:CalculateRating(points)
 	points = tonumber(points)
 
 	SSPVP:Print(string.format(L["[%d vs %d] %d points = %d rating"], 5, 5, points, GetRating(points)))

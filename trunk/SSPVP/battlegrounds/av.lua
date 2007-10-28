@@ -13,8 +13,9 @@ function AV:Initialize()
 	self:RegisterMessage("SS_CANCELAV_REQ", "ClearSyncOverlay")
 	self:RegisterMessage("SS_QUEUECD_DATA", "SyncOverlay")
 	
-	SSPVP.cmd:RegisterSlashHandler(L["sync <count> - Starts an Alterac Valley sync queue count down."], "sync (%d+)", self.StartAVSync)
-	SSPVP.cmd:RegisterSlashHandler(L["cancel - Cancels a running sync count down."], "cancel", self.CancelSync)
+	local cmd = self:InitializeSlashCommand(L["SSPVP Alterac Valley commands"], "SSAV", "ssav")
+	cmd:RegisterSlashHandler(L["sync <count> - Starts an Alterac Valley sync queue count down."], "sync (%d+)", "StartAVSync")
+	cmd:RegisterSlashHandler(L["cancel - Cancels a running sync count down."], "cancel", "self.CancelSync")
 
 	SSOverlay:AddCategory("av", L["Timers"], nil, AV, "PrintAllTimers")
 	SSOverlay:AddCategory("avitems", L["Item Tracker"])
@@ -418,9 +419,6 @@ end
 function AV:QueueAV()
 	SSPVP:AutoMessage(L["Queued for Alterac Valley!"])
 	PVPSync:SendMessage("QUEUEAV", "RAID")
-
-	-- For SSPVP 2.x.x
-	SendAddonMessage("SSAV", "QUEUEAV", "RAID")
 end
 
 -- Cancel running timer
@@ -443,7 +441,7 @@ function AV:CancelSync()
 end
 
 -- Start a sync timer
-function AV.StartAVSync(seconds)
+function AV:StartAVSync(seconds)
 	if( ( GetNumRaidMembers() == 0 and not IsPartyLeader() ) or ( GetNumRaidMembers() > 0 and not IsRaidLeader() ) ) then
 		SSPVP:Print(L["You must be party or raid leader to perform this action."])
 		return
