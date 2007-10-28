@@ -33,8 +33,13 @@ function AB:DisableModule()
 	self:UnregisterAllMessages()
 	self:UnregisterAllEvents()
 
-	timers = {}
-	dataSent = {}
+	for k, v in pairs(timers) do
+		timers[k] = nil
+	end
+	for k, v in pairs(dataSent) do
+		dataSent[k] = nil
+	end
+	
 	
 	SSOverlay:RemoveCategory("abinfo")
 	SSOverlay:RemoveCategory("ab")
