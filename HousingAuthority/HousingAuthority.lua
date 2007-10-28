@@ -852,12 +852,15 @@ function HouseAuthority.CreateButton(config, data)
 	argcheck(data.onSet, "onSet", type, "nil")
 	
 	local button = CreateFrame("Button", nil, config.frame, data.template or "GameMenuButtonTemplate")
+	button.xPos = 10
+	--button.yPos = 0
+	
 	button.parent = config
 	button.data = data
 	button:SetScript("OnClick", buttonClicked)
 	button:SetText(data.text)
-	button:SetHeight(18)
-	button:SetWidth(button:GetFontString():GetStringWidth() + 18)
+	button:SetHeight(20)
+	button:SetWidth(data.width or (button:GetFontString():GetStringWidth() + 25))
 	
 	table.insert(config.widgets, button)
 	return button
