@@ -291,6 +291,11 @@ local sliderBackdrop = {bgFile = "Interface\\Buttons\\UI-SliderBar-Background",
 			edgeSize = 8, tile = true, tileSize = 8,
 			insets = { left = 3, right = 3, top = 6, bottom = 6 }}
 
+local function manualSliderShown(self)
+	self.dontSet = true
+	self:SetNumber(getValue(self.parent, self.data) * 100)
+end
+
 local function sliderShown(self)
 	local value = getValue(self.parent, self.data)
 	self:SetValue(value)
@@ -302,13 +307,9 @@ local function sliderShown(self)
 	end
 	
 	if( self.input ) then
+		manualSliderShown(self.input)
 		self.input:Show()
 	end
-end
-
-local function manualSliderShown(self)
-	self.dontSet = true
-	self:SetNumber(getValue(self.parent, self.data) * 100)
 end
 
 local function updateSliderValue(self)
@@ -394,7 +395,6 @@ local function inputClearAndChange(self)
 end
 
 -- COLOR PICKER
-local activeButton
 local function colorPickerShown(self)
 	local value = getValue(self.parent, self.data)
 	self:GetNormalTexture():SetVertexColor(value.r, value.g, value.b)
@@ -408,38 +408,32 @@ local function colorPickerLeft(self)
 	self.border:SetVertexColor(HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
 end
 
-local rgb = { r = 0, g = 0, b = 0 }
 local function setColorValue()
 	local r, g, b = ColorPickerFrame:GetColorRGB()
 	
-	rgb.r = r
-	rgb.g = g
-	rgb.b = b
-	
-	setValue(activeButton.parent, activeButton.data, rgb)
-	activeButton:GetNormalTexture():SetVertexColor(r, g, b)
+	setValue(ColorPickerFrame.activeButton.parent, ColorPickerFrame.activeButton.data, { r = r, g = g, b = b })
+	ColorPickerFrame.activeButton:GetNormalTexture():SetVertexColor(r, g, b)
 end
 
-local function cancelColorValue(previous)
-	local self = activeButton
-	
-	setValue(self.parent, self.data, previous)
-	self:GetNormalTexture():SetVertexColor(previous.r, previous.g, previous.b)
+local function cancelColorValue(previous)	
+	setValue(ColorPickerFrame.activeButton.parent, ColorPickerFrame.activeButton.data, previous)
+	ColorPickerFrame.activeButton:GetNormalTexture():SetVertexColor(previous.r, previous.g, previous.b)
 end
 
 local function resetStrata(self)
 	self:SetFrameStrata(self.origStrata)
 	self.origStrata = nil
+	self.activeButton = nil
 end
 
 local function openColorPicker(self)
 	local value = getValue(self.parent, self.data)
-	activeButton = self
-	
+		
 	ColorPickerFrame.previousValues = value
 	ColorPickerFrame.func = setColorValue
 	ColorPickerFrame.cancelFunc = cancelColorValue
 	ColorPickerFrame.origStrata = ColorPickerFrame:GetFrameStrata()
+	ColorPickerFrame.activeButton = self
 	
 	ColorPickerFrame:SetFrameStrata("FULLSCREEN")
 	ColorPickerFrame:HookScript("OnHide", resetStrata)
@@ -1121,6 +1115,8 @@ function HouseAuthority.CreateSlider(config, data)
 	
 	if( data.manualInput ) then
 		slider.input = HouseAuthority.CreateInput(config, { width = 35, maxChars = string.len((data.max or 1.0) * 100), var = data.var, set = data.set, onSet = data.onSet, get = data.get, handler = data.handler, numeric = true, realTime = true })
+		slider.input.parent = config
+		slider.input.data = data
 		slider.input:SetScript("OnShow", manualSliderShown)
 		slider.input:SetScript("OnTextChanged", updateSliderValue)
 		slider.input:SetPoint("LEFT", slider, "RIGHT", 15, -2)
