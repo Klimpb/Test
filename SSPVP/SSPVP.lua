@@ -178,15 +178,6 @@ function SSPVP:Initialize()
 	for i=1, MAX_ARENA_TEAMS do
 		ArenaTeamRoster(i)
 	end
-	
-	-- Upgrade fix due to types
-	local keys = { ["leave"] = { "arenaDelay", "bgDelay" }, ["join"] = { "bgDelay", "bgAfk", "arenaDelay" }, ["av"] = { "interval" }, ["overlay"] = { "rowPad", "catPad" } }
-	
-	for key, rows in pairs(keys) do
-		for _, subKey in pairs(rows) do
-			SSPVP.db.profile[key][subKey] = tonumber(SSPVP.db.profile[key][subKey])
-		end
-	end
 end
 
 function SSPVP:Enable()

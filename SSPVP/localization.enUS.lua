@@ -258,8 +258,8 @@ SSPVPLocals = {
 	-- Captain Galvangar
 	["Captain Galvangar"] = "Captain Galvangar",
 	
-	["%s has engaged Captain Galvangar."] = "%s has engaged Captain Galvangar.",
-	["%s has reset Captain Galvangar."] = "%s has reset Captain Galvangar.",
+	["The Alliance have engaged Captain Galvangar."] = "The Alliance have engaged Captain Galvangar.",
+	["The Alliance have reset Captain Galvangar."] = "The Alliance have reset Captain Galvangar.",
 	
 	["Your kind has no place in Alterac Valley"] = "Your kind has no place in Alterac Valley",
 	["I'll never fall for that, fool!"] = "I'll never fall for that, fool!",
@@ -267,8 +267,8 @@ SSPVPLocals = {
 	-- Captain Balinda
 	["Captain Balinda Stonehearth"] = "Captain Balinda Stonehearth",
 	
-	["%s has engaged Captain Balinda Stonehearth."] = "%s has engaged Captain Balinda Stonehearth.",
-	["%s has reset Captain Balinda Stonehearth."] = "%s has reset Captain Balinda Stonehearth.",
+	["The Horde have engaged Captain Balinda Stonehearth."] = "The Horde have engaged Captain Balinda Stonehearth.",
+	["The Horde have reset Captain Balinda Stonehearth."] = "The Horde have reset Captain Balinda Stonehearth.",
 	
 	["Begone, uncouth scum!"] = "Begone, uncouth scum!",
 	["Filthy Frostwolf cowards"] = "Filthy Frostwolf cowards",
@@ -276,8 +276,8 @@ SSPVPLocals = {
 	-- Drek'Thar
 	["Drek'Thar"] = "Drek'Thar",
 	
-	["%s has engaged Drek'Thar."] = "%s has engaged Drek'Thar.",
-	["%s has reset Drek'Thar."] = "%s has reset Drek'Thar.",
+	["The Alliance have engaged Drek'Thar."] = "The Alliance have engaged Drek'Thar.",
+	["The Alliance have reset Drek'Thar."] = "The Alliance have reset Drek'Thar.",
 	
 	["Stormpike weaklings"] = "Stormpike weaklings",
 	["Stormpike filth!"] = "Stormpike filth!",
@@ -286,8 +286,8 @@ SSPVPLocals = {
 	-- Vanndar
 	["Vanndar Stormpike"] = "Vanndar Stormpike",
 	
-	["%s has reset Vanndar Stormpike."] = "%s has reset Vanndar Stormpike.",
-	["%s has engaged Vanndar Stormpike."] = "%s has engaged Vanndar Stormpike.",
+	["The Horde have reset Vanndar Stormpike."] = "The Horde have reset Vanndar Stormpike.",
+	["The Horde have engaged Vanndar Stormpike."] = "The Horde have engaged Vanndar Stormpike.",
 	
 	["Why don't ya try again"] = "Why don't ya try again",
 	["Soldiers of Stormpike, your General is under attack"] = "Soldiers of Stormpike, your General is under attack",	
@@ -301,7 +301,7 @@ SSPVPLocals = {
 	["has assaulted the ([^!]+)"] = "has assaulted the ([^!]+)",
 	["has defended the ([^!]+)"] = "has defended the ([^!]+)",
 	["(.+) claims the ([^!]+)"] = "(.+) claims the ([^!]+)",
-
+	
 	-- Eye of the Storm
 	["Bases: ([0-9]+)  Victory Points: ([0-9]+)%/2000"] = "Bases: ([0-9]+)  Victory Points: ([0-9]+)%/2000",
 	["Bases %d  Points %d/2000"] = "Bases %d  Points %d/2000",
