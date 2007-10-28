@@ -253,13 +253,18 @@ function UIErrorsFrame_OnEvent(event, message, ...)
 	return Orig_UIErrorsFrame_OnEvent(event, message, ...)
 end
 
--- Blocking messages that start with [SS]
 local Orig_ChatFrame_MessageEventHandler = ChatFrame_MessageEventHandler
 function ChatFrame_MessageEventHandler(event, ...)
+	-- Block messages starting with [SS]
 	if( SSPVP.db.profile.general.block and ( event == "CHAT_MSG_RAID" or event == "CHAT_MSG_RAID_LEADER" or event == "CHAT_MSG_PARTY" or event == "CHAT_MSG_BATTLEGROUND" or event == "CHAT_MSG_BATTLEGROUND_LEADER" ) ) then
 		if( string.sub(arg1, 0, 4) == "[SS]" ) then
 			return false
 		end
+	end
+	
+	-- Block mark of honor creation
+	if( event == "CHAT_MSG_LOOT" and string.match(arg1, L["(.+) create"]) and string.match(arg1, L["(.+) Mark of Honor"]) ) then
+		return false		
 	end
 	
 	return Orig_ChatFrame_MessageEventHandler(event, ...)
