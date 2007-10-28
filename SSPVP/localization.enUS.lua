@@ -380,6 +380,8 @@ SSPVPLocals = {
 	["Play"] = "Play",
 	["Stop"] = "Stop",
 	
+	["Padding"] = "Padding",
+	
 	["Show time elapsed since flag was picked up"] = "Show time elaped since flag was picked up",
 	
 	["Enable auto turn in"] = "Enable auto turn in",

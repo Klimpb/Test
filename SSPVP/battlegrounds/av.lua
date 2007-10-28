@@ -61,8 +61,13 @@ function AV:EnableModule()
 end
 
 function AV:DisableModule()
-	timers = {}
-	dataSent = {}
+	for k, v in pairs(timers) do
+		timers[k] = nil
+	end
+	
+	for k, v in pairs(dataSent) do
+		dataSent[k] = nil
+	end
 
 	self:UnregisterAllMessages()
 	self:UnregisterAllEvents()

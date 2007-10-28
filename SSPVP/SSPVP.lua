@@ -12,7 +12,7 @@ SSPVP.revision = tonumber(string.match("$Revision$", "(%d+)") or 1)
 local L = SSPVPLocals
 
 local confirmedPortLeave = {}
-local activeBF = {id = -1}
+local activeBF = {}
 local battlefieldInfo = {}
 local queuedUpdates = {}
 local confirmedBFLeave
@@ -214,10 +214,10 @@ function SSPVP:Disable()
 	SSOverlay:RemoveCategory("general")
 	SSOverlay:RemoveCategory("queue")
 
+	activeBF = {}
 	confirmBF = {}
 	battlefieldInfo = {}
 	
-	activeBF.id = -1
 	joiningBF = nil
 	joiningAt = nil
 end
@@ -315,7 +315,7 @@ end
 -- Block raid join/leaves
 local Orig_ChatFrame_SystemEventHandler = ChatFrame_SystemEventHandler
 function ChatFrame_SystemEventHandler(event, ...)
-	if( activeBF.id > 0 and arg1 and SSPVP.db.profile.reformat.blockSpam and (string.match(arg1, JoinedRaid) or string.match(arg1, LeftRaid) ) ) then
+	if( activeBF.id and arg1 and SSPVP.db.profile.reformat.blockSpam and (string.match(arg1, JoinedRaid) or string.match(arg1, LeftRaid) ) ) then
 		return true
 	end
 	
@@ -325,7 +325,7 @@ end
 -- Auto append server name
 local Orig_SendChatMessage = SendChatMessage
 function SendChatMessage(text, type, language, target, ...)
-	if( activeBF.id > 0 and target and SSPVP.db.profile.reformat.autoAppend and type == "WHISPER" and not string.match(target, "-") ) then
+	if( activeBF.id and target and SSPVP.db.profile.reformat.autoAppend and type == "WHISPER" and not string.match(target, "-") ) then
 		local foundName
 		local foundPlayers = 0
 				
@@ -540,8 +540,11 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			self:DisableAllModules()
 			self:EnableModules(activeBF.abbrev)
 			
-			-- Pop the battlefield minimap
 			if( activeBF.abbrev ~= "arena" ) then
+				-- Grab new carrier data every 15 seconds
+				self:ScheduleRepeatingTimer("SSSCOREDATA", RequestBattlefieldScoreData, 15) 
+				
+				-- Pop the battlefield minimap
 				if( SSPVP.db.profile.bf.minimap ) then
 					BattlefieldMinimap_LoadUI()
 
@@ -560,45 +563,47 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 		
 		-- We left the battlefield
 		elseif( status ~= "active" and i == activeBF.id ) then
-			-- Reset
+			self:DisableAllModules()
+
+			-- Recycle the table
 			for k, _ in pairs(activeBF) do
-				if( k == "id" ) then
-					activeBF[k] = -1
-				else
-					activeBF[k] = nil
-				end
+				activeBF[k] = nil
 			end
 			
-			self:DisableAllModules()
+			-- Remove starting timer
 			SSOverlay:RemoveRow("timer", "general", L["Starting In: %s"])
 
+			-- Hide minimap
 			if( IsAddOnLoaded("Blizzard_BattlefieldMinimap") ) then
 				BattlefieldMinimap:Hide()
 			end
 		end
 		
 		-- No longer a confirmation, so clear out config/joining
-		if( status ~= "confirm" and map ) then
-			if( id == joiningBF ) then
-				joiningBF = nil
-				joiningAt = nil
-			end
+		if( id == joiningBF and  status ~= "confirm" and map ) then
+			joiningBF = nil
+			joiningAt = nil
 		end
 		
 		-- Deal with the queue overlay
-		if( status ~= "none" and SSPVP.db.profile.queue.enabled and ( activeBF.id == -1 or SSPVP.db.profile.queue.insideField ) ) then
+		if( status ~= "none" and SSPVP.db.profile.queue.enabled and ( not activeBF.id or SSPVP.db.profile.queue.insideField ) ) then
 			SSPVP:UpdateQueueOverlay(i)
 		end	
 	end
 	
 	-- Do we need to queue auto leave or take a screenshot?
-	if( activeBF.id > 0 ) then
+	if( activeBF.id ) then
 		if( not SSPVP.db.profile.queue.insideField ) then
 			SSOverlay:RemoveCategory( "queue" )
 		end
 
 		if( GetBattlefieldWinner() ) then
 			if( self.db.profile.leave.screen and not activeBF.screenShot ) then
+				-- Popup the score frame incase we lag and it's not opened before we leave
+				if( not WorldStateScoreFrame:IsVisible() ) then
+					ShowUIPanel(WorldStateScoreFrame)
+				end
+
 				activeBF.screenShot = true
 				Screenshot()
 
@@ -693,7 +698,7 @@ end
 -- If the auto leave happens before the screenshots finished then you get a nice
 -- screenshot of the loading screen
 function SSPVP:ScreenshotTaken()
-	if( activeBF.screenShot and self.db.profile.leave.screen ) then
+	if( activeBF.screenShot and self.db.profile.leave.screen and self.db.profile.leave.enabled ) then
 		activeBF.screenShot = nil
 		self:QueueBattlefieldLeave()
 	end
@@ -717,6 +722,7 @@ function SSPVP:QueueBattlefieldLeave()
 		end
 	end
 	
+	-- Don't auto leave if we have another battleground thats active
 	if( active == 1 ) then
 		local delay
 		if( abbrev == "arena" ) then
@@ -743,13 +749,13 @@ function SSPVP:AutoJoinBattlefield()
 	-- Figure out our current status
 	if( UnitIsAFK("player") ) then
 		currentType = "afk"
-	elseif( activeBF.id > 0 and activeBF.abbrev == "arena" ) then
+	elseif( activeBF.id and activeBF.abbrev == "arena" ) then
 		if( activeBF.isRegistered ) then
 			currentType = "ratedArena"
 		else
 			currentType = "skirmArena"
 		end
-	elseif( activeBF.id > 0 and activeBF.abbrev ) then
+	elseif( activeBF.id and activeBF.abbrev ) then
 		currentType = activeBF.abbrev
 	elseif( isInstance and type ~= "pvp" ) then
 		currentType = "instance"
@@ -803,7 +809,7 @@ function SSPVP:QueueReady(id, map)
 	if( SSPVP:GetBattlefieldAbbrev(map) == "arena" ) then
 		delayType = "arenaDelay"
 	else
-		if( UnitIsAFK( "player" ) ) then
+		if( UnitIsAFK("player") ) then
 			delayType = "bgAfk"
 		else
 			delayType = "bgDelay"
@@ -908,7 +914,7 @@ function SSPVP:PrintTimer(name, endTime, faction)
 	local secondsLeft = endTime - GetTime()
 
 	if( secondsLeft > 0 and name ) then
-		SSPVP:ChannelMessage( string.format( L["[%s] %s: %s"], L[ faction ], name, string.trim( SecondsToTime( secondsLeft ) ) ) )
+		SSPVP:ChannelMessage(string.format(L["[%s] %s: %s"], L[faction ], name, string.trim(SecondsToTime(secondsLeft))))
 	end
 end
 
@@ -956,13 +962,13 @@ function SSPVP:CORPSE_OUT_OF_RANGE()
 end
 
 function SSPVP:CORPSE_IN_RANGE()
-	if( activeBF.id > 0 and SSPVP.db.profile.bf.autoAccept and GetCorpseRecoveryDelay() ~= nil and GetCorpseRecoveryDelay() > 0 ) then
+	if( activeBF.id and SSPVP.db.profile.bf.autoAccept and GetCorpseRecoveryDelay() ~= nil and GetCorpseRecoveryDelay() > 0 ) then
 		self:ScheduleTimer("SSAUTO_RELEASE", RetrieveCorpse, GetCorpseRecoveryDelay() + 1)
 	end
 end
 
 function SSPVP:PLAYER_DEAD()
-	if( activeBF.id > 0 and SSPVP.db.profile.bf.release ) then
+	if( activeBF.id and SSPVP.db.profile.bf.release ) then
 		if( not HasSoulstone() and SSPVP.db.profile.bf.release ) then
 			StaticPopupDialogs["DEATH"].text = L["Releasing..."]
 			RepopMe()	

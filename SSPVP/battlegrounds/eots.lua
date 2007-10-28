@@ -183,10 +183,10 @@ function EoTS:UpdateCarrier()
 			button.positionSet = true
 
 			button:ClearAllPoints()
-			button:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame1Text:GetRight() + 5, AlwaysUpFrame1Text:GetTop() - 5)
+			button:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame1Text:GetRight() + 8, AlwaysUpFrame1Text:GetTop() - 5)
 
 			text:ClearAllPoints()
-			text:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame1Text:GetRight() + 5, AlwaysUpFrame1Text:GetTop() - 5)
+			text:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame1Text:GetRight() + 8, AlwaysUpFrame1Text:GetTop() - 5)
 		end
 		
 	elseif( carrierFaction == "Horde" ) then
@@ -198,10 +198,10 @@ function EoTS:UpdateCarrier()
 			button.positionSet = true
 
 			button:ClearAllPoints()
-			button:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame2Text:GetRight() + 5, AlwaysUpFrame2Text:GetTop() - 5)
+			button:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame2Text:GetRight() + 8, AlwaysUpFrame2Text:GetTop() - 5)
 
 			text:ClearAllPoints()
-			text:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame2Text:GetRight() + 5, AlwaysUpFrame2Text:GetTop() - 5)
+			text:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame2Text:GetRight() + 8, AlwaysUpFrame2Text:GetTop() - 5)
 		end
 	end
 	

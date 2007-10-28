@@ -231,10 +231,10 @@ function WSG:UpdateCarrierAttributes(faction)
 				self.allianceButton.positionSet = true
 				
 				self.allianceButton:ClearAllPoints()
-				self.allianceButton:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame2DynamicIconButton:GetRight() + 5, AlwaysUpFrame2DynamicIconButton:GetTop() - 14)
+				self.allianceButton:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame2DynamicIconButton:GetRight() + 6, AlwaysUpFrame2DynamicIconButton:GetTop() - 14)
 
 				self.allianceText:ClearAllPoints()
-				self.allianceText:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame2DynamicIconButton:GetRight() + 5, AlwaysUpFrame2DynamicIconButton:GetTop() - 14)
+				self.allianceText:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame2DynamicIconButton:GetRight() + 6, AlwaysUpFrame2DynamicIconButton:GetTop() - 14)
 			end
 		else
 			self.allianceText.colorSet = nil
@@ -255,10 +255,10 @@ function WSG:UpdateCarrierAttributes(faction)
 				self.hordeButton.positionSet = true
 				
 				self.hordeButton:ClearAllPoints()
-				self.hordeButton:SetPoint( "LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame1DynamicIconButton:GetRight() + 5, AlwaysUpFrame1DynamicIconButton:GetTop() - 14)
+				self.hordeButton:SetPoint( "LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame1DynamicIconButton:GetRight() + 6, AlwaysUpFrame1DynamicIconButton:GetTop() - 14)
 
 				self.hordeText:ClearAllPoints()
-				self.hordeText:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame1DynamicIconButton:GetRight() + 5, AlwaysUpFrame1DynamicIconButton:GetTop() - 14)
+				self.hordeText:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame1DynamicIconButton:GetRight() + 6, AlwaysUpFrame1DynamicIconButton:GetTop() - 14)
 			end
 		else
 			self.hordeText.colorSet = nil
