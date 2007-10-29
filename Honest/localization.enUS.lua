@@ -7,12 +7,13 @@ HonestLocals = {
 	["%s (%dvs%d)"] = "%s (%dvs%d)",
 	["Unknown"] = "Unknown",
 	
-	["%([0-9]+vs[0-9]+%)"] = "%([0-9]+vs[0-9]+%)",
-	["(.+) %((.+)%) %(([0-9]+)vs([0-9]+)%)"] = "(.+) %((.+)%) %(([0-9]+)vs([0-9]+)%)",
-	
+	["Honest upgraded, configuration reset"] = "Honest upgraded, configuration reset",
 	["Arena has reset! You gained %d points, for a total of %d."] = "Arena has reset! You gained %d points, for a total of %d.",
 	["Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d, standing #%d."] = "Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d, standing #%d.",
 	["Honor has reset! Estimated %d, Actual %d, Difference %d (%.2f%% off)"] = "Honor has reset! Estimated %d, Actual %d, Difference %d (%.2f%% off)",
+	["Game over! Honor gained %d, time spent %s."] = "Game over! Honor gained %d, time spent %s.",
+	
+	["Blizzard Estimation: %d"] = "Blizzard Estimation: %d",
 	
 	["Actual Honor Points: %d"] = "Actual Honor Points: %d",
 	["Estimated Honor Points: %d"] = "Estimated Honor Points: %d",
@@ -23,37 +24,16 @@ HonestLocals = {
 	["on"] = "on",
 	["off"] = "off",
 	
-	["View Today"] = "View Today",
-	["View Yesterday"] = "View Yesterday",
-	
 	["Actual honor gains is now %s"] = "Actual honor gains is now %s",
 	["Estimated honor gains is now %s"] = "Estimated honor gains is now %s",
 	["Total times killed is now %s"] = "Total times killed is now %s",
+	["Showing total honor gained and time spent is now %s"] = "Showing total honor gained and time spent is now %s",
 
 	["actual - Toggles showing actual honor gained for kills"] = "actual - Toggles showing actual honor gained for kills",
 	["estimated - Toggles showing estimated honor gained for kills"] = "estimated - Toggles showing estimated honor gained for kills",
 	["killed - Toggles showing how many times you've killed a person"] = "killed - Toggles showing how many times you've killed a person",
-	["ui - Opens the OptionHouse UI"] = "ui - Opens the OptionHouse UI",
-	
-	["Honest"] = "Honest",
-	["General"] = "General",
-	["Show actual honor gains"] = "Show actual honor gains",
-	["Show estimated honor gains"] = "Show estimated honor gains",
-	["Show how many times an enemy has died"] = "Show how many times an enemy has died",
-	
-	["Honest Estimated: |cFFFFFFFF%d|r / Blizzard Estimated: |cFFFFFFFF%d|r"] = "Honest Estimated: |cFFFFFFFF%d|r / Blizzard Estimated: |cFFFFFFFF%d|r",
-	["Honest Estimated: |cFFFFFFFF%d|r / Actual Honor: |cFFFFFFFF%d|r"] = "Honest Estimated: |cFFFFFFFF%d|r / Actual Honor: |cFFFFFFFF%d|r",
-	["Kill Honor: |cFFFFFFFF%d|r (|cFFFFFFFF%.2f%%|r)"] = "Kill Honor: |cFFFFFFFF%d|r (|cFFFFFFFF%.2f%%|r)",
-	["Bonus Honor: |cFFFFFFFF%d|r (|cFFFFFFFF%.2f%%|r)"] = "Bonus Honor: |cFFFFFFFF%d|r (|cFFFFFFFF%.2f%%|r)",
-	["%s: %d"] = "%s: %d",
-	["Battlefield"] = "Battlefield",
-	["Wins"] = "Wins",
-	["Loses"] = "Loses",
-	["Perct"] = "Perct",
-	["Avg Honor"] = "Avg Honor",
-	["Arena"] = "Arena",
-	["Type"] = "Type",
+	["spent - Toggles showing game information once it ends"] = "spent - Toggles showing game information once it ends",
+		
 	["R"] = "R",
 	["S"] = "S",
-	["Bracket"] = "Bracket",
 };

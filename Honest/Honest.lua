@@ -1,111 +1,174 @@
-Honest = DongleStub("Dongle-1.0"):New( "Honest" )
+Honest = DongleStub("Dongle-1.1"):New("Honest")
 
 local L = HonestLocals
-local LastWin = 0
-local StartTime = 0
-local HonorGained = 0
+local bonusHonorLog
+local killHonorLog
 
-local RegisteredFrames = {}
-local OH = LibStub("OptionHouse-1.1")
+local HonorGainFrames = {}
+
+local activeBF = -1
+local crtParsedName
+local startHonor
+local startTime
 
 function Honest:Enable()
 	self.defaults = {
 		profile = {
-			arena = {
-				lastWeek = 0,
-			},
-			today = {
-				totals = {
-					total = 0,
-					bonus = 0,
-					kill = 0,
-					win = 0,
-					lose = 0,
-				},
+			days = {},
+			arena = { lastWeek = 0 },
+			honor = {
+				totalHonor = 0,
+				totalBonus = 0,
+				totalKill = 0,
+				totalWins = 0,
+				totalLoses = 0,
 				record = {},
 				bonus = {},
 				kill = {},
 				killed = {},
 			},
-			yesterday = {
-				totals = {
-					total = 0,
-					bonus = 0,
-					kill = 0,
-					win = 0,
-					lose = 0,
-					honor = 0,
-				},
-				timeOut = 0,
-				record = {},
-				bonus = {},
-				kill = {},
-				killed = {},
-			},
+
+			lastWin = 0,
 			showKilled = true,
 			showActual = true,
 			showEstimated = true,
+			showInfo = true,
 		}
 	}
 	
-	self.db = self:InitializeDB( "HonestDB", self.defaults )
-	self.db:SetProfile( self.db.keys.char )
+	self.db = self:InitializeDB("HonestDB", self.defaults)
+	self.db:SetProfile(self.db.keys.char)
+	
+	-- Reset from old Honest format to new
+	if( self.db.profile.yesterday or self.db.profile.today ) then
+		self.db:ResetDB()
+		self:Print(L["Honest upgraded, configuration reset"])
+	end
+	
+	-- Set default day information
+	if( not self.db.profile.days[1] ) then
+		self.db.profile.days[1] = {}
+		for k, v in pairs(self.defaults.profile.honor) do
+			self.db.profile.days[1][k] = v
+		end
+	end
 
-	self.cmd = self:InitializeSlashCommand( L["Honest slash commands"], "Honest", "honest" )
-	--self.cmd:InjectDBCommands( self.db, "delete", "copy", "list", "set" )
-	self.cmd:RegisterSlashHandler( L["ui - Opens the OptionHouse UI"], "ui", function() OH:Open( "Honest" ) end )
-	self.cmd:RegisterSlashHandler( L["actual - Toggles showing actual honor gained for kills"], "actual", "ToggleActual" )	
-	self.cmd:RegisterSlashHandler( L["estimated - Toggles showing estimated honor gained for kills"], "estimated", "ToggleEstimated" )	
-	self.cmd:RegisterSlashHandler( L["killed - Toggles showing how many times you've killed a person"], "killed", "ToggleKilled" )	
+	if( not self.db.profile.days[2] ) then
+		self.db.profile.days[2] = {timeOut = 0}
+		for k, v in pairs(self.defaults.profile.honor) do
+			self.db.profile.days[2][k] = v
+		end
+	end
 	
-	self:RegisterEvent( "CHAT_MSG_COMBAT_HONOR_GAIN" )
+	-- Slashs
+	self.cmd = self:InitializeSlashCommand(L["Honest slash commands"], "Honest", "honest")
+	self.cmd:RegisterSlashHandler(L["actual - Toggles showing actual honor gained for kills"], "actual", "ToggleActual")	
+	self.cmd:RegisterSlashHandler(L["estimated - Toggles showing estimated honor gained for kills"], "estimated", "ToggleEstimated")	
+	self.cmd:RegisterSlashHandler(L["killed - Toggles showing how many times you've killed a person"], "killed", "ToggleKilled")	
+	self.cmd:RegisterSlashHandler(L["spent - Toggles showing game information once it ends"], "spent", "ToggleSpent")	
 	
-	self:RegisterEvent( "PLAYER_ENTERING_WORLD", "CheckDay" )
-	self:RegisterEvent( "PLAYER_PVP_KILLS_CHANGED", "CheckDay" )
-	self:RegisterEvent( "PLAYER_PVP_RANK_CHANGED", "CheckDay" )
-	self:RegisterEvent( "HONOR_CURRENCY_UPDATE", "CheckDay" )
+	-- Events
 	self:RegisterEvent("ADDON_LOADED")
+	self:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
+	self:RegisterEvent("CHAT_MSG_COMBAT_HONOR_GAIN")
 
-	L["BonusString"] = string.gsub( COMBATLOG_HONORAWARD, "%%d", "([0-9]+)" )
-	L["HKString"] = string.gsub( string.gsub( string.gsub( string.gsub( COMBATLOG_HONORGAIN , "%)", "%%)" ), "%(", "%%(" ), "%%s", "(.+)" ), "%%d", "([0-9]+)" )
+	self:RegisterEvent("PLAYER_ENTERING_WORLD", "CheckDay")
+	self:RegisterEvent("PLAYER_PVP_KILLS_CHANGED", "CheckDay")
+	self:RegisterEvent("PLAYER_PVP_RANK_CHANGED", "CheckDay")
+	self:RegisterEvent("HONOR_CURRENCY_UPDATE", "CheckDay")
+
+	-- Basic logs
+	bonusHonorLog = string.gsub(COMBATLOG_HONORAWARD, "%%d", "([0-9]+)")
+	killHonorLog = string.gsub(string.gsub(string.gsub(string.gsub(COMBATLOG_HONORGAIN , "%)", "%%)"), "%(", "%%("), "%%s", "(.+)"), "%%d", "([0-9]+)")
 	
-	hooksecurefunc( "WorldStateScoreFrame_Update", self.WSSF_Update )
-	hooksecurefunc( "PVPFrame_Update", self.PVPFrame_Update )
-	hooksecurefunc( "PVPTeamDetails_OnShow", self.HideHonest )
-	hooksecurefunc( "PVPTeamDetails_OnHide", self.ShowHonest )
 	hooksecurefunc("ChatFrame_RemoveMessageGroup", function(frame, type)
 		if( type == "COMBAT_HONOR_GAIN" ) then
-			RegisteredFrames[frame] = nil
+			HonorGainFrames[frame] = nil
 		end
 	end)
 	
-		
-	PVPHonorTodayHonor:SetWidth( 75 )
+	-- Reposition it for some reason that I don't remember anymore	
 	PVPHonorTodayHonor:ClearAllPoints()
-	PVPHonorTodayHonor:SetPoint( "CENTER", "PVPHonorTodayKills", "BOTTOM", 0, -12 )
+	PVPHonorTodayHonor:SetPoint("CENTER", "PVPHonorTodayKills", "BOTTOM", 0, -12)
 
-	getglobal( "PVPHonorToday~" ):Hide()
+	-- Hide the "~"
+	getglobal("PVPHonorToday~"):Hide()
 	
-	self:PVPFrame_Update()
+	-- Update PVP frame with our new info, and check for new day
 	self:CheckDay()
-	
-	-- Register with OH
-	local ui = OH:RegisterAddOn( "Honest", L["Honest"], "Amarand", "r" .. tonumber( string.match( "$Revision$", "(%d+)" ) or 1 ) )
-	ui:RegisterCategory( L["General"], self, "CreateUI" )
-	
+		
 	-- Alright now hook whatevers loaded
 	if( IsAddOnLoaded("Blizzard_CombatText") ) then
 		self:HookFCT()
 	end
+	
 	if( IsAddOnLoaded("sct") ) then
 		self:HookSCT()
 	end
-	
-	-- For upgrading format to the new one with split arena thing,
-	-- I could make it transfer it to the new one too, but i'm lazy.
-	for location, record in pairs( self.db.profile.today.record ) do
-		if( not record.teamSize and string.match( location, L["%([0-9]+vs[0-9]+%)"] ) ) then
-			self.db.profile.today.record[ location ] = nil
+end
+
+function Honest:Disable()
+	self:UnregisterAllEvents()
+end
+
+-- Start times
+function Honest:UPDATE_BATTLEFIELD_STATUS()
+	for i=1, MAX_BATTLEFIELD_QUEUES do
+		local status, map, id, _, _, teamSize, isRated = GetBattlefieldStatus(i)
+		
+		-- Unique name!
+		local parsedName = map
+		if( teamSize > 0 ) then
+			if( status == "active" and teamSize > 0 ) then
+				if( isRated ) then
+					parsedName = map .. "R" .. teamSize
+				else
+					parsedName = map .. "S" .. teamSize
+				end
+			end
+		end
+				
+		-- Joined a new battlefield, start-zee-timers
+		if( status == "active" and i ~= activeBF ) then
+			activeBF = i
+			crtParsedName = parsedName
+			startHonor = self.db.profile.days[1].totalHonor
+			startTime = GetTime()
+			
+			if( not self.db.profile.days[1].record[parsedName] ) then
+				self.db.profile.days[1].record[parsedName] = {win = 0, lose = 0, totalTime = 0, rated = isRated, teamSize = teamSize, map = map}
+			end
+
+		-- We left a battlefield, check end honor/total time spent and output it if need be
+		elseif( status ~= "active" and i == activeBF ) then
+			-- We afked out, or left in a means besides it finishing
+			-- don't output anything
+			if( not GetBattlefieldWinner() ) then
+				startHonor = nil
+				startTime = nil
+				activeBF = nil
+				crtParsedName = nil
+				return
+			end
+			
+			local endHonor = math.abs(self.db.profile.days[1].totalHonor - startHonor)
+			local totalTime = math.abs(GetTime() - startTime)
+			
+			-- Save
+			if( totalTime > 0 ) then
+				self.db.profile.days[1].record[crtParsedName].totalTime = ( self.db.profile.days[1].record[crtParsedName].totalTime or 0 ) + totalTime
+			end
+			
+			-- Print
+			if( self.db.profile.showInfo and endHonor > 0 and totalTime > 0 ) then
+				self:Print(string.format(L["Game over! Honor gained %d, time spent %s."], endHonor, SecondsToTime(totalTime)))
+			end
+			
+			-- Delete
+			startHonor = nil
+			startTime = nil
+			activeBF = nil
+			crtParsedName = nil
 		end
 	end
 end
@@ -136,6 +199,7 @@ function Honest:BlizzardCombatTextEvent(event, ...)
 	
 	Honest.Orig_BlizzardCombatTextEvent(SCT, event, ...)
 end
+
 -- Hook honor gained functions for blocking
 function Honest:HookSCT()
 	if( SCT and SCT.BlizzardCombatTextEvent ) then
@@ -151,267 +215,153 @@ function Honest:HookFCT()
 	end
 end
 
-
-function Honest:CreateUI()
-	local frame = CreateFrame("Frame", nil, OH:GetFrame("addon"))
-	frame:SetScript("OnShow", function()
-		Honest.actualCheck:SetChecked( Honest.db.profile.showActual )	
-		Honest.estimateCheck:SetChecked( Honest.db.profile.showEstimated )	
-		Honest.killedCheck:SetChecked( Honest.db.profile.showKilled )	
-	end )
+-- Rating -> Points
+local pointPenalty = {[5] = 1.0, [3] = 0.88, [2] = 0.76}
+local function GetPoints(rating, teamSize)
+	local penalty = pointPenalty[teamSize]
 	
-	self.actualCheck = CreateFrame( "CheckButton", "HonestUIActual", frame, "OptionsCheckButtonTemplate" )
-	self.actualCheck:SetWidth( 32 )
-	self.actualCheck:SetHeight( 32 )
-	self.actualCheck:SetPoint( "TOPLEFT", 5, -5 )
-	HonestUIActualText:SetText( L["Show actual honor gains"] )
-	self.actualCheck:SetScript( "OnClick", function()
-		if( this:GetChecked() ) then
-			Honest.db.profile.showActual = true
+	local points = 0
+	if( rating > 1500 ) then
+		points = (1511.26 / (1 + 1639.28 * math.exp(1) ^ (-0.00412 * rating))) * penalty
+	else
+		points = ((0.22 * rating ) + 14) * penalty
+	end
+	
+	if( points < 0 ) then
+		points = 0
+	end
+	
+	return points
+end
+
+-- Copies a table over
+local function copyTable(copyFrom)
+	-- Don't copy anything!
+	if( not copyFrom ) then
+		return nil
+	end
+	
+	local copyTo = {}
+	for k, v in pairs(copyFrom) do
+		if( type(v) == "table" ) then
+			copyTo[k] = copyTable(v)
 		else
-			Honest.db.profile.showActual = false		
-		end
-	end )
-	
-	self.estimateCheck = CreateFrame( "CheckButton", "HonestUIEstimated", frame, "OptionsCheckButtonTemplate" )
-	self.estimateCheck:SetPoint( "TOPLEFT", 5, -35 )
-	HonestUIEstimatedText:SetText( L["Show estimated honor gains"] )
-	self.estimateCheck:SetScript( "OnClick", function()
-		if( this:GetChecked() ) then
-			Honest.db.profile.showEstimated = true
-		else
-			Honest.db.profile.showEstimated = false		
-		end
-	end )
-	
-	self.killedCheck = CreateFrame( "CheckButton", "HonestUIKilled", frame, "OptionsCheckButtonTemplate" )
-	self.killedCheck:SetPoint( "TOPLEFT", 5, -65 )
-	HonestUIKilledText:SetText( L["Show how many times an enemy has died"] )
-	self.killedCheck:SetScript( "OnClick", function()
-		if( this:GetChecked() ) then
-			Honest.db.profile.showKilled = true
-		else
-			Honest.db.profile.showKilled = false		
-		end
-	end )
-	
-	return frame
-end
-
-function Honest:HideHonest()
-	if( Honest.frame ) then
-		Honest.frame:Hide()
-	end
-end
-
-function Honest:ShowHonest()
-	if( PVPFrame:IsShown() and Honest.frame ) then
-		Honest.frame:Show()
-	end
-end
-
-function Honest:ToggleActual()
-	self.db.profile.showActual = not self.db.profile.showActual
-	
-	if( self.db.profile.showActual ) then
-		self:Print( string.format( L["Actual honor gains is now %s"], L["on"] ) )
-	else
-		self:Print( string.format( L["Actual honor gains is now %s"], L["off"] ) )	
-	end
-end
-
-function Honest:ToggleEstimated()
-	self.db.profile.showEstimated = not self.db.profile.showEstimated
-	
-	if( self.db.profile.showEstimated ) then
-		self:Print( string.format( L["Estimated honor gains is now %s"], L["on"] ) )
-	else
-		self:Print( string.format( L["Estimated honor gains is now %s"], L["off"] ) )	
-	end
-end
-
-function Honest:ToggleKilled()
-	self.db.profile.showKilled = not self.db.profile.showKilled
-	
-	if( self.db.profile.showKilled ) then
-		self:Print( string.format( L["Total times killed is now %s"], L["on"] ) )
-	else
-		self:Print( string.format( L["Total times killed is now %s"], L["off"] ) )	
-	end
-end
-
-function Honest:Disable()
-	self:UnregisterAllEvents()
-end
-
-function Honest:WSSF_Update()
-	if( not GetBattlefieldWinner() or ( LastWin > 0 and LastWin > GetTime() ) ) then
-		return
-	end
-	
-	-- Shhh, nobodies allowed to win in 2 minutes again
-	LastWin = GetTime() + 120
-	
-	local  playerTeam
-	
-	for i=1, GetNumBattlefieldScores() do
-		local name, _, _, _, _, faction = GetBattlefieldScore( i )
-		
-		if( name == UnitName( "player" ) ) then
-			playerTeam = faction
-			break
+			copyTo[k] = v
 		end
 	end
 	
-	local location, unparsedMap, teamSize, isRegistered = Honest:GetLocation()
-
-	if( not Honest.db.profile.today.record[ location ] ) then
-		Honest.db.profile.today.record[ location ] = { win = 0, lose = 0, rated = isRegistered, teamSize = teamSize, map = unparsedMap }
-	end
-	
-	if( playerTeam == GetBattlefieldWinner() ) then
-		Honest.db.profile.today.totals.win = Honest.db.profile.today.totals.win + 1
-		Honest.db.profile.today.record[ location ].win = Honest.db.profile.today.record[ location ].win + 1
-	else
-		Honest.db.profile.today.totals.lose = Honest.db.profile.today.totals.lose + 1
-		Honest.db.profile.today.record[ location ].lose = Honest.db.profile.today.record[ location ].lose + 1
-	end
+	return copyTo
 end
 
-local Orig_ChatFrame_MessageEventHandler = ChatFrame_MessageEventHandler
-function ChatFrame_MessageEventHandler( event )
-	if( event == "CHAT_MSG_COMBAT_HONOR_GAIN" ) then
-		RegisteredFrames[ this ] = true
-		return true
-	end
-	
-	return Orig_ChatFrame_MessageEventHandler(event)
-end
-
+-- Check if arena reset, and work out how many points we gained
 function Honest:CheckArenaReset()
-	self.eventFires = self.eventFires - 1
-	
-	if( self.eventFires <= 0 ) then
-		self:UnregisterEvent("ARENA_TEAM_ROSTER_UPDATE")
-	end
+	local self = Honest
 	
 	-- Only show the message if we gained points, HOPEFULLY
 	-- this will mean it only shows on reset and not when we spend points
 	if( GetArenaCurrency() > self.db.profile.arena.lastWeek ) then
-		local pointsTeam, pointsBracket, teamName, teamSize, teamRating
-		local teamStanding, pointsStanding
+		local pointsTeam, pointsBracket, pointsStanding
 		local teamPoints = 0
 		local highestPoints = 0
-
+		
+		-- Figure out where we got the points from
 		for i=1, MAX_ARENA_TEAMS do
-			teamName, teamSize, teamRating, _, _, _, _, _, _, teamStanding = GetArenaTeam( i )
+			local teamName, teamSize, teamRating, _, _, _, _, _, _, teamStanding = GetArenaTeam(i)
 
 			if( teamName ) then
 				local teamPoints = 0
-				if( rating > 1500 ) then
-					teamPoints = (1511.26 / (1 + 1639.28 * math.exp(1) ^ (-0.00412 * rating))) * penalty
-				else
-					teamPoints = ((0.22 * rating ) + 14) * penalty
-				end
-
-				if( teamPoints < 0 ) then
-					teamPoints = 0
-				end
+				local points = GetPoints(teamRating, teamSize)
 				
-				if( teamSize == 3 ) then
-					teamPoints = teamPoints * 0.80
-				elseif( teamSize == 2 ) then
-					teamPoints = teamPoints * 0.70	
-				end
-
-				if( teamPoints > highestPoints ) then
+				if( points > highestPoints ) then
 					pointsTeam = teamName
 					pointsBracket = teamSize
 					pointsStanding = teamStanding
-					highestPoints = floor( teamPoints )
+					
+					highestPoints = points
 				end
 			end
 		end
 				
 		-- Double check, make sure we actually got the data
 		if( pointsTeam ) then
-			self:Print( string.format( L["Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d, standing #%d."], highestPoints, pointsTeam, pointsBracket, pointsBracket, GetArenaCurrency(), pointsStanding ) )
+			self:Print(string.format(L["Arena has reset! You gained %d points from %s (%dvs%d), for a total of %d, standing #%d."], highestPoints, pointsTeam, pointsBracket, pointsBracket, GetArenaCurrency(), pointsStanding))
 		else
-			self:Print( string.format( L["Arena has reset! You gained %d points, for a total of %d."], ( GetArenaCurrency() - self.db.profile.arena.lastWeek ), GetArenaCurrency() ) )
+			self:Print(string.format(L["Arena has reset! You gained %d points, for a total of %d."], (GetArenaCurrency() - self.db.profile.arena.lastWeek), GetArenaCurrency()))
 		end
 	end
 
 	self.db.profile.arena.lastWeek = GetArenaCurrency()
 end
 
+-- Check if our day reset
 function Honest:CheckDay()
 	-- Check arena
 	if( GetArenaCurrency() ~= self.db.profile.arena.lastWeek ) then
-		self.eventFires = MAX_ARENA_TEAMS
-		self:RegisterEvent("ARENA_TEAM_ROSTER_UPDATE", "CheckArenaReset")
-
 		for i=1, MAX_ARENA_TEAMS do
 			ArenaTeamRoster(i)
 		end
+		
+		-- Not very clean, but waiting for even firing is inaccurate
+		self:ScheduleTimer("HONESTARENA", self.CheckArenaReset, 2)
 	end
 	
 	-- Check honor
-	local _, yesterdayHonor = GetPVPYesterdayStats()
-
-	if( yesterdayHonor ~= self.db.profile.yesterday.totals.honor or ( self.db.profile.yesterday.timeOut > 0 and self.db.profile.yesterday.timeOut <= time() ) ) then
-		local todayHonor = self.db.profile.today.totals.total
-		local diff = math.abs( yesterdayHonor - todayHonor )
+	local yestHonor = select(2, GetPVPYesterdayStats())
+	if( yestHonor ~= self.db.profile.days[2].totalHonor or ( self.db.profile.days[2].timeOut > 0 and self.db.profile.days[2].timeOut <= time() ) ) then
+		local todayHonor = self.db.profile.days[1].totalHonor
+		local diff = math.abs(yestHonor - todayHonor)
 		local diffPerc
 		
-		if( yesterdayHonor < todayHonor ) then
-			diffPerc = yesterdayHonor / todayHonor
+		-- Figure out how much we were off by
+		if( yestHonor < todayHonor ) then
+			diffPerc = yestHonor / todayHonor
 		else
-			diffPerc = todayHonor / yesterdayHonor
+			diffPerc = todayHonor / yestHonor
 		end
 		
-		if( todayHonor > 0 and yesterdayHonor > 0 ) then
-			self:Print( string.format( L["Honor has reset! Estimated %d, Actual %d, Difference %d (%.2f%% off)"], todayHonor, yesterdayHonor, diff, ( 100 - diffPerc * 100 ) ) )
+		if( todayHonor > 0 and yestHonor > 0 ) then
+			self:Print(string.format(L["Honor has reset! Estimated %d, Actual %d, Difference %d (%.2f%% off)"], todayHonor, yestHonor, diff, (100 - diffPerc * 100)))
+	
+			-- Shift everything down so we only have 7 days worth of data at any time
+			Honest.db.profile.days[7] = copyTable(Honest.db.profile.days[6])
+			Honest.db.profile.days[6] = copyTable(Honest.db.profile.days[5])
+			Honest.db.profile.days[5] = copyTable(Honest.db.profile.days[4])
+			Honest.db.profile.days[4] = copyTable(Honest.db.profile.days[3])
+			Honest.db.profile.days[3] = copyTable(Honest.db.profile.days[2])
+		end
+
+		Honest.db.profile.days[2] = copyTable(Honest.db.profile.days[1])
+				
+		-- Now reset the current day
+		self.db.profile.days[1] = {}
+		for k, v in pairs(self.defaults.profile.honor) do
+			self.db.profile.days[1][k] = v
 		end
 		
-		HonorGained = 0
-		StartTime = 0
+		-- Date that this is from, so we can show it in the dropdown
+		self.db.profile.days[1].date = time()
 		
-		-- Why 26 instead of 24? Because Honor doesn't reset at the
-		-- same time every day
-		self.db.profile.yesterday = self.db.profile.today
-		self.db.profile.yesterday.totals.honor = yesterdayHonor
-		self.db.profile.yesterday.timeOut = time() + ( 60 * 60 * 26 )
+		-- Reset honor automatically after 26 hours
+		-- Reset time isn't 100% exact, so pad it out by 2 hours
+		self.db.profile.days[2].timeOut = time() + (60 * 60 * 26)
+		self.db.profile.days[2].totalHonor = yestHonor
 		
-		-- Now reset the database
-		self.db.profile.today = {
-			totals = {
-				total = 0,
-				bonus = 0,
-				kill = 0,
-				win = 0,
-				lose = 0,
-			},
-			record = {},
-			bonus = {},
-			kill = {},
-			killed = {},
-		}
-		                
-		
-		self:PVPFrame_Update()
+		-- Update our saved honor
+		PVPHonor_Update()
 	end
 end
 
+-- Figure out where we are
 function Honest:GetLocation()
 	local status, map, teamSize
 	for i=1, MAX_BATTLEFIELD_QUEUES do
-		status, map, _, _, _, teamSize, isRated = GetBattlefieldStatus( i )
+		status, map, _, _, _, teamSize, isRated = GetBattlefieldStatus(i)
 		
 		if( status == "active" and teamSize > 0 ) then
 			if( isRated ) then
-				return string.format( L["%s (%s) (%dvs%d)"], map, L["R"], teamSize, teamSize ), map, teamSize, isRated			
+				return map .. "R" .. teamSize, map, teamSize, isRated			
 			else
-				return string.format( L["%s (%s) (%dvs%d)"], map, L["S"], teamSize, teamSize ), map, teamSize, isRated
+				return map .. "S" .. teamSize, map, teamSize, isRated
 			end
 		end
 	end
@@ -419,41 +369,54 @@ function Honest:GetLocation()
 	return GetRealZoneText() or L["Unknown"]
 end
 
-function Honest:AddHonor( amount, type )
-	self.db.profile.today.totals[ type ] = ( self.db.profile.today.totals[ type ] or 0 ) + amount
-	self.db.profile.today[ type ][ self:GetLocation() ] = ( self.db.profile.today[ type ][ self:GetLocation() ] or 0 ) + amount
-	self.db.profile.today.totals.total = self.db.profile.today.totals.total + amount
+function Honest:AddHonor(amount, type)
+	-- Save!
+	self.db.profile.days[1][type][self:GetLocation()] = (self.db.profile.days[1][type][self:GetLocation()] or 0) + amount
 	
-	if( IsAddOnLoaded( "sct" ) and SCT.db.profile.SHOWHONOR ) then
-		SCT:Display_Event("SHOWHONOR", "+" .. floor(amount) .. " " .. HONOR )
+	if( type == "bonus" ) then
+		self.db.profile.days[1].totalBonus = (self.db.profile.days[1].totalBonus or 0) + amount
+		self.db.profile.days[1].totalHonor = self.db.profile.days[1].totalHonor + amount
+	elseif( type == "kill" ) then
+		self.db.profile.days[1].totalKill = (self.db.profile.days[1].totalKill or 0) + amount
+		self.db.profile.days[1].totalHonor = self.db.profile.days[1].totalHonor + amount
+	end
+	
+	-- Show it in SCT
+	if( IsAddOnLoaded("sct") and SCT.db.profile.SHOWHONOR ) then
+		SCT:Display_Event("SHOWHONOR", "+" .. math.floor(amount) .. " " .. HONOR)
 		
-	elseif( IsAddOnLoaded( "Blizzard_CombatText" ) ) then
+	-- Show it in FCT
+	elseif( IsAddOnLoaded("Blizzard_CombatText") ) then
+		-- Haven't cached the movement function yet
 		if( not COMBAT_TEXT_SCROLL_FUNCTION ) then
 			CombatText_UpdateDisplayedMessages()
 		end
 		
-		CombatText_AddMessage( string.format( COMBAT_TEXT_HONOR_GAINED, floor(amount) ), COMBAT_TEXT_SCROLL_FUNCTION, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].r, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].g, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].b, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].var, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].isStaggered )
+		CombatText_AddMessage(string.format(COMBAT_TEXT_HONOR_GAINED, math.floor(amount)), COMBAT_TEXT_SCROLL_FUNCTION, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].r, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].g, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].b, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].var, COMBAT_TEXT_TYPE_INFO["HONOR_GAINED"].isStaggered)
 	end
 end
 
-function Honest:CHAT_MSG_COMBAT_HONOR_GAIN( event, msg )
+function Honest:CHAT_MSG_COMBAT_HONOR_GAIN(event, msg)
 	self:CheckDay()
 	
-	if( string.match( msg, L["HKString"] ) ) then
-		local name, rank, honor = string.match( msg, L["HKString"] )
+	if( string.match(msg, killHonorLog) ) then
+		local name, _, honor = string.match(msg, killHonorLog)
 		local actualHonor = 0
 		
-		if( self.db.profile.today.killed[ name ] ) then
-			if( self.db.profile.today.killed[ name ] < 10 ) then
-				actualHonor = math.floor( honor * ( 1.0 - ( ( self.db.profile.today.killed[ name ] - 1 ) / 10 ) ) )
+		if( self.db.profile.days[1].killed[name] ) then
+			-- We have killed them at least once, so apply diminishing
+			if( self.db.profile.days[1].killed[name] < 10 ) then
+				actualHonor = honor * (1.0 - ((self.db.profile.days[1].killed[name] - 1) / 10))
 			end
 						
-			self.db.profile.today.killed[ name ] = self.db.profile.today.killed[ name ] + 1
+			self.db.profile.days[1].killed[name] = self.db.profile.days[1].killed[name] + 1
 		else
+			-- Haven't killed them yet, so estimated is our actual
 			actualHonor = honor
-			self.db.profile.today.killed[ name ] = 1
+			self.db.profile.days[1].killed[name] = 1
 		end
 		
+		-- Figure out if we should use short names or long
 		local optionsEnabled = 0
 		if( self.db.profile.showKilled ) then optionsEnabled = optionsEnabled + 1 end
 		if( self.db.profile.showEstimated ) then optionsEnabled = optionsEnabled + 1 end
@@ -461,553 +424,185 @@ function Honest:CHAT_MSG_COMBAT_HONOR_GAIN( event, msg )
 		
 				
 		local options = {}
+		
+		-- Show total honor without diminishing returns
 		if( self.db.profile.showEstimated ) then
 			if( optionsEnabled > 2 ) then
-				table.insert( options, string.format( L["Estimated: %d"], honor ) )
+				table.insert(options, string.format(L["Estimated: %d"], honor))
 			else
-				table.insert( options, string.format( L["Estimated Honor Points: %d"], honor ) )
+				table.insert(options, string.format(L["Estimated Honor Points: %d"], honor))
 			end
 		end
-
+		
+		-- Show actual honor with diminishing returns
 		if( self.db.profile.showActual ) then
 			if( optionsEnabled > 2 ) then
-				table.insert( options, string.format( L["Actual: %d"], honor ) )
+				table.insert(options, string.format(L["Actual: %d"], honor))
 			else
-				table.insert( options, string.format( L["Actual Honor Points: %d"], actualHonor ) )
+				table.insert(options, string.format(L["Actual Honor Points: %d"], math.floor(actualHonor)))
 			end
 		end
-		
-		if( self.db.profile.showKilled ) then
-			table.insert( options, string.format( L["Killed: %d"],  self.db.profile.today.killed[ name ] ) )
-		end
-				
-		if( optionsEnabled > 0 ) then
-			msg = string.format( L["%s dies, honorable kill (%s)"], name, table.concat( options, ", " ) )
-		else
-			msg = string.format( L["%s dies, honorable kill"], name )
-		end
-		
-		for frame, _ in pairs( RegisteredFrames ) do
-			frame:AddMessage( msg, ChatTypeInfo["COMBAT_HONOR_GAIN"].r, ChatTypeInfo["COMBAT_HONOR_GAIN"].g, ChatTypeInfo["COMBAT_HONOR_GAIN"].b )
-		end
-		
-		self:AddHonor( actualHonor, "kill" )
-	
-	elseif( string.match( msg, L["BonusString"] ) ) then
-		local honor = string.match( msg, L["BonusString"] )
-		
-		self:AddHonor( honor, "bonus" )
-		
-		for frame, _ in pairs( RegisteredFrames ) do
-			frame:AddMessage( msg, ChatTypeInfo["COMBAT_HONOR_GAIN"].r, ChatTypeInfo["COMBAT_HONOR_GAIN"].g, ChatTypeInfo["COMBAT_HONOR_GAIN"].b )
-		end
-	end
-end
-
-local function SortHonor( a, b )
-	if( not b ) then
-		return false
-	end
-	
-	return ( a[2] > b[2] )
-end
-
-local function SortBattlefields( a, b )
-	if( not b ) then
-		return false
-	end
-	
-	if( a.perct == 0 and b.perct == 0 ) then
-		return ( a.avg > b.avg )
-	end
-	
-	return ( a.perct > b.perct )
-end
-
-local function SortArenas( a, b )
-	if( not b ) then
-		return false
-	end
-	
-	return ( a.teamSize > b.teamSize )
-end
-
-function Honest:UpdateHonorUI( day )
-	if( not self.frame or not PVPFrame:IsShown() ) then
-		return
-	end
-	
-	local self = Honest
-	
-	-- HONOR ESTIMATIONS
-	if( day == "today" ) then
-		self.estimateText:SetText( string.format( L["Honest Estimated: |cFFFFFFFF%d|r / Blizzard Estimated: |cFFFFFFFF%d|r"], self.db.profile[ day ].totals.total, select( 2, GetPVPSessionStats() ) ) )
-	elseif( day == "yesterday" ) then
-		self.estimateText:SetText( string.format( L["Honest Estimated: |cFFFFFFFF%d|r / Actual Honor: |cFFFFFFFF%d|r"], self.db.profile[ day ].totals.total, select( 2, GetPVPYesterdayStats() ) ) )
-	end
-
-	-- KILL HONOR
-	if( self.totalKill ) then
-		for i=1, self.totalKill do
-			getglobal( self.frame:GetName() .. "KillText" .. i ):Hide()
-		end
-	end
-	
-	local lastCategory = self.killText
-	local killPercent = 0
-	if( self.db.profile[ day ].totals.kill > 0 and self.db.profile[ day ].totals.total > 0 ) then
-		killPercent = ( self.db.profile[ day ].totals.kill / self.db.profile[ day ].totals.total ) * 100
-	end
-	
-	self.killText:SetText( string.format( L["Kill Honor: |cFFFFFFFF%d|r (|cFFFFFFFF%.2f%%|r)"], self.db.profile[ day ].totals.kill, killPercent ) )
-	
-	local killList = {}
-	for location, amount in pairs( self.db.profile[ day ].kill ) do
-		table.insert( killList, { location, amount } )
-	end
-	
-	table.sort( killList, SortHonor )
-	self.totalKill = #( killList )
-	
-	for i, info in pairs( killList ) do
-		local text
-		if( getglobal( self.frame:GetName() .. "KillText" .. i ) ) then
-			text = getglobal( self.frame:GetName() .. "KillText" .. i )
-		else
-			text = self.frame:CreateFontString( self.frame:GetName() .. "KillText" .. i, "BACKGROUND" )
-			text:SetFontObject( GameFontNormalSmall )
-			text:SetTextColor( 1, 1, 1, 1 )
-			
-			if( i > 1 ) then
-				text:SetPoint( "TOPLEFT", self.frame:GetName() .. "KillText" .. ( i - 1 ), "TOPLEFT", 0, -12 )
-			else
-				text:SetPoint( "TOPLEFT", self.killText, "TOPLEFT", 0, -18 )
-			end
-		end
-		
-		text:SetText( string.format( L["%s: %d"], info[1], info[2] ) )
-		text:Show()
-		
-		lastCategory = text
-	end
-	
-	-- Hide all the bonus stuff
-	if( self.totalBonus ) then
-		for i=1, self.totalBonus do
-			getglobal( self.frame:GetName() .. "BonusText" .. i ):Hide()
-		end
-	end
-	
-	-- BONUS HONOR
-	local bonusPercent = 0
-	if( self.db.profile[ day ].totals.bonus > 0 and self.db.profile[ day ].totals.total > 0 ) then
-		bonusPercent = ( self.db.profile[ day ].totals.bonus / self.db.profile[ day ].totals.total ) * 100
-	end
-
-	self.bonusText:SetText( string.format( L["Bonus Honor: |cFFFFFFFF%d|r (|cFFFFFFFF%.2f%%|r)"], self.db.profile[ day ].totals.bonus, bonusPercent ) )
-	
-	local bonusList = {}
-	for location, amount in pairs( self.db.profile[ day ].bonus ) do
-		table.insert( bonusList, { location, amount } )
-	end
-	
-	table.sort( bonusList, SortHonor )
-	self.totalBonus = #( bonusList )
-	
-	for i, info in pairs( bonusList ) do
-		local text
-		
-		if( getglobal( self.frame:GetName() .. "BonusText" .. i ) ) then
-			text = getglobal( self.frame:GetName() .. "BonusText" .. i )
-		else
-			text = self.frame:CreateFontString( self.frame:GetName() .. "BonusText" .. i, "BACKGROUND" )
-			text:SetFontObject( GameFontNormalSmall )
-			text:SetTextColor( 1, 1, 1, 1 )
-			
-			if( i > 1 ) then
-				text:SetPoint( "TOPLEFT", self.frame:GetName() .. "BonusText" .. ( i - 1 ), "TOPLEFT", 0, -12 )
-			else
-				text:SetPoint( "TOPLEFT", self.bonusText, "TOPLEFT", 0, -18 )
-			end
-		end
-		
-		text:SetText( string.format( L["%s: %d"], info[1], info[2] ) )
-		text:Show()
-	end
-	
-	
-	-- BATTLEFIELD RECORDS
-	if( self.totalWins ) then
-		for i=1, self.totalWins do
-			getglobal( self.frame:GetName() .. "Records" .. i  ):Hide()
-		end
-	end
-
-	local recordList = {}
-	for location, record in pairs( self.db.profile[ day ].record ) do
-		if( not record.teamSize ) then
-			record.perct = record.win / ( record.win + record.lose )
-
-			if( self.db.profile[ day ].bonus[ location ] or self.db.profile[ day ].kill[ location ] ) then
-				record.avg = ( ( self.db.profile[ day ].bonus[ location ] or 0 ) + ( self.db.profile[ day ].kill[ location ] or 0 ) ) / ( record.win + record.lose )
-			else
-				record.avg = 0
-			end
-
-			table.insert( recordList, { location = location, wins = record.win, loses = record.lose, perct = record.perct, avg = record.avg } )
-		end
-	end
-	
-	if( #( recordList ) > 0 ) then
-		self.battlefieldText:Show()
-		self.perctText:Show()
-		self.winText:Show()
-		self.loseText:Show()
-		self.avgText:Show()
-		
-		self.battlefieldText:SetPoint( "TOPLEFT", lastCategory, "TOPLEFT", 0, -30 )	
-	
-		self.totalWins = #( recordList )
-		table.sort( recordList, SortBattlefields )
-		
-		for i, info in pairs( recordList ) do
-			local frame, battlefield, wins, loses, perct
-			local recordName = self.frame:GetName() .. "Records" .. i
-			
-			if( getglobal( recordName ) ) then
-				frame = getglobal( recordName )
-				battlefield = getglobal( frame:GetName() .. "Battlefield" )
-				wins = getglobal( frame:GetName() .. "Wins" )
-				loses = getglobal( frame:GetName() .. "Loses" )
-				perct = getglobal( frame:GetName() .. "Perct" )
-				avg = getglobal( frame:GetName() .. "Average" )
-			else
-				frame = CreateFrame( "Frame", recordName, self.frame )
-
-				battlefield = frame:CreateFontString( frame:GetName() .. "Battlefield", "BACKGROUND" )
-				battlefield:SetFontObject( GameFontNormalSmall )
-				battlefield:SetTextColor( 1, 1, 1, 1 )
-
-				wins = frame:CreateFontString( frame:GetName() .. "Wins", "BACKGROUND" )
-				wins:SetFontObject( GameFontNormalSmall )
-				wins:SetTextColor( 0, 1, 0, 1 )
-
-				loses = frame:CreateFontString( frame:GetName() .. "Loses", "BACKGROUND" )
-				loses:SetFontObject( GameFontNormalSmall )
-				loses:SetTextColor( 1, 0, 0, 1 )
-
-				perct = frame:CreateFontString( frame:GetName() .. "Perct", "BACKGROUND" )
-				perct:SetFontObject( GameFontNormalSmall )
-				perct:SetTextColor( 1, 1, 1, 1 )
-
-				avg = frame:CreateFontString( frame:GetName() .. "Average", "BACKGROUND" )
-				avg:SetFontObject( GameFontNormalSmall )
-				avg:SetTextColor( 1, 1, 1, 1 )
-
-				if( i > 1 ) then
-					battlefield:SetPoint( "TOPLEFT", self.frame:GetName() .. "Records" .. ( i - 1 ) .. "Battlefield", "TOPLEFT", 0, -12 ) 			
-					wins:SetPoint( "CENTER", self.frame:GetName() .. "Records" .. ( i - 1 ) .. "Wins", "CENTER", 0, -12 ) 			
-					loses:SetPoint( "CENTER", self.frame:GetName() .. "Records" .. ( i - 1 ) .. "Loses", "CENTER", 0, -12 ) 			
-					perct:SetPoint( "CENTER", self.frame:GetName() .. "Records" .. ( i - 1 ) .. "Perct", "CENTER", 0, -12 ) 
-					avg:SetPoint( "CENTER", self.frame:GetName() .. "Records" .. ( i - 1 ) .. "Average", "CENTER", 0, -12 ) 
-				else
-					battlefield:SetPoint( "TOPLEFT", self.battlefieldText, "TOPLEFT", 0, -18 ) 			
-					wins:SetPoint( "CENTER", self.winText, "CENTER", 0, -18 ) 			
-					loses:SetPoint( "CENTER", self.loseText, "CENTER", 0, -18 ) 			
-					perct:SetPoint( "CENTER", self.perctText, "CENTER", 0, -18 ) 			
-					avg:SetPoint( "CENTER", self.avgText, "CENTER", 0, -18 ) 
-				end
-			end
-			
-			lastCategory = battlefield
-
-			frame:Show()
-
-			battlefield:SetText( info.location )
-			wins:SetText( info.wins )
-			loses:SetText( info.loses )
-			
-			if( info.perct > 0 ) then
-				perct:SetText( string.format( "%.1f%%", info.perct * 100 ) )
-			else
-				perct:SetText( "--" )
-			end
-			
-			if( info.avg > 0 ) then
-				avg:SetText( string.format( "%.2f", info.avg ) )
-			else
-				avg:SetText( "--" )
-			end
-		end
-	else
-		self.battlefieldText:Hide()
-		self.perctText:Hide()
-		self.winText:Hide()
-		self.loseText:Hide()
-		self.avgText:Hide()
-	end
-
-	-- ARENA RECORDS
-	if( self.arenaWins ) then
-		for i=1, self.arenaWins do
-			getglobal( self.frame:GetName() .. "ArenaRecords" .. i  ):Hide()
-		end
-	end
-
-	local recordList = {}
-	for location, record in pairs( self.db.profile[ day ].record ) do
-		if( record.teamSize ) then
-			record.perct = record.win / ( record.win + record.lose )
-			
-			table.insert( recordList, { location = record.map, wins = record.win, loses = record.lose, perct = record.perct, rated = record.rated, teamSize = record.teamSize } )
-		end
-	end
-	
-	if( #( recordList ) > 0 ) then
-		self.arenaText:Show()
-		self.arenaPerctText:Show()
-		self.arenaWinText:Show()
-		self.arenaLoseText:Show()
-		self.ratedText:Show()
-		self.bracketText:Show()
-		
-		self.arenaText:SetPoint( "TOPLEFT", lastCategory, "TOPLEFT", 0, -30 )	
-	
-		self.arenaWins = #( recordList )
-		table.sort( recordList, SortArenas )
-		
-		for i, info in pairs( recordList ) do
-			local frame, arenaName, wins, bracket, rated, loses, perct
-			local recordName = self.frame:GetName() .. "ArenaRecords" .. i
-			
-			if( getglobal( recordName ) ) then
-				frame = getglobal( recordName )
-				arenaName = getglobal( frame:GetName() .. "Arena" )
-				wins = getglobal( frame:GetName() .. "Wins" )
-				bracket = getglobal( frame:GetName() .. "Bracket" )
-				rated = getglobal( frame:GetName() .. "Rated" )
-				loses = getglobal( frame:GetName() .. "Loses" )
-				perct = getglobal( frame:GetName() .. "Perct" )
-			else
-				frame = CreateFrame( "Frame", recordName, self.frame )
-
-				arenaName = frame:CreateFontString( frame:GetName() .. "Arena", "BACKGROUND" )
-				arenaName:SetFontObject( GameFontNormalSmall )
-				arenaName:SetTextColor( 1, 1, 1, 1 )
-
-				wins = frame:CreateFontString( frame:GetName() .. "Wins", "BACKGROUND" )
-				wins:SetFontObject( GameFontNormalSmall )
-				wins:SetTextColor( 0, 1, 0, 1 )
-
-				loses = frame:CreateFontString( frame:GetName() .. "Loses", "BACKGROUND" )
-				loses:SetFontObject( GameFontNormalSmall )
-				loses:SetTextColor( 1, 0, 0, 1 )
-
-				perct = frame:CreateFontString( frame:GetName() .. "Perct", "BACKGROUND" )
-				perct:SetFontObject( GameFontNormalSmall )
-				perct:SetTextColor( 1, 1, 1, 1 )
-
-				rated = frame:CreateFontString( frame:GetName() .. "Rated", "BACKGROUND" )
-				rated:SetFontObject( GameFontNormalSmall )
-				rated:SetTextColor( 1, 1, 1, 1 )
-
-				bracket = frame:CreateFontString( frame:GetName() .. "Bracket", "BACKGROUND" )
-				bracket:SetFontObject( GameFontNormalSmall )
-				bracket:SetTextColor( 1, 1, 1, 1 )
-
-				if( i > 1 ) then
-					arenaName:SetPoint( "TOPLEFT", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Arena", "TOPLEFT", 0, -12 ) 			
-					bracket:SetPoint( "CENTER", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Bracket", "CENTER", 0, -12 ) 
-					rated:SetPoint( "CENTER", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Rated", "CENTER", 0, -12 ) 
-					wins:SetPoint( "CENTER", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Wins", "CENTER", 0, -12 ) 			
-					loses:SetPoint( "CENTER", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Loses", "CENTER", 0, -12 ) 			
-					perct:SetPoint( "CENTER", self.frame:GetName() .. "ArenaRecords" .. ( i - 1 ) .. "Perct", "CENTER", 0, -12 ) 
-				else
-					arenaName:SetPoint( "TOPLEFT", self.arenaText, "TOPLEFT", 0, -18 ) 			
-					wins:SetPoint( "CENTER", self.arenaWinText, "CENTER", 0, -18 ) 			
-					loses:SetPoint( "CENTER", self.arenaLoseText, "CENTER", 0, -18 ) 			
-					perct:SetPoint( "CENTER", self.arenaPerctText, "CENTER", 0, -18 ) 			
-					rated:SetPoint( "CENTER", self.ratedText, "CENTER", 0, -18 ) 
-					bracket:SetPoint( "CENTER", self.bracketText, "CENTER", 0, -18 ) 
-				end
-			end
-			
-			lastCategory = arenaName
-
-			frame:Show()
-			
-			arenaName:SetText( info.location )
-			wins:SetText( info.wins )
-			loses:SetText( info.loses )
-			
-			if( info.perct > 0 ) then
-				perct:SetText( string.format( "%.1f%%", info.perct * 100 ) )
-			else
-				perct:SetText( "--" )
-			end
-			
-			bracket:SetText( info.teamSize )
-			
-			if( info.rated ) then
-				rated:SetText( L["R"] )
-			else
-				rated:SetText( L["S"] )
-			end
-		end
-	else
-		self.arenaText:Hide()
-		self.arenaPerctText:Hide()
-		self.arenaWinText:Hide()
-		self.arenaLoseText:Hide()
-		self.ratedText:Hide()
-		self.bracketText:Hide()
-	end
-end
-
-function Honest:PVPFrame_Update()
-	PVPHonorTodayHonor:SetText( Honest.db.profile.today.totals.total )
-	
-	if( not PVPFrame:IsShown() ) then
-		return
-	end
-	
-	local self = Honest
-	if( not self.frame ) then
-		self.frame = CreateFrame( "Frame", "HonestDetails", PVPFrame )
-		self.frame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-					edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-					tile = true,
-					tileSize = 9,
-					edgeSize = 9,
-					insets = { left = 2, right = 2, top = 2, bottom = 2 } })	
-
-		self.frame:SetBackdropColor( 0, 0, 0, 0.90 )
-		self.frame:SetBackdropBorderColor( 0.75, 0.75, 0.75, 0.90 )
-		self.frame:SetFrameStrata( "LOW" )
-		
-		self.frame:SetClampedToScreen( true )
-		self.frame:SetPoint( "TOPLEFT", PVPFrame, "TOPRIGHT", -10, -12 )
-		--self.frame:SetPoint( "CENTER", UIParent, "CENTER", 0, 80 )		
-		
-		self.frame:SetHeight( 400 )
-		self.frame:SetWidth( 340 )
-		self.frame:Show()
-
-		-- For viewing today/yesterday honor
-		self.todayView = CreateFrame( "Button", self.frame:GetName() .. "ViewToday", self.frame, "UIPanelButtonGrayTemplate" )
-		self.todayView:SetPoint( "BOTTOMLEFT", self.frame, "BOTTOMLEFT", 1, 2 )
-		self.todayView:SetText( L["View Today"] )
-		self.todayView:SetHeight( 16 )
-		self.todayView:SetWidth( 110 )
-		self.todayView:SetFont( ( self.todayView:GetFont() ), 11 )
-		self.todayView:SetScript( "OnClick", function() Honest:UpdateHonorUI( "today" ) end )
-
-		self.yesterdayView = CreateFrame( "Button", self.frame:GetName() .. "ViewYesterday", self.frame, "UIPanelButtonGrayTemplate" )
-		self.yesterdayView:SetPoint( "BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -1, 2 )
-		self.yesterdayView:SetText( L["View Yesterday"] )
-		self.yesterdayView:SetHeight( 16 )
-		self.yesterdayView:SetWidth( 110 )
-		self.yesterdayView:SetFont( ( self.yesterdayView:GetFont() ), 11 )
-		self.yesterdayView:SetScript( "OnClick", function() Honest:UpdateHonorUI( "yesterday" ) end )
-
-		-- Estimated text
-		self.estimateText = self.frame:CreateFontString( self.frame:GetName() .. "Estimate", "BACKGROUND" )
-		self.estimateText:SetFontObject( GameFontNormalSmall )
-		self.estimateText:SetPoint( "TOPLEFT", self.frame, "TOPLEFT", 5, -8 )
-		self.estimateText:Show()
 		
 		-- Kill honor
-		self.killText = self.frame:CreateFontString( self.frame:GetName() .. "KillTotal", "BACKGROUND" )
-		self.killText:SetFontObject( GameFontNormalSmall )
-		self.killText:ClearAllPoints()
-		self.killText:SetPoint( "TOPLEFT", self.frame, "TOPLEFT", 5, -30 )
-		self.killText:Show()
-
-		-- BATTLEGROUND STATS
-		-- Bonus honor
-		self.bonusText = self.frame:CreateFontString( self.frame:GetName() .. "BonusTotal", "BACKGROUND" )
-		self.bonusText:SetFontObject( GameFontNormalSmall )
-		self.bonusText:ClearAllPoints()
-		self.bonusText:SetPoint( "TOPRIGHT", self.frame, "TOPRIGHT", -5, -30 )
-		self.bonusText:Show()
+		if( self.db.profile.showKilled ) then
+			table.insert(options, string.format(L["Killed: %d"],  self.db.profile.days[1].killed[name]))
+		end
+				
+		-- If you have no options enabled, just show he died
+		if( optionsEnabled > 0 ) then
+			msg = string.format(L["%s dies, honorable kill (%s)"], name, table.concat(options, ", "))
+		else
+			msg = string.format(L["%s dies, honorable kill"], name)
+		end
 		
+		-- Record honor
+		self:AddHonor(actualHonor, "kill")
 		
-		-- Battlefield name
-		self.battlefieldText = self.frame:CreateFontString( self.frame:GetName() .. "BattlefieldName", "BACKGROUND" )
-		self.battlefieldText:SetFontObject( GameFontNormalSmall )
-		self.battlefieldText:SetText( L["Battlefield"] )
-		self.battlefieldText:Show()
-
-		-- Average
-		self.avgText = self.frame:CreateFontString( self.frame:GetName() .. "AverageText", "BACKGROUND" )
-		self.avgText:SetFontObject( GameFontNormalSmall )
-		self.avgText:SetText( L["Avg Honor"] )
-		self.avgText:SetPoint( "TOPLEFT", self.battlefieldText, "TOPRIGHT", 85, 0 )
-		self.avgText:Show()
-
-		-- Perct
-		self.perctText = self.frame:CreateFontString( self.frame:GetName() .. "PerctText", "BACKGROUND" )
-		self.perctText:SetFontObject( GameFontNormalSmall )
-		self.perctText:SetText( L["Perct"] )
-		self.perctText:SetPoint( "TOPLEFT", self.avgText, "TOPRIGHT", 15, 0 )
-		self.perctText:Show()
+		-- Display it in all registered frames
+		for frame, _ in pairs(HonorGainFrames) do
+			frame:AddMessage(msg, ChatTypeInfo["COMBAT_HONOR_GAIN"].r, ChatTypeInfo["COMBAT_HONOR_GAIN"].g, ChatTypeInfo["COMBAT_HONOR_GAIN"].b)
+		end
+	
+	-- Bonus honor
+	elseif( string.match(msg, bonusHonorLog) ) then
+		local honor = string.match(msg, bonusHonorLog)
 		
-		-- Wins
-		self.winText = self.frame:CreateFontString( self.frame:GetName() .. "WinText", "BACKGROUND" )
-		self.winText:SetFontObject( GameFontNormalSmall )
-		self.winText:SetText( L["Wins"] )
-		self.winText:SetPoint( "TOPLEFT", self.perctText, "TOPRIGHT", 15, 0 )
-		self.winText:Show()
-
-		-- Loses
-		self.loseText = self.frame:CreateFontString( self.frame:GetName() .. "LoseText", "BACKGROUND" )
-		self.loseText:SetFontObject( GameFontNormalSmall )
-		self.loseText:SetText( L["Loses"] )
-		self.loseText:SetPoint( "TOPLEFT", self.winText, "TOPRIGHT", 15, 0 )
-		self.loseText:Show()
+		-- Record honor
+		self:AddHonor(honor, "bonus")
 		
-		-- ARENA STATS
-		-- Arena name
-		self.arenaText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaName", "BACKGROUND" )
-		self.arenaText:SetFontObject( GameFontNormalSmall )
-		self.arenaText:SetText( L["Arena"] )
-		self.arenaText:Show()
+		-- Display it in all registered frames
+		for frame, _ in pairs(HonorGainFrames) do
+			frame:AddMessage(msg, ChatTypeInfo["COMBAT_HONOR_GAIN"].r, ChatTypeInfo["COMBAT_HONOR_GAIN"].g, ChatTypeInfo["COMBAT_HONOR_GAIN"].b)
+		end
+	end
+end
 
-		-- Bracket
-		self.bracketText = self.frame:CreateFontString( self.frame:GetName() .. "BracketText", "BACKGROUND" )
-		self.bracketText:SetFontObject( GameFontNormalSmall )
-		self.bracketText:SetText( L["Bracket"] )
-		self.bracketText:SetPoint( "TOPLEFT", self.arenaText, "TOPRIGHT", 85, 0 )
-		self.bracketText:Show()
-
-		-- Rated
-		self.ratedText = self.frame:CreateFontString( self.frame:GetName() .. "RatedText", "BACKGROUND" )
-		self.ratedText:SetFontObject( GameFontNormalSmall )
-		self.ratedText:SetText( L["Type"] )
-		self.ratedText:SetPoint( "TOPLEFT", self.bracketText, "TOPRIGHT", 15, 0 )
-		self.ratedText:Show()
-
-		-- Perct
-		self.arenaPerctText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaPerctText", "BACKGROUND" )
-		self.arenaPerctText:SetFontObject( GameFontNormalSmall )
-		self.arenaPerctText:SetText( L["Perct"] )
-		self.arenaPerctText:SetPoint( "TOPLEFT", self.ratedText, "TOPRIGHT", 15, 0 )
-		self.arenaPerctText:Show()
-		
-		-- Wins
-		self.arenaWinText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaWinText", "BACKGROUND" )
-		self.arenaWinText:SetFontObject( GameFontNormalSmall )
-		self.arenaWinText:SetText( L["Wins"] )
-		self.arenaWinText:SetPoint( "TOPLEFT", self.arenaPerctText, "TOPRIGHT", 15, 0 )
-		self.arenaWinText:Show()
-
-		-- Loses
-		self.arenaLoseText = self.frame:CreateFontString( self.frame:GetName() .. "ArenaLoseText", "BACKGROUND" )
-		self.arenaLoseText:SetFontObject( GameFontNormalSmall )
-		self.arenaLoseText:SetText( L["Loses"] )
-		self.arenaLoseText:SetPoint( "TOPLEFT", self.arenaWinText, "TOPRIGHT", 15, 0 )
-		self.arenaLoseText:Show()
+-- Record win/loses
+local Orig_WorldStateScoreFrame_Update = WorldStateScoreFrame_Update
+function WorldStateScoreFrame_Update(...)
+	Orig_WorldStateScoreFrame_Update(...)
+	
+	-- Make sure we've won, and that we aren't at the threshold of 2 minutes
+	if( not GetBattlefieldWinner() or ( Honest.db.profile.lastWin > 0 and Honest.db.profile.lastWin > GetTime() ) ) then
+		return
 	end
 	
-	Honest:UpdateHonorUI( "today" )
+	-- Shhh, nobodies allowed to win in 2 minutes >_> <_< >_>
+	Honest.db.profile.lastWin = GetTime() + 120
+	
+	-- Figure out player faction so we know if they won or lost
+	local playerTeam
+	for i=1, GetNumBattlefieldScores() do
+		local name, _, _, _, _, faction = GetBattlefieldScore(i)
+		
+		if( name == UnitName("player") ) then
+			playerTeam = faction
+			break
+		end
+	end
+	
+	local location, unparsedMap, teamSize, isRegistered = Honest:GetLocation()
+
+	-- No record found for this battleground yet
+	if( not Honest.db.profile.days[1].record[location] ) then
+		Honest.db.profile.days[1].record[location] = {win = 0, lose = 0, totalTime = 0, rated = isRegistered, teamSize = teamSize, map = unparsedMap}
+	end
+	
+	if( playerTeam == GetBattlefieldWinner() ) then
+		Honest.db.profile.days[1].totalWins = Honest.db.profile.days[1].totalWins + 1
+		Honest.db.profile.days[1].record[location].win = Honest.db.profile.days[1].record[location].win + 1
+	else
+		Honest.db.profile.days[1].totalLoses = Honest.db.profile.days[1].totalLoses + 1
+		Honest.db.profile.days[1].record[location].lose = Honest.db.profile.days[1].record[location].lose + 1
+	end
+end
+
+-- Block all honor gain messages
+local Orig_ChatFrame_MessageEventHandler = ChatFrame_MessageEventHandler
+function ChatFrame_MessageEventHandler(event, ...)
+	if( event == "CHAT_MSG_COMBAT_HONOR_GAIN" ) then
+		HonorGainFrames[this] = true
+		return true
+	end
+	
+	return Orig_ChatFrame_MessageEventHandler(event, ...)
+end
+
+-- Hide our frame when the PVP team info one is shown
+local Orig_PVPTeamDetails_OnShow = PVPTeamDetails_OnShow
+function PVPTeamDetails_OnShow(...)
+	Orig_PVPTeamDetails_OnShow(...)
+
+	if( PVPFrame:IsShown() and Honest.frame ) then
+		Honest.frame:Show()
+	end
+end
+
+local Orig_PVPTeamDetails_OnHide = PVPTeamDetails_OnHide
+function PVPTeamDetails_OnHide(...)
+	Orig_PVPTeamDetails_OnHide(...)
+
+	if( Honest.frame ) then
+		Honest.frame:Hide()
+	end
+end
+
+-- Change Blizzard estimated honor to our estimated honor
+local Orig_PVPHonor_Update = PVPHonor_Update
+function PVPHonor_Update(...)
+	Orig_PVPHonor_Update(...)
+	
+	PVPHonorTodayHonor:SetText(Honest.db.profile.days[1].totalHonor)	
+	PVPHonorTodayHonor:SetWidth(PVPHonorTodayHonor:GetStringWidth() + 15)
+	
+	-- Show blizzards estimation in the tooltip
+	if( not PVPHonorTodayHonorFrame.isHooked ) then
+		PVPHonorTodayHonorFrame.isHooked = true
+		PVPHonorTodayHonorFrame:SetScript("OnEnter", function(self)
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+			GameTooltip:SetText(string.format(L["Blizzard Estimation: %d"], select(2, GetPVPSessionStats())) , nil, nil, nil, nil, 1)
+			GameTooltip:Show()
+		end)
+	end
+end
+
+-- Slash commands
+function Honest:ToggleSpent()
+	self.db.profile.showInfo = not self.db.profile.showInfo
+	
+	if( self.db.profile.showInfo ) then
+		self:Print(string.format(L["Showing total honor gained and time spent is now %s"], L["on"]))
+	else
+		self:Print(string.format(L["Showing total honor gained and time spent is now %s"], L["off"]))	
+	end
+end
+
+function Honest:ToggleActual()
+	self.db.profile.showActual = not self.db.profile.showActual
+	
+	if( self.db.profile.showActual ) then
+		self:Print(string.format(L["Actual honor gains is now %s"], L["on"]))
+	else
+		self:Print(string.format(L["Actual honor gains is now %s"], L["off"]))	
+	end
+end
+
+function Honest:ToggleEstimated()
+	self.db.profile.showEstimated = not self.db.profile.showEstimated
+	
+	if( self.db.profile.showEstimated ) then
+		self:Print(string.format(L["Estimated honor gains is now %s"], L["on"]))
+	else
+		self:Print(string.format(L["Estimated honor gains is now %s"], L["off"]))	
+	end
+end
+
+function Honest:ToggleKilled()
+	self.db.profile.showKilled = not self.db.profile.showKilled
+	
+	if( self.db.profile.showKilled ) then
+		self:Print(string.format(L["Total times killed is now %s"], L["on"]))
+	else
+		self:Print(string.format(L["Total times killed is now %s"], L["off"]))	
+	end
 end
