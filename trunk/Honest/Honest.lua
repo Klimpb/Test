@@ -143,7 +143,7 @@ function Honest:UPDATE_BATTLEFIELD_STATUS()
 		elseif( status ~= "active" and i == activeBF ) then
 			-- We afked out, or left in a means besides it finishing
 			-- don't output anything
-			if( not GetBattlefieldWinner() ) then
+			if( GetBattlefieldWinner() == nil ) then
 				startHonor = nil
 				startTime = nil
 				activeBF = nil
@@ -552,7 +552,7 @@ local Orig_PVPHonor_Update = PVPHonor_Update
 function PVPHonor_Update(...)
 	Orig_PVPHonor_Update(...)
 	
-	PVPHonorTodayHonor:SetText(Honest.db.profile.days[1].totalHonor)	
+	PVPHonorTodayHonor:SetText(math.floor(Honest.db.profile.days[1].totalHonor + 0.5))	
 	PVPHonorTodayHonor:SetWidth(PVPHonorTodayHonor:GetStringWidth() + 15)
 	
 	-- Show blizzards estimation in the tooltip
