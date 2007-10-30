@@ -20,7 +20,6 @@ function SSOverlay:Reload()
 	-- Position type may have changed, resave
 	SSOverlay:SavePosition()
 	
-	
 	-- Enable mouse for moving if need be
 	for i=1, CREATED_ROWS do
 		self.overlayRows[i]:EnableMouse(SSPVP.db.profile.overlay.locked)
@@ -415,7 +414,7 @@ function SSOverlay:UpdateCategoryText()
 	
 	local totalCats = 0
 	-- Figure out how many rows we have using a cat
-	if( SSPVP.db.profile.overlay.catType == "show" ) then
+	if( SSPVP.db.profile.overlay.catType ~= "hide" ) then
 		for _, row in pairs(rows) do
 			if( not foundCats[row.category] and row.type ~= "catText" ) then
 				totalCats = totalCats + 1
