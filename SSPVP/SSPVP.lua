@@ -513,7 +513,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			end
 		
 		-- Just joined a battlefield
-		elseif( status == "active" and i ~= activeBF.id ) then
+		elseif( status == "active" and i ~= activeBF.id and id ~= activeBF.instance ) then
 			battlefieldInfo[map .. teamSize] = status
 			
 			-- Grab data now so we aren't waiting 15 seconds
@@ -522,6 +522,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			-- Basic data
 			activeBF.id = i
 			activeBF.map = map
+			activeBF.instance = id
 			activeBF.teamSize = teamSize
 			activeBF.isRegistered = registeredMatch
 			activeBF.abbrev = SSPVP:GetBattlefieldAbbrev(map)
@@ -562,7 +563,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			end
 		
 		-- We left the battlefield
-		elseif( status ~= "active" and i == activeBF.id ) then
+		elseif( status ~= "active" and i == activeBF.id and id ~= activeBF.instance ) then
 			self:DisableAllModules()
 
 			-- Recycle the table
