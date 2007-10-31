@@ -85,7 +85,7 @@ function ArenaIgnore:JoinedArena()
 	self:RegisterEvent("PLAYER_TARGET_CHANGED")
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL")
 	
-	self:ScheduleTimer("AISTARTSCAN", self.StartScan, 20)
+	self:ScheduleTimer("AISTARTSCAN", self.StartScan, 10)
 end
 
 function ArenaIgnore:LeftArena()
@@ -136,16 +136,16 @@ function ArenaIgnore:StartScan()
 		timeSeen = tonumber(timeSeen) or 0
 		
 		-- Class matches (or any class)
-		--if( self.db.profile.classes[classToken] or self.db.profile.classes.ALL ) then
+		if( self.db.profile.classes[classToken] or self.db.profile.classes.ALL ) then
 			-- Same bracket, or any bracket
-		--	if( ( self.db.profile.sameBracket and ( two == maxPlayers or three == maxPlayers or five == maxPlayers ) ) or not self.db.profile.sameBracket ) then
+			if( ( self.db.profile.sameBracket and ( two == maxPlayers or three == maxPlayers or five == maxPlayers ) ) or not self.db.profile.sameBracket ) then
 				-- Cut off (or no cutoff)
-		--		if( ( self.db.profile.enableCutoff and timeSeen >= cutOff ) or not self.db.profile.enableCutoff ) then
+				if( ( self.db.profile.enableCutoff and timeSeen >= cutOff ) or not self.db.profile.enableCutoff ) then
 					ignoreQueue[player] = true
 					totalPlayers = totalPlayers + 1
-		--		end
-		--	end		
-		--end
+				end
+			end		
+		end
 	end
 	
 	-- Can't find anyone, exit quickly.
