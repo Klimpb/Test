@@ -334,11 +334,10 @@ end
 local brackets = {}
 function ArenaIgnore:ScanUnit(unit)
 	local name, server = UnitName(unit)
-	if( not name ) then
+	if( not name or not server ) then
 		return
 	end
 
-	server = server or GetRealmName()
 	local id = name .. "-" .. server
 		
 	-- Already seen them, Unknown player, not an enemy, or arena hasn't started yet
