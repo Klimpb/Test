@@ -1,6 +1,6 @@
 ## Interface: 20200
 ## Title: Arena Ignore
-## Version: $Revision: 252 $
+## Version: $Revision$
 ## Notes: Figures out who you're playing against by using /ignore
 ## SavedVariables: ArenaIgnoreDB, AI_Players
 ## OptionalDeps: LibStub, OptionHouse, HousingAuthority
