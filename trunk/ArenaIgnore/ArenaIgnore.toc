@@ -1,0 +1,16 @@
+## Interface: 20200
+## Title: Arena Ignore
+## Version: $Revision: 252 $
+## Notes: Figures out who you're playing against by using /ignore
+## SavedVariables: ArenaIgnoreDB, AI_Players
+## OptionalDeps: LibStub, OptionHouse, HousingAuthority
+
+lib\Dongle.lua
+lib\OptionHouse.lua
+lib\HousingAuthority.lua
+
+localization.enUS.lua
+localization.deDE.lua
+localization.frFR.lua
+
+ArenaIgnore.lua
