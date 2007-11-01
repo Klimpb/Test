@@ -1031,7 +1031,7 @@ local function createOHFrame()
 		end
 	end)
 	frame:SetScript("OnShow", function()
-		if( OptionHouseDB.position ) then
+		if( OptionHouseDB and OptionHouseDB.position ) then
 			frame:ClearAllPoints()
 			frame:SetPoint("TOPLEFT", nil, "BOTTOMLEFT", OptionHouseDB.position.x, OptionHouseDB.position.y)
 		end
