@@ -1,8 +1,0 @@
-## Interface: 20300
-## Title: GTB
-## Notes: Graphical timer bars libray
-## Author: Shadowed
-## OptionalDeps: LibStub
-
-LibStub.lua
-GTB.lua

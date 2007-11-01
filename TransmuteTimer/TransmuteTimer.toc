@@ -1,6 +1,0 @@
-## Interface: 20200
-## Title: Transmute Timer
-## Notes: Alerts you for transmute timing
-## SavedVariables: TransmuteTimers, TT_Config
-
-TransmuteTimer.lua
