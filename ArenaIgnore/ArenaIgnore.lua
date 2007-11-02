@@ -313,7 +313,12 @@ function ArenaIgnore:FoundEnemy(name)
 	if( self.db.profile.showFound ) then
 		self:Print(string.format(L["Enemy %s from %s, %s %s."], name, server, class, race))
 	end
+
+	if( self.db.profile.reportEnemies ) then
+		SendChatMessage(string.format("%s / %s / %s / %s", name, server, race, class), "BATTLEGROUND")
+	end
 	
+	self:TriggerMessage("SS_ENEMY_DATA", name, server, race, classToken)
 	self:SendMessage("ENEMY:" .. name .. "," .. server .. "," .. race .. "," .. classToken)
 end
 
@@ -334,14 +339,14 @@ end
 local brackets = {}
 function ArenaIgnore:ScanUnit(unit)
 	local name, server = UnitName(unit)
-	if( not name or not server ) then
+	if( not name or name == UNKNOWNOBJECT or not server ) then
 		return
 	end
 
 	local id = name .. "-" .. server
 		
 	-- Already seen them, Unknown player, not an enemy, or arena hasn't started yet
-	if( seenEnemies[id] or name == UNKNOWNOBJECT or not UnitIsPlayer(unit) or not UnitIsEnemy("player", unit) or GetPlayerBuffTexture(L["Arena Preparation"]) ) then
+	if( seenEnemies[id] or not UnitIsPlayer(unit) or not UnitIsEnemy("player", unit) or GetPlayerBuffTexture(L["Arena Preparation"]) ) then
 		return
 	end
 	
@@ -363,10 +368,6 @@ function ArenaIgnore:ScanUnit(unit)
 
 	-- Store
 	AI_Players[id] = table.concat({name, server, race, class, classToken, time(), brackets["2"] or "", brackets["3"] or "", brackets["5"] or ""},":")
-
-	-- Sync for AF mods
-	self:TriggerMessage("SS_ENEMY_DATA", name, server, race, classToken)
-	self:SendMessage("ENEMY:" .. name .. "," .. server .. "," .. race .. "," .. classToken)
 
 	-- Recycle
 	brackets[""] = nil
@@ -406,7 +407,7 @@ end
 
 -- Quick code for syncing
 function ArenaIgnore:SendMessage(msg)
-	SendAddonMessage("ARNIG", msg, "BATTLEGROUND")
+	SendAddonMessage("SSAF", msg, "BATTLEGROUND")
 
 	-- SSAF will automatically discord data we send yourself, so manually trigger the data message
 	self:TriggerMessage("SS_ENEMY_DATA", string.split(",", string.sub(msg, 7)))
@@ -430,7 +431,8 @@ function ArenaIgnore:CreateUI()
 	local config = {
 		{ group = L["General"], type = "groupOrder", order = 1 },
 
-		{ order = 1, group = L["General"], text = L["Print out found enemies"], help = L["Prints out the player, server, race and class that are found to be in the same arena (if any)."], type = "check", var = "perSend"},
+		{ order = 0, group = L["General"], text = L["Report found enemies to battleground chat"], type = "check", var = "reportEnemies"},
+		{ order = 1, group = L["General"], text = L["Print out found enemies"], help = L["Prints out the player, server, race and class that are found to be in the same arena (if any)."], type = "check", var = "showFound"},
 		{ order = 2, group = L["General"], text = L["Only check for classes"], help = L["Classes to check to see if you're against."], default = "ALL", list = classes, multi = true, type = "dropdown", var = "classes"},
 		{ order = 3, group = L["General"], text = L["Only check people you've seen in the same bracket"], help = L["Will restrict people searched to those you've seen in the same arena. If you've only seen \"FooBar\" in 2vs2 an 3vs3, he wont be scanned when you're playing in 5vs5."], type = "check", default = true, var = "sameBracket"},
 		{ order = 4, group = L["General"], text = L["Show scan starting and stopping."], help = L["Alerts you when a scan has been started, how many people are being scanned and ETA, along with when the scan is over."], type = "check", default = true, var = "startStop"},
