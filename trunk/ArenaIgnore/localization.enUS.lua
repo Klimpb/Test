@@ -16,6 +16,9 @@ ArenaIgnoreLocals = {
 	["WARNING: You have %d people ignored, you need %d total slots and an extra %d to be safe."] = "WARNING: You have %d people ignored, you need %d total slots and an extra %d to be safe.",
 
 	
+	["Scan manually started"] = "Scan manually started",
+	["Scan manually stopped"] = "Scan manually stopped",
+	
 	-- GUI
 	["All"] = "All",
 	
@@ -39,6 +42,8 @@ ArenaIgnoreLocals = {
 	
 	["Print out found enemies"] = "Print out found enemies",
 	["Prints out the player, server, race and class that are found to be in the same arena (if any)."] = "Prints out the player, server, race and class that are found to be in the same arena (if any).",
+	
+	["Report found enemies to battleground chat"] = "Report found enemies to battleground chat",
 	
 	["CLASSES"] = {
 		["MAGE"] = "Mage",

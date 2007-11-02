@@ -67,8 +67,25 @@ function ArenaIgnore:Initialize()
 	SLASH_ARENAIGNORE2 = "/arenai"
 	SLASH_ARENAIGNORE3 = "/arenaignore"
 	
-	SlashCmdList["ARENAIGNORE"] = function()
-		OptionHouse:Open("Arena Ignore")
+	SlashCmdList["ARENAIGNORE"] = function(msg)
+		msg = msg or ""
+		if( msg == "start" ) then
+			self:StopScan()
+			
+			if( not self.db.profile.startStop ) then
+				self:Print(L["Scan manually started"])
+			end
+			
+			self:StartScan()
+		elseif( msg == "stop" ) then
+			if( not self.db.profile.startStop ) then
+				self:Print(L["Scan manually stopped"])
+			end
+
+			self:StopScan()
+		else
+			OptionHouse:Open("Arena Ignore")
+		end
 	end
 	
 	-- Are we close to the limit?
@@ -339,9 +356,11 @@ end
 local brackets = {}
 function ArenaIgnore:ScanUnit(unit)
 	local name, server = UnitName(unit)
-	if( not name or name == UNKNOWNOBJECT or not server ) then
+	if( not name or name == UNKNOWNOBJECT ) then
 		return
 	end
+	
+	server = server or GetRealmName()
 
 	local id = name .. "-" .. server
 		
