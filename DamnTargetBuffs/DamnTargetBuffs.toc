@@ -1,0 +1,15 @@
+## Interface: 20200
+## Title: Damn Target Buffs
+## Notes: Small addon that lets you show as many buffs as you want and does cleaner resizing of them
+## OptionalDeps: Dongle, OptionHouse, HousingAuthority
+## SavedVariables: DTBDB
+
+lib\Dongle.lua
+lib\OptionHouse.lua
+lib\HousingAuthority.lua
+
+localization.enUS.lua
+localization.deDE.lua
+localization.frFR.lua
+
+DamnTargetBuffs.lua
