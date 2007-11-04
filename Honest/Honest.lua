@@ -141,18 +141,12 @@ function Honest:UPDATE_BATTLEFIELD_STATUS()
 
 		-- We left a battlefield, check end honor/total time spent and output it if need be
 		elseif( status ~= "active" and i == activeBF ) then
-			-- We afked out, or left in a means besides it finishing
-			-- don't output anything
-			if( GetBattlefieldWinner() == nil ) then
-				startHonor = nil
-				startTime = nil
-				activeBF = nil
-				crtParsedName = nil
-				return
-			end
-			
 			local endHonor = math.abs(self.db.profile.days[1].totalHonor - startHonor)
 			local totalTime = math.abs(GetTime() - startTime)
+			
+			if( totalTime <= 120 or endHonor <= 20 ) then
+				return
+			end
 			
 			-- Save
 			if( totalTime > 0 ) then
