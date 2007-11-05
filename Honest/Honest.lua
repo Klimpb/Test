@@ -8,8 +8,6 @@ local HonorGainFrames = {}
 
 local activeBF = -1
 local crtParsedName
-local startHonor
-local startTime
 
 function Honest:Enable()
 	self.defaults = {
@@ -71,6 +69,7 @@ function Honest:Enable()
 	self:RegisterEvent("ADDON_LOADED")
 	self:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
 	self:RegisterEvent("CHAT_MSG_COMBAT_HONOR_GAIN")
+	self:RegisterEvent("PLAYER_LEAVING_WORLD", "UPDATE_BATTLEFIELD_STATUS")
 
 	self:RegisterEvent("PLAYER_ENTERING_WORLD", "CheckDay")
 	self:RegisterEvent("PLAYER_PVP_KILLS_CHANGED", "CheckDay")
@@ -132,8 +131,8 @@ function Honest:UPDATE_BATTLEFIELD_STATUS()
 		if( status == "active" and i ~= activeBF ) then
 			activeBF = i
 			crtParsedName = parsedName
-			startHonor = self.db.profile.days[1].totalHonor
-			startTime = GetTime()
+			self.db.profile.startHonor = self.db.profile.days[1].totalHonor
+			self.db.profile.startTime = GetTime()
 			
 			if( not self.db.profile.days[1].record[parsedName] ) then
 				self.db.profile.days[1].record[parsedName] = {win = 0, lose = 0, totalTime = 0, rated = isRated, teamSize = teamSize, map = map}
@@ -141,8 +140,8 @@ function Honest:UPDATE_BATTLEFIELD_STATUS()
 
 		-- We left a battlefield, check end honor/total time spent and output it if need be
 		elseif( status ~= "active" and i == activeBF ) then
-			local endHonor = math.abs(self.db.profile.days[1].totalHonor - startHonor)
-			local totalTime = math.abs(GetTime() - startTime)
+			local endHonor = math.abs(self.db.profile.days[1].totalHonor - self.db.profile.startHonor)
+			local totalTime = math.abs(GetTime() - self.db.profile.startTime)
 			
 			if( totalTime <= 120 or endHonor <= 20 ) then
 				return
@@ -159,8 +158,8 @@ function Honest:UPDATE_BATTLEFIELD_STATUS()
 			end
 			
 			-- Delete
-			startHonor = nil
-			startTime = nil
+			self.db.profile.startHonor = nil
+			self.db.profile.startTime = nil
 			activeBF = nil
 			crtParsedName = nil
 		end
