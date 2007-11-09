@@ -22,6 +22,7 @@ local ignoreQueue = {}
 local removeQueue = {}
 local ignoresRemoved = {}
 local sentIgnores = {}
+local sameServer = {}
 
 local tempBlock
 local scanRunning
@@ -160,10 +161,15 @@ function ArenaIgnore:StartScan()
 				if( ( self.db.profile.enableCutoff and timeSeen >= cutOff ) or not self.db.profile.enableCutoff ) then
 					ignoreQueue[player] = true
 					totalPlayers = totalPlayers + 1
+					
+					if( server == GetRealmName() ) then
+						sentIgnores[player] = name
+					end
 				end
 			end		
 		end
 	end
+
 	
 	-- Can't find anyone, exit quickly.
 	if( totalPlayers == 0 ) then
@@ -195,6 +201,15 @@ function ArenaIgnore:StopScan(suppress)
 	-- Stop monitoring so we can send out new batches
 	self:UnregisterEvent("CHAT_MSG_SYSTEM")
 	
+	-- Special remove for people from our server
+	for player, fullName in pairs(sameServer) do
+		ignoresRemoved[player] = true
+		ignoreQueue[fullName] = nil
+		sentIgnores[fullName] = nil
+		
+		Orig_DelIgnore(player)
+	end
+	
 	-- Clear out the queue
 	for player in pairs(ignoreQueue) do
 		ignoresRemoved[player] = true
@@ -210,6 +225,7 @@ function ArenaIgnore:StopScan(suppress)
 			
 		Orig_DelIgnore(player)
 	end
+	
 	
 	-- Output time spent scanning
 	if( not suppress and self.db.profile.startStop ) then
