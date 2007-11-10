@@ -1,8 +1,8 @@
-local frame = CreateFrame( "Frame" );
-local tooltip = CreateFrame( "GameTooltip", "FTCTooltip", frame, "GameTooltipTemplate" );
+local frame = CreateFrame( "Frame" )
+local tooltip = CreateFrame( "GameTooltip", "FTCTooltip", frame, "GameTooltipTemplate" )
 
-local spellReagents = {};
-local buttons = {};
+local spellReagents = {}
+local buttons = {}
 
 local L = {
 	["on"] = "on",
@@ -29,7 +29,7 @@ local L = {
 
 	["Reagents"] = "Reagents",
 	["FTC"] = "FTC",
-};
+}
 
 --[[
 if( GetLocale() == "deDE" ) then
@@ -40,50 +40,54 @@ end
 ]]
 
 local function Print( msg )
-	DEFAULT_CHAT_FRAME:AddMessage( "|cFF33FF99" .. L["FTC"] .. "|r: " .. msg );
+	DEFAULT_CHAT_FRAME:AddMessage( "|cFF33FF99" .. L["FTC"] .. "|r: " .. msg )
 end
 
 local function CheckActionButton( actionID, frame )
 	if( IsConsumableAction( actionID ) or IsStackableAction( actionID ) ) then
-		local type, spellID = GetActionInfo( actionID );
+		local type, spellID = GetActionInfo( actionID )
 
 		if( type == "spell" ) then
-			local count = GetActionCount( actionID );
-			local spellName = GetSpellName( spellID, BOOKTYPE_SPELL );
-			local reagent = spellReagents[ spellName ];
+			local count = GetActionCount( actionID )
+			local spellName = GetSpellName( spellID, BOOKTYPE_SPELL )
+			local reagent = spellReagents[ spellName ]
 
 			if( reagent and FTC_Config.list[ reagent ] and ( FTC_Config.list[ reagent ] == 0 or FTC_Config.list[ reagent ] <= count ) ) then
-				getglobal( frame:GetName() .. "Count" ):Hide();
+				getglobal( frame:GetName() .. "Count" ):Hide()
 			else
-				getglobal( frame:GetName() .. "Count" ):Show();
+				getglobal( frame:GetName() .. "Count" ):Show()
 			end
 			
-			buttons[ frame ] = true;
+			buttons[ frame ] = true
 		end
 	end
 end
 
 local function HideCount()
-	CheckActionButton( ActionButton_GetPagedID( this ), this );
+	CheckActionButton( ActionButton_GetPagedID( this ), this )
 end
 
 function CacheReagents()
+	for k in pairs(spellReagents) do
+		spellReagents[k] = nil
+	end
+
 	-- Loop-o-doom
-	local reagent, text, offset, numSpells;
+	local reagent, text, offset, numSpells
 	for book=1, MAX_SKILLLINE_TABS do
-	    _, _, offset, numSpells = GetSpellTabInfo( book );
+	    _, _, offset, numSpells = GetSpellTabInfo( book )
 
 	    for i=1, numSpells do
-		tooltip:SetSpell( offset + i, BOOKTYPE_SPELL );
+		tooltip:SetSpell( offset + i, BOOKTYPE_SPELL )
 
 		for j=1, tooltip:NumLines() do
-			text = getglobal( tooltip:GetName() .. "TextLeft" .. j ):GetText();
+			text = getglobal( tooltip:GetName() .. "TextLeft" .. j ):GetText()
 
 			if( string.match( text, "^" .. L["Reagents"] ) ) then
-				_, reagent = string.split( "\n", text );
+				_, reagent = string.split( "\n", text )
 				
-				spellReagents[ ( GetSpellName( offset + i, BOOKTYPE_SPELL ) ) ] = string.lower( reagent );
-				break;
+				spellReagents[ ( GetSpellName( offset + i, BOOKTYPE_SPELL ) ) ] = string.lower( reagent )
+				break
 			end
 		end
 	    end
@@ -91,11 +95,11 @@ function CacheReagents()
 end
 
 local function CheckCountHiding()
-	local actionID;
+	local actionID
 	for button, _ in pairs( buttons ) do
-		actionID = ActionButton_GetPagedID( button );
+		actionID = ActionButton_GetPagedID( button )
 		if( HasAction( actionID ) ) then
-			CheckActionButton( actionID, button );
+			CheckActionButton( actionID, button )
 		end
 	end
 end
@@ -103,135 +107,135 @@ end
 local function OnEvent()
 	if( event == "ADDON_LOADED" and arg1 == "ForgetTwoCount" ) then
 		if( not FTC_Config ) then
-			FTC_Config = { list = {} };
+			FTC_Config = { list = {} }
 		end
 
-		SLASH_REGBLOCK1 = "/ftc";
-		SLASH_REGBLOCK2 = "/regblock";
-		SLASH_REGBLOCK3 = "/reghide";
+		SLASH_REGBLOCK1 = "/ftc"
+		SLASH_REGBLOCK2 = "/regblock"
+		SLASH_REGBLOCK3 = "/reghide"
 		SlashCmdList["REGBLOCK"] = function( msg )
 			if( not msg or msg == "" ) then
-				DEFAULT_CHAT_FRAME:AddMessage( L["/ftc list - View a list of reagents to hide the counter."] );
-				DEFAULT_CHAT_FRAME:AddMessage( L["/ftc add <reagent> <threshold> - Add a reagent with a set number to reshow it at, use 0 to always hide."] );
-				DEFAULT_CHAT_FRAME:AddMessage( L["/ftc upd <reagent> <threshold> - Updates a specific reagents threshold."] );
-				DEFAULT_CHAT_FRAME:AddMessage( L["/ftc rmv <reagent> or <reagent id> - Removes the specified reagent using either name or id."] );
-				DEFAULT_CHAT_FRAME:AddMessage( L["/ftc clear - Clears all saved reagent counters."] );
-				return;
+				DEFAULT_CHAT_FRAME:AddMessage( L["/ftc list - View a list of reagents to hide the counter."] )
+				DEFAULT_CHAT_FRAME:AddMessage( L["/ftc add <reagent> <threshold> - Add a reagent with a set number to reshow it at, use 0 to always hide."] )
+				DEFAULT_CHAT_FRAME:AddMessage( L["/ftc upd <reagent> <threshold> - Updates a specific reagents threshold."] )
+				DEFAULT_CHAT_FRAME:AddMessage( L["/ftc rmv <reagent> or <reagent id> - Removes the specified reagent using either name or id."] )
+				DEFAULT_CHAT_FRAME:AddMessage( L["/ftc clear - Clears all saved reagent counters."] )
+				return
 			end
 			
-			msg = string.lower( msg );
+			msg = string.lower( msg )
 			
 			if( msg == "list" ) then
-				local total = 0;
+				local total = 0
 				
 				for reagent, threshold in pairs( FTC_Config.list ) do
-					total = total + 1;
+					total = total + 1
 					
 					if( threshold == 0 ) then
-						DEFAULT_CHAT_FRAME:AddMessage( string.format( L["#%d: %s, no threshold."], total, reagent ) );
+						DEFAULT_CHAT_FRAME:AddMessage( string.format( L["#%d: %s, no threshold."], total, reagent ) )
 					else
-						DEFAULT_CHAT_FRAME:AddMessage( string.format( L["#%d: %s, threshold %d."], total, reagent, threshold) );
+						DEFAULT_CHAT_FRAME:AddMessage( string.format( L["#%d: %s, threshold %d."], total, reagent, threshold) )
 					end
 				end
 				
 				if( total == 0 ) then
-					Print( L["No reagents have been added to the list to hide."] );
+					Print( L["No reagents have been added to the list to hide."] )
 				end
 			
 			elseif( msg == "clear" ) then
-				FTC_Config.list = {};
-				CheckCountHiding();
+				FTC_Config.list = {}
+				CheckCountHiding()
 				
-				Print( L["All saved reagents have been removed."] );
+				Print( L["All saved reagents have been removed."] )
 			
 			-- Yes these 3 are the same thing, shhhhhhh
 			elseif( string.match( msg, "add (.+) ([0-9]+)" ) ) then
-				local reagent, threshold = string.match( msg, "add (.+) ([0-9]+)" );
-				threshold = tonumber( threshold ) or 0;
+				local reagent, threshold = string.match( msg, "add (.+) ([0-9]+)" )
+				threshold = tonumber( threshold ) or 0
 				
 				if( threshold < 0 ) then
-					threshold = 0;
+					threshold = 0
 				end
 				
-				FTC_Config.list[ string.lower( reagent ) ] = threshold;
+				FTC_Config.list[ string.lower( reagent ) ] = threshold
 				
 				if( threshold > 0 ) then
-					Print( string.format( L["Added %s with a threshold of %d to the list of reagent counts to hide."], reagent, threshold ) );
+					Print( string.format( L["Added %s with a threshold of %d to the list of reagent counts to hide."], reagent, threshold ) )
 				else
-					Print( string.format( L["Added %s with no threshold set, always hiding counter."], reagent ) );
+					Print( string.format( L["Added %s with no threshold set, always hiding counter."], reagent ) )
 				end
 
-				CheckCountHiding();
+				CheckCountHiding()
 
 			elseif( string.match( msg, "add (.+)" ) ) then
-				local reagent = string.match( msg, "add (.+)" );
+				local reagent = string.match( msg, "add (.+)" )
 				
-				FTC_Config.list[ string.lower( reagent ) ] = 0;
-				Print( string.format( L["Added %s with no threshold set, always hiding counter."], reagent ) );
+				FTC_Config.list[ string.lower( reagent ) ] = 0
+				Print( string.format( L["Added %s with no threshold set, always hiding counter."], reagent ) )
 
-				CheckCountHiding();
+				CheckCountHiding()
 
 			elseif( string.match( msg, "upd (.+) ([0-9]+)" ) ) then
-				local reagent, threshold = string.match( msg, "upd (.+) ([0-9]+)" );
-				threshold = tonumber( threshold ) or 0;
+				local reagent, threshold = string.match( msg, "upd (.+) ([0-9]+)" )
+				threshold = tonumber( threshold ) or 0
 				
 				if( threshold < 0 ) then
-					threshold = 0;
+					threshold = 0
 				end
 				
-				FTC_Config.list[ string.lower( reagent ) ] = threshold;
+				FTC_Config.list[ string.lower( reagent ) ] = threshold
 				
 				if( threshold > 0 ) then
-					Print( string.format( L["Updated threshold on %s, set to %s."], reagent, threshold ) );
+					Print( string.format( L["Updated threshold on %s, set to %s."], reagent, threshold ) )
 				else
-					Print( string.format( L["Removed threshold on %s, always hiding counter."], reagent ) );
+					Print( string.format( L["Removed threshold on %s, always hiding counter."], reagent ) )
 				end
 				
-				CheckCountHiding();
+				CheckCountHiding()
 
 			elseif( string.match( msg, "rmv ([0-9]+)" ) ) then
-				local reagentID = string.match( msg, "rmv ([0-9]+)" );
-				local i = 0;
+				local reagentID = string.match( msg, "rmv ([0-9]+)" )
+				local i = 0
 				
-				reagentID = tonumber( reagentID ) or 0;
+				reagentID = tonumber( reagentID ) or 0
 				
 				for reagent, threshold in pairs( FTC_Config.list ) do
-					i = i + 1;
+					i = i + 1
 					if( i == reagentID ) then
-						Print( string.format( L["Removed reagent counter hiding on %s (#%d)."], reagent, i ) );
-						return;
+						Print( string.format( L["Removed reagent counter hiding on %s (#%d)."], reagent, i ) )
+						return
 					end
 				end
 				
-				Print( string.format( L["Cannot find any reagent with the id #%d"], reagentID ) );
+				Print( string.format( L["Cannot find any reagent with the id #%d"], reagentID ) )
 
-				CheckCountHiding();
+				CheckCountHiding()
 			
 			elseif( string.match( msg, "rmv (.+)" ) ) then
-				local reagent = string.match( msg, "rmv (.+)" );
+				local reagent = string.match( msg, "rmv (.+)" )
 				
-				FTC_Config.list[ reagent ] = nil;
-				Print( string.format( L["Removed reagent counter hiding on %s."], reagent ) );
+				FTC_Config.list[ reagent ] = nil
+				Print( string.format( L["Removed reagent counter hiding on %s."], reagent ) )
 				
-				CheckCountHiding();
+				CheckCountHiding()
 			end
 		end
 				
-		hooksecurefunc( "ActionButton_UpdateCount", HideCount );
+		hooksecurefunc( "ActionButton_UpdateCount", HideCount )
 
-		CacheReagents();
+		CacheReagents()
 	
 	-- New spell learn, recheck list
 	elseif( event == "LEARNED_SPELL_IN_TAB" or event == "SPELLS_CHANGED" ) then
-		CacheReagents();
+		CacheReagents()
 	end
 end
 
-tooltip:SetOwner( frame, "ANCHOR_NONE" );
+tooltip:SetOwner( frame, "ANCHOR_NONE" )
 
-frame:SetScript( "OnEvent", OnEvent );
-frame:SetScript( "OnUpdate", OnUpdate );
+frame:SetScript( "OnEvent", OnEvent )
+frame:SetScript( "OnUpdate", OnUpdate )
 
-frame:RegisterEvent( "ADDON_LOADED" );
-frame:RegisterEvent( "LEARNED_SPELL_IN_TAB" );
-frame:RegisterEvent( "SPELLS_CHANGED" );
+frame:RegisterEvent( "ADDON_LOADED" )
+frame:RegisterEvent( "LEARNED_SPELL_IN_TAB" )
+frame:RegisterEvent( "SPELLS_CHANGED" )
