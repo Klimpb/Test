@@ -55,7 +55,7 @@ function ArenaIgnore:Initialize()
 	OptionHouse = LibStub("OptionHouse-1.1")
 	HouseAuthority = LibStub("HousingAuthority-1.2")
 	
-	local OHObj = OptionHouse:RegisterAddOn("Arena Ignore", nil, "Amarand", "r" .. tonumber(string.match("$Revision$", "(%d+)") or 1))
+	local OHObj = OptionHouse:RegisterAddOn("Arena Ignore", nil, "Mayen", "r" .. tonumber(string.match("$Revision$", "(%d+)") or 1))
 	OHObj:RegisterCategory(L["General"], self, "CreateUI", nil, 1)
 	
 	-- Localizations

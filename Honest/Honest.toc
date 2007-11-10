@@ -1,8 +1,10 @@
-## Interface: 20200
+## Interface: 20300
 ## Title: Honest
 ## Notes: Honor estimation, and PvP data mod
 ## SavedVariables: HonestDB
 ## OptionalDeps: OptionHouse
+## Version: $Revision$
+## Author: Mayen
 
 Dongle.lua
 OptionHouse.lua

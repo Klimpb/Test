@@ -1,6 +1,7 @@
-## Interface: 20200
+## Interface: 20300
 ## Title: Damn Quest Watch
 ## Notes: Auto hides quests from quest watch when they complete
-## Author: Shadowed
+## Author: Mayen
+## Version: $Revision$
 
 DamnQuestWatch.lua

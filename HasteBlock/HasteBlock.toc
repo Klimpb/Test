@@ -1,5 +1,7 @@
-## Interface: 20100
+## Interface: 20300
 ## Title: HasteBlock
+## Version: $Revision$
+## Author: Mayen
 ## Notes: Ranged/Spell/Melee haste indicater
 ## OptionalDeps: LegoBlock, OptionHouse, HousingAuthority
 ## SavedVariablesPerCharacter: HasteBlockDB

@@ -1,6 +1,8 @@
-## Interface: 20100
+## Interface: 20300
 ## Title: Forget Two Count
 ## Notes: Hides the reagent count list on action bars
 ## SavedVariables: FTC_Config
+## Author: Mayen
+## Version: $Revision$
 
 ForgetTwoCount.lua

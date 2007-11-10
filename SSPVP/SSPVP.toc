@@ -1,7 +1,8 @@
-## Interface: 20200
+## Interface: 20300
 ## Title: SSPVP
 ## Version: $Revision$
 ## Notes: PvP, Battleground and Arena mod
+## Author: Mayen
 ## SavedVariables: SSPVPDB
 ## OptionalDeps: LibStub, OptionHouse, HousingAuthority
 
