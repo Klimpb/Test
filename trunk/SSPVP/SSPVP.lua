@@ -1,5 +1,5 @@
 --[[ 
-	SSPVP By Shadowd / Amarand from Icecrown (US) PvE
+	SSPVP by Mayen, Icecrown-US (PvE)
 	
 	1.x Release: January 26th 2006
 	2.x Release: December 27th 2006

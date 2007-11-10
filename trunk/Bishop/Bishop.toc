@@ -1,6 +1,8 @@
-## Interface: 20200
+## Interface: 20300
 ## Title: Bishop
 ## Notes: A Healers Toolbox of sorts that provides helpful statistics about your healing
+## Author: Mayen
+## Version: $Revision$
 ## OptionalDeps: Dongle
 ## SavedVariables: BishopDB
 

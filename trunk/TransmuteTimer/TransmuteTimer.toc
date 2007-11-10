@@ -1,6 +1,8 @@
-## Interface: 20200
+## Interface: 20300
 ## Title: Transmute Timer
 ## Notes: Alerts you for transmute timing
 ## SavedVariables: TransmuteTimers, TT_Config
+## Version: $Revision: 322 $
+## Author: Mayen
 
 TransmuteTimer.lua

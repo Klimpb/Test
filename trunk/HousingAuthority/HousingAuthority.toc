@@ -1,6 +1,7 @@
-## Interface: 20200
+## Interface: 20300
 ## Title: Housing Authority
-## Author: Shadowed
+## Version: $Revision$
+## Author: Mayen
 ## OptionalDeps: LibStub, OptionHouse
 
 LibStub.lua
