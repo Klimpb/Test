@@ -163,7 +163,7 @@ function ArenaIgnore:StartScan()
 					totalPlayers = totalPlayers + 1
 					
 					if( server == GetRealmName() ) then
-						sentIgnores[player] = name
+						sameServer[name] = player
 					end
 				end
 			end		
