@@ -194,6 +194,14 @@ function WSG:UpdateCarriersAttributes()
 	WSG:UpdateCarrierAttributes("Horde")
 end
 
+local function checkButtonTarget(self)
+	if( UnitExists("target") and UnitName("target") == self.carrierName ) then
+		UIErrorsFrame:AddMessage(string.format(L["Targetting %s"], self.carrierName), 1.0, 0.1, 0.1, 1.0)
+	else
+		UIErrorsFrame:AddMessage(string.format(L["%s is out of range"], self.carrierName), 1.0, 0.1, 0.1, 1.0)
+	end
+end
+
 -- Update a specific factions carrier
 function WSG:UpdateCarrierAttributes(faction)
 	if( InCombatLockdown() ) then
@@ -223,7 +231,8 @@ function WSG:UpdateCarrierAttributes(faction)
 		if( carrierNames[faction] ) then
 			self.allianceText:SetAlpha( 1.0 )
 			self.allianceButton:SetAttribute("type", "macro")
-			self.allianceButton:SetAttribute("macrotext", "/target " .. carrierNames[faction])
+			self.allianceButton:SetAttribute("macrotext", "/targetexact " .. carrierNames[faction])
+			self.allianceButton:SetScript("PostClick", checkButtonTarget)
 			self.allianceButton.carrierName = carrierNames[faction]
 			self.allianceButton:Show()
 
@@ -247,7 +256,8 @@ function WSG:UpdateCarrierAttributes(faction)
 		if( carrierNames[faction] ) then
 			self.hordeText:SetAlpha(1.0)
 			self.hordeButton:SetAttribute("type", "macro")
-			self.hordeButton:SetAttribute("macrotext", "/target " .. carrierNames[faction])
+			self.hordeButton:SetAttribute("macrotext", "/targetexact " .. carrierNames[faction])
+			self.hordeButton:SetScript("PostClick", checkButtonTarget)
 			self.hordeButton.carrierName = carrierNames[faction]
 			self.hordeButton:Show()
 

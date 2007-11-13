@@ -20,7 +20,6 @@ extras\config.lua
 extras\mover.lua
 extras\overlay.lua
 extras\sync.lua
-extras\turnin.lua
 extras\score.lua
 extras\arena.lua
 

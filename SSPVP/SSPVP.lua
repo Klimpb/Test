@@ -154,11 +154,7 @@ function SSPVP:Initialize()
 				arenaDelay = 0,
 				bgDelay = 0,
 			},
-			turnin = {
-				enabled = true,
-			},
 			modules = {},
-			quests = L["TURNQUESTS"],
 		}
 	}
 	

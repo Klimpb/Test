@@ -28,6 +28,9 @@ SSPVPLocals = {
 	
 	["You are about to leave the active or queued battlefield %s, are you sure?"] = "You are about to leave the active or queued battlefield %s, are you sure?",
 	["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"] = "You are about to leave the active or queued arena %s (%dvs%d), are you sure?",
+	
+	["%s is out of range"] = "%s is out of range",
+	["Targetting %s"] = "Targetting %s",
 		
 	["Battlefield Info"] = "Battlefield Info",
 	
@@ -316,33 +319,6 @@ SSPVPLocals = {
 	["Flag Captures: %d"] = "Flag Captures: %d",
 	["Towers to win: %d"] = "Towers to win: %d",
 	["Towers to win: %d (A:%d/H:%d)"] = "Towers to win: %d (A:%d/H:%d)",
-	
-	-- Auto turn in
-	["Removed the quest '%s...' from auto complete."] = "Removed the quest '%s...' from auto complete.",
-	["Added the quest '%s...' to the skip list, hold ALT and click the text again to remove it."] = "Added the quest '%s...' to the skip list, hold ALT and click the text again to remove it.",
-
-	["TURNTYPES"] = {
-		["av"] = "Alterac Valley quests",
-		["manual"] = "Manually added quests",
-	},
-	["TURNQUESTS"] = {
-		{ name = "Irondeep Supplies", type = "av" },
-		{ name = "Coldtooth Supplies", type = "av" },
-		{ name = "More Armor Scraps", type = "av", item = { ["17422"] = 20 } },
-		{ name = "Ivus the Forest Lord", type = "av", item = { ["17423"] = 1 } },
-		{ name = "Crystal Cluster", type = "av", item = { ["17423"] = 5 } },
-		{ name = "Ram Riding Harnesses", type = "av", item = { ["17643"] = 1 } },
-		{ name = "Slidore's Fleet", type = "av", item = { ["17502"] = 1 } },
-		{ name = "Vipore's Fleet", type = "av", item = { ["17503"] = 1 } },
-		{ name = "Ichman's Fleet", type = "av", item = { ["17504"] = 1 } },
-		{ name = "More Booty", type = "av", item = { ["17422"] = 20 } },
-		{ name = "A Gallon of Blood", type = "av", item = { ["17306"] = 5 } },
-		{ name = "Lokholar the Ice Lord", type = "av", item = { ["17306"] = 1 } },
-		{ name = "Ram Hide Harness", type = "av", item = { ["17642"] = 1 } },
-		{ name = "Guse's Fleet", type = "av", item = { ["17326"] = 1 } },
-		{ name = "Jeztor's Fleet", type = "av", item = { ["17327"] = 1 } },
-		{ name = "Mulverick's Fleet", type = "av", item = { ["17328"] = 1 } },	
-	},
 	
 	-- UI
 	["SSPVP"] = "SSPVP",

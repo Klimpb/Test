@@ -43,7 +43,6 @@ function UI:Initialize()
 	OHObj:RegisterCategory(L["Alterac Valley"], self, "AlteracValley", nil, 7)
 	OHObj:RegisterCategory(L["Arathi Basin"], self, "ArathiBasin", nil, 8)
 	OHObj:RegisterCategory(L["Eye of the Storm"], self, "EyeOfTheStorm", nil, 9)
-	OHObj:RegisterCategory(L["Auto turn in"], self, "AutoTurnIn", nil, 10)
 	OHObj:RegisterSubCategory(L["Overlay"], L["Queue"], self, "QueueOverlay")
 end
 
@@ -463,20 +462,4 @@ function UI:EyeOfTheStorm()
 	}
 
 	return HousingAuthority:CreateConfiguration(config, {set = "Set", get = "Get", onSet = "Reload", handler = UI})
-end
-
--- AUTO TURN IN
-function UI:AutoTurnIn()
-	local config = {
-		{ group = L["General"], type = "groupOrder", order = 1 },
-		{ group = L["Categories"], type = "groupOrder", order = 2 },
-		
-		{ group = L["General"], text = L["Enable auto turn in"], type = "check", var = {"turnin", "enabled"}},
-	}
-
- 	for key, text in pairs(L["TURNTYPES"]) do
-		table.insert(config, { group = L["Categories"], text = string.format(L["Disable %s"], text), type = "check", var = {"turnin", key}})
-	end
-
-	return HousingAuthority:CreateConfiguration(config, {set = "Set", get = "Get", handler = UI})
 end
