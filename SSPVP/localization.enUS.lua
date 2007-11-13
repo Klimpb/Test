@@ -163,7 +163,6 @@ SSPVPLocals = {
 	
 	["on - Enables SSPVP"] = "on - Enables SSPVP",
 	["off - Disables SSPVP"] = "off - Disables SSPVP",
-	["map - Toggles the battlefield minimap regardless of being inside a battleground."] = "map - Toggles the battlefield minimap regardless of being inside a battleground.",
 	["sync <count> - Starts an Alterac Valley sync queue count down."] = "sync <count> - Starts an Alterac Valley sync queue count down.",
 	["ui - Pulls up the configuration page."] = "ui - Pulls up the configuration page.",
 	["cancel - Cancels a running sync count down."] = "cancel - Cancels a running sync count down.",
@@ -475,7 +474,6 @@ SSPVPLocals = {
 	["Battlefield auto joining priorities"] = "Battlefield auto joining priorities",
 	["Priority system to use when auto joining battlegrounds, equal priorities will not override eachother, If you have Warsong Gulch as #1 and Arathi Basin as #2 you'll always auto join Warsong Gulch when in Arathi Basin, but not Arathi Basin when inside Warsong Gulch."] = "Priority system to use when auto joining battlegrounds, equal priorities will not override eachother. If you have Warsong Gulch as #1 and Arathi Basin as #2 you'll always auto join Warsong Gulch when in Arathi Basin, but not Arathi Basin when inside Warsong Gulch.",
 
-	["Auto open minimap when inside a battleground"] = "Auto open minimap when inside a battleground",
 	["Auto release when inside an active battlefield"] = "Auto release when inside an active battlefield",
 	["Auto release even with a soulstone active"] = "Auto release even with a soulstone active",
 	["Auto accept corpse ressurections inside a battlefield"] = "Auto accept corpse ressurections inside a battlefield",
