@@ -86,6 +86,19 @@ function Honest:Enable()
 		end
 	end)
 	
+	hooksecurefunc("PVPTeamDetails_OnShow", function()
+		if( Honest.frame and PVPFrame:IsShown() ) then
+			Honest.frame:Show()
+		end
+	end)
+	
+	hooksecurefunc("PVPTeamDetails_OnHide", function()
+		if( Honest.frame and Honest.frame:IsVisible() ) then
+			Honest.frame:Hide()
+		end
+	end)
+
+	
 	-- Reposition it for some reason that I don't remember anymore	
 	PVPHonorTodayHonor:ClearAllPoints()
 	PVPHonorTodayHonor:SetPoint("CENTER", "PVPHonorTodayKills", "BOTTOM", 0, -12)
@@ -128,7 +141,7 @@ function Honest:UPDATE_BATTLEFIELD_STATUS()
 		end
 				
 		-- Joined a new battlefield, start-zee-timers
-		if( status == "active" and i ~= activeBF ) then
+		if( status == "active" and i ~= activeBF and parsedName ) then
 			activeBF = i
 			crtParsedName = parsedName
 			self.db.profile.startHonor = self.db.profile.days[1].totalHonor
@@ -139,7 +152,7 @@ function Honest:UPDATE_BATTLEFIELD_STATUS()
 			end
 
 		-- We left a battlefield, check end honor/total time spent and output it if need be
-		elseif( status ~= "active" and i == activeBF ) then
+		elseif( status ~= "active" and i == activeBF and crtParsedName ) then
 			local endHonor = math.abs(self.db.profile.days[1].totalHonor - self.db.profile.startHonor)
 			local totalTime = math.abs(GetTime() - self.db.profile.startTime)
 			
@@ -147,13 +160,10 @@ function Honest:UPDATE_BATTLEFIELD_STATUS()
 				return
 			end
 			
-			-- Save
-			if( totalTime > 0 ) then
-				self.db.profile.days[1].record[crtParsedName].totalTime = ( self.db.profile.days[1].record[crtParsedName].totalTime or 0 ) + totalTime
-			end
+			self.db.profile.days[1].record[crtParsedName].totalTime = ( self.db.profile.days[1].record[crtParsedName].totalTime or 0 ) + totalTime
 			
 			-- Print
-			if( self.db.profile.showInfo and endHonor > 0 and totalTime > 0 ) then
+			if( self.db.profile.showInfo ) then
 				self:Print(string.format(L["Game over! Honor gained %d, time spent %s."], endHonor, SecondsToTime(totalTime)))
 			end
 			
@@ -496,7 +506,7 @@ function WorldStateScoreFrame_Update(...)
 	
 	local location, unparsedMap, teamSize, isRegistered = Honest:GetLocation()
 
-	-- No record found for this battleground yet
+	-- No record found for this battlefield yet
 	if( not Honest.db.profile.days[1].record[location] ) then
 		Honest.db.profile.days[1].record[location] = {win = 0, lose = 0, totalTime = 0, rated = isRegistered, teamSize = teamSize, map = unparsedMap}
 	end
@@ -521,30 +531,18 @@ function ChatFrame_MessageEventHandler(event, ...)
 	return Orig_ChatFrame_MessageEventHandler(event, ...)
 end
 
--- Hide our frame when the PVP team info one is shown
-local Orig_PVPTeamDetails_OnShow = PVPTeamDetails_OnShow
-function PVPTeamDetails_OnShow(...)
-	Orig_PVPTeamDetails_OnShow(...)
-
-	if( PVPFrame:IsShown() and Honest.frame ) then
-		Honest.frame:Show()
-	end
-end
-
-local Orig_PVPTeamDetails_OnHide = PVPTeamDetails_OnHide
-function PVPTeamDetails_OnHide(...)
-	Orig_PVPTeamDetails_OnHide(...)
-
-	if( Honest.frame ) then
-		Honest.frame:Hide()
-	end
-end
-
 -- Change Blizzard estimated honor to our estimated honor
 local Orig_PVPHonor_Update = PVPHonor_Update
 function PVPHonor_Update(...)
 	Orig_PVPHonor_Update(...)
 	
+	-- Honest hasn't loaded yet, exit out quickly.
+	if( not Honest.db ) then
+		return
+
+	end
+	
+
 	PVPHonorTodayHonor:SetText(math.floor(Honest.db.profile.days[1].totalHonor + 0.5))	
 	PVPHonorTodayHonor:SetWidth(PVPHonorTodayHonor:GetStringWidth() + 15)
 	
