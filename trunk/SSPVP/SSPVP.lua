@@ -73,7 +73,6 @@ function SSPVP:Initialize()
 				release = true,
 				autoAccept = true,
 				releaseSS = false,
-				minimap = true,
 			},
 			score = {
 				color = true,
@@ -536,28 +535,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			self:StopSound()
 			self:DisableAllModules()
 			self:EnableModules(activeBF.abbrev)
-			
-			if( activeBF.abbrev ~= "arena" ) then
-				-- Grab new carrier data every 15 seconds
-				self:ScheduleRepeatingTimer("SSSCOREDATA", RequestBattlefieldScoreData, 15) 
-				
-				-- Pop the battlefield minimap
-				if( SSPVP.db.profile.bf.minimap ) then
-					BattlefieldMinimap_LoadUI()
-
-					if( IsAddOnLoaded("Blizzard_BattlefieldMinimap") ) then
-						BattlefieldMinimap:Show()
-						BattlefieldMinimap_Update()
-					end
-				elseif( IsAddOnLoaded("Blizzard_BattlefieldMinimap") ) then
-					BattlefieldMinimap:Hide()
-				end
-			
-			-- Don't need it open, hide then!
-			elseif( IsAddOnLoaded("Blizzard_BattlefieldMinimap") ) then
-				BattlefieldMinimap:Hide()
-			end
-		
+					
 		-- We left the battlefield
 		elseif( status ~= "active" and i == activeBF.id and id ~= activeBF.instance ) then
 			self:DisableAllModules()
@@ -569,11 +547,6 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			
 			-- Remove starting timer
 			SSOverlay:RemoveRow("timer", "general", L["Starting In: %s"])
-
-			-- Hide minimap
-			if( IsAddOnLoaded("Blizzard_BattlefieldMinimap") ) then
-				BattlefieldMinimap:Hide()
-			end
 		end
 		
 		-- No longer a confirmation, so clear out config/joining

@@ -18,18 +18,6 @@ function UI:Initialize()
 		OptionHouse:Open("SSPVP")
 	end)
 	
-	-- Toggle battlefield minimap
-	SSPVP.cmd:RegisterSlashHandler(L["map - Toggles the battlefield minimap regardless of being inside a battleground."], "map", function()
-		BattlefieldMinimap_LoadUI() 
-		if( BattlefieldMinimap:IsVisible() ) then
-			MiniMapBattlefieldFrame.status = ""
-			BattlefieldMinimap:Hide()
-		else
-			MiniMapBattlefieldFrame.status = "active"
-			BattlefieldMinimap:Show()
-		end 
-	end)
-	
 	OptionHouse = LibStub("OptionHouse-1.1")
 	HousingAuthority = LibStub("HousingAuthority-1.2")
 	
@@ -317,11 +305,8 @@ end
 -- BATTLEFIELD
 function UI:Battlefield()
 	local config = {
- 		{ group = L["General"], type = "groupOrder", order = 1 },
-		{ group = L["Scores"], type = "groupOrder", order = 2 },
-		{ group = L["Death"], type = "groupOrder", order = 3 },
-
- 		{ order = 1, group = L["General"], text = L["Auto open minimap when inside a battleground"], type = "check", var = {"bf", "minimap"}},
+		{ group = L["Scores"], type = "groupOrder", order = 1 },
+		{ group = L["Death"], type = "groupOrder", order = 2 },
  		
  		{ order = 1, group = L["Scores"], text = L["Color names by class on score board"], type = "check", var = {"score", "color"}},
  		{ order = 2, group = L["Scores"], text = L["Hide class icon next to names on score board"], type = "check", var = {"score", "icon"}},
