@@ -207,7 +207,7 @@ end
 -- frame we're moving
 function Mover:WorldStateAlwaysUpFrame_Update()
 	-- Not using either, exit quickly
-	if( not SSPVP.db.profile.mover.capture and not SSPVP.db.profile.mover.world ) then
+	if( SSPVP.db.profile.mover.capture and SSPVP.db.profile.mover.world ) then
 		if( Mover.worldFrame and Mover.worldFrame:IsShown() ) then
 			Mover.worldFrame:Hide()
 		end

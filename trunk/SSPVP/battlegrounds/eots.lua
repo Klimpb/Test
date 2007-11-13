@@ -115,6 +115,14 @@ function EoTS:ParseFlag(msg, faction)
 	end
 end
 
+local function checkButtonTarget(self)
+	if( UnitExists("target") and UnitName("target") == self.carrierName ) then
+		UIErrorsFrame:AddMessage(string.format(L["Targetting %s"], self.carrierName), 1.0, 0.1, 0.1, 1.0)
+	else
+		UIErrorsFrame:AddMessage(string.format(L["%s is out of range"], self.carrierName), 1.0, 0.1, 0.1, 1.0)
+	end
+end
+
 -- Update carrier attributes
 function EoTS:UpdateCarrierAttributes()
 	if( InCombatLockdown() ) then
@@ -133,7 +141,8 @@ function EoTS:UpdateCarrierAttributes()
 	if( carrierFaction == "Alliance" ) then
 		self.allianceText:SetAlpha(1)
 		self.allianceButton:SetAttribute("type", "macro")
-		self.allianceButton:SetAttribute("macrotext", "/target " .. carrierName)
+		self.allianceButton:SetAttribute("macrotext", "/targetexact " .. carrierName)
+		self.allianceButton:SetScript("PostClick", checkButtonTarget)
 		self.allianceButton.carrierName = carrierName
 		self.allianceButton:Show()
 
@@ -143,7 +152,8 @@ function EoTS:UpdateCarrierAttributes()
 	elseif( carrierFaction == "Horde" ) then
 		self.hordeText:SetAlpha(1)
 		self.hordeButton:SetAttribute("type", "macro")
-		self.hordeButton:SetAttribute("macrotext", "/target " .. carrierName)
+		self.hordeButton:SetAttribute("macrotext", "/targetexact " .. carrierName)
+		self.hordeButton:SetScript("PostClick", checkButtonTarget)
 		self.hordeButton.carrierName = carrierName
 		self.hordeButton:Show()
 
