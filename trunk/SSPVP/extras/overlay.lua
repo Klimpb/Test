@@ -474,7 +474,7 @@ function SSOverlay:UpdateRow(updatedRow, ...)
 	
 	for id, row in pairs( rows ) do
 		-- Does type/category/text match?
-		if( row.type == updatedRow.type and row.category == updatedRow.category and string.lower(row.addedText) == string.lower(updatedRow.addedText) ) then
+		if( row.type == updatedRow.type and row.category == updatedRow.category and ( string.lower(row.addedText) == string.lower(updatedRow.addedText) or string.match(updatedRow.addedText, row.addedText) ) ) then
 			if( not updatedRow.color or ( updatedRow.color and row.color and updatedRow.color.r == row.color.r and updatedRow.color.g == row.color.g and updatedRow.color.b == row.color.b ) ) then
 				rows[id] = updatedRow
 				rows[id].addID = id
@@ -611,12 +611,9 @@ function SSOverlay:RemoveRow(type, category, text, color)
 			-- Check category
 			if( ( category and row.category == category ) or not category ) then
 				-- Check text
-				if( ( text and (string.match(string.lower(row.addedText), string.lower(text)) or text == row.addedText) ) or not text ) then
-					-- Check color
-					if( not color or ( color and row.color and color.r == row.color.r and color.g == row.color.g and color.b == row.color.b ) ) then
-						self.frame.highestWidth = 0
-						table.remove(rows, i)
-					end
+				if( ( text and (string.match(string.lower(text), string.lower(row.addedText)) or text == row.addedText) ) or not text ) then
+					self.frame.highestWidth = 0
+					table.remove(rows, i)
 				end
 			end
 		end

@@ -333,7 +333,7 @@ function Score:WorldStateScoreFrame_Update()
 		local name, _, _, _, _, faction, _, _, _, classToken = GetBattlefieldScore(FauxScrollFrame_GetOffset(WorldStateScoreScrollFrame) + i)
 
 		if( name ) then
-			local nameText = getglobal("WorldStateScoreButton" .. i .. "Name")
+			local nameText = getglobal("WorldStateScoreButton" .. i .. "NameText")
 
 			-- Hide class icons
 			if( SSPVP.db.profile.score.icon ) then
