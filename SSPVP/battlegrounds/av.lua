@@ -151,7 +151,7 @@ function AV:SendTimers()
 	end
 	
 	if( #(send) > 0 ) then
-		PVPSync:SendMessage( "AVTIMERS:TIME:T:0," .. table.concat(send, ","))
+		PVPSync:SendMessage( "AVTIMERS:NEW:T:0," .. table.concat(send, ","))
 	end
 end
 
@@ -171,6 +171,7 @@ function AV:ParseSync(event, ...)
 		return
 	end
 	
+	local isNewAV
 	for i=1, select("#", ...) do
 		local abbrev, factionAbbrev, seconds = string.split(":", (select(i, ...)))
 	
@@ -190,7 +191,7 @@ function AV:ParseSync(event, ...)
 			if( not name ) then
 				return
 			end
-						
+			
 			-- We've seen the data sent, ignore it if we ever send it ourself
 			dataSent[name] = true
 			
@@ -214,7 +215,7 @@ function AV:ParseSync(event, ...)
 				end
 
 				SSOverlay:AddOnClick("timer", "av", name .. ": %s", SSPVP, "PrintTimer", name, GetTime() + seconds, faction)
-				timers[ name ] = {faction = faction, endTime = GetTime() + seconds}
+				timers[name] = {faction = faction, endTime = GetTime() + seconds}
 			end
 		end
 	end
@@ -280,9 +281,6 @@ function ChatFrame_OnEvent(event, ...)
 				SSPVP:Message(L["The Alliance have reset Captain Galvangar."], SSOverlay:GetFactionColor("Alliance"))
 				return
 			end
-		
-		elseif( string.match(arg2, L["(.+) Warmaster"]) or string.match(arg2, L["(.+) Marshal"]) ) then
-			return
 		end
 	end
 	
@@ -359,11 +357,11 @@ function AV:ParseYell(event, msg, from)
 			name = string.gsub(name, "^" .. L["The"], "")
 			name = string.trim(name)
 			
-			timers[name] = {faction = faction, endTime = GetTime() + 300}
-			self:StartIntervalAlerts(name, faction, 300)
+			timers[name] = {faction = faction, endTime = GetTime() + 245}
+			self:StartIntervalAlerts(name, faction, 245)
 
-			SSOverlay:UpdateTimer("av", name .. ": %s", 300, SSOverlay:GetFactionColor(faction))
-			SSOverlay:AddOnClick("timer", "av", name .. ": %s", SSPVP, "PrintTimer", name, GetTime() + 300, faction)
+			SSOverlay:UpdateTimer("av", name .. ": %s", 245, SSOverlay:GetFactionColor(faction))
+			SSOverlay:AddOnClick("timer", "av", name .. ": %s", SSPVP, "PrintTimer", name, GetTime() + 245, faction)
 		
 		-- Node successfully assaulted
 		elseif( string.match(msg, L["(.+) was taken by the"]) ) then
@@ -372,7 +370,7 @@ function AV:ParseYell(event, msg, from)
 			name = string.trim(name)
 			
 			timers[name] = nil
-			SSOverlay:RemoveRow("timer", "av", name)
+			SSOverlay:RemoveRow("timer", "av", name .. ": %s")
 		
 		-- Node successfully destroyed
 		elseif( string.match(msg, L["(.+) was destroyed by the"]) ) then
@@ -381,7 +379,7 @@ function AV:ParseYell(event, msg, from)
 			name = string.trim(name)
 			
 			timers[name] = nil
-			SSOverlay:RemoveRow("timer", "av", name)
+			SSOverlay:RemoveRow("timer", "av", name .. ": %s")
 		end
 	
 	-- Ivus the Forest Lord was summoned successfully
@@ -403,19 +401,19 @@ end
 -- Parse the claim messages at the start of AV
 function AV:ParseHorde(event, msg)
 	if( string.match(msg, L["claims the (.+) graveyard!"]) ) then
-		SSOverlay:UpdateTimer("av", L["Snowfall Graveyard"] .. ": %s", 300, SSOverlay:GetFactionColor("Horde"))
+		SSOverlay:UpdateTimer("av", L["Snowfall Graveyard"] .. ": %s", 245, SSOverlay:GetFactionColor("Horde"))
 		SSOverlay:AddOnClick("timer", "av", L["Snowfall Graveyard"] .. ": %s", SSPVP, "PrintTimer", name, GetTime() + 600, "Horde")
 
-		self:StartIntervalAlerts(L["Snowfall Graveyard"], "Horde", 300)
+		self:StartIntervalAlerts(L["Snowfall Graveyard"], "Horde", 245)
 	end
 end
 
 function AV:ParseAlliance(event, msg)
 	if( string.match(msg, L["claims the (.+) graveyard!"]) ) then
-		SSOverlay:UpdateTimer("av", L["Snowfall Graveyard"] .. ": %s", 300, SSOverlay:GetFactionColor("Alliance"))
-		SSOverlay:AddOnClick("timer", "av", L["Snowfall Graveyard"] .. ": %s", SSPVP, "PrintTimer", name, GetTime() + 300, "Alliance")
+		SSOverlay:UpdateTimer("av", L["Snowfall Graveyard"] .. ": %s", 245, SSOverlay:GetFactionColor("Alliance"))
+		SSOverlay:AddOnClick("timer", "av", L["Snowfall Graveyard"] .. ": %s", SSPVP, "PrintTimer", name, GetTime() + 245, "Alliance")
 
-		self:StartIntervalAlerts(L["Snowfall Graveyard"], "Alliance", 300)
+		self:StartIntervalAlerts(L["Snowfall Graveyard"], "Alliance", 245)
 	end
 end
 

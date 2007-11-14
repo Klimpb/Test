@@ -22,13 +22,6 @@ function Arena:Initialize()
 	cmd:RegisterSlashHandler(L["percent <playedGames> <totalGames> - Calculates how many games you will need to play to reach 30% using the passed played games and total games."], "percent (%d+) (%d+)", "CalculateGoal")
 end
 
--- Stealth buff timer
-function Arena:CHAT_MSG_BG_SYSTEM_NEUTRAL(event, message)
-	if( message == L["The Arena battle has begun!"] ) then
-		SSOverlay:UpdateTimer("arena", L["Stealth buff: %s"], 92)
-	end
-end
-
 -- Calculates RATING -> POINTS
 local function GetPoints(rating, teamSize)
 	teamSize = teamSize or 5
@@ -119,12 +112,12 @@ function Arena:SetRating(parent, teamSize, teamRating)
 	ratingText:SetPoint("LEFT", parent .. "DataRatingLabel", "RIGHT", 2, 0)
 
 	label:ClearAllPoints()
-	label:SetPoint("LEFT", parent .. "DataName", "RIGHT", -19, 0)
+	label:SetPoint("LEFT", parent .. "DataName", "RIGHT", -12, 0)
 
-	ratingText:SetText( string.format( "%d |cffffffff(%d)|r", teamRating, GetPoints(teamRating, teamSize) ) )
+	ratingText:SetText(string.format("%d |cffffffff(%d)|r", teamRating, GetPoints(teamRating, teamSize)))
 	ratingText:SetWidth(70)
 
-	getglobal(parent .. "DataName"):SetWidth(160)
+	getglobal(parent .. "DataName"):SetWidth(130)
 end
 
 -- Add points next to rating
