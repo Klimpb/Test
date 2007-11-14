@@ -313,7 +313,7 @@ end
 -- Block ignore types of messages
 local Orig_ChatFrame_OnEvent = ChatFrame_OnEvent
 function ChatFrame_OnEvent(event, ...)
-	if( arg1 ) then
+	if( arg1 and event == "CHAT_MSG_SYSTEM" ) then
 		if( scanRunning or tempBlock ) then
 			if( string.match(arg1, ERR_IGNORE_NOT_FOUND) or string.match(arg1, ERR_FRIEND_NOT_FOUND) or string.match(arg1, ignoreRemoved) or string.match(arg1, ignoreAdded) or string.match(arg1, alreadyIgnore) ) then
 				return
