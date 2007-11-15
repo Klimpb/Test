@@ -550,7 +550,7 @@ local function createListRow(parent, id)
 	button:SetHighlightTextColor(HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b)
 	
 	-- GetFontString() returns nil until we SetText
-	button:SetText("")
+	button:SetText("*")
 	button:GetFontString():SetPoint("LEFT", button, "LEFT", 40, 0)
 
 	local highlight = button:CreateTexture(nil, "BACKGROUND")
