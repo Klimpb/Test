@@ -1,6 +1,0 @@
-## Interface: 20003
-## Title: BoWRaid Assist
-## Notes: Handles main assists for BoWRaid
-## DefaultState: enabled
-## Dependencies: BoWRaid
-BoWRaid_Assist.xml

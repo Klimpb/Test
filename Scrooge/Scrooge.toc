@@ -1,7 +1,0 @@
-## Interface: 20200
-## Title: Uncle Scrooge
-## Notes: How do you get to be the most richest duck in the world? Steal Ace2/Rock donations links/buttons!
-## Author: Shadowed
-## X-Category: Miscellaneous
-
-Scrooge.lua
