@@ -1,0 +1,7 @@
+## Interface: 20300
+## Title: Personal Rating
+## Notes: Shows your highest personal rating on the PvP Frame
+## Version: $Revision$
+## Author: Mayen
+
+PersonalRating.lua
