@@ -1,0 +1,29 @@
+## Interface: 20300
+## Title: SSPVP 2
+## Version: $Revision: 362 $
+## Notes: PvP, Battleground and Arena mod
+## Author: Mayen
+## SavedVariables: SSPVPDB
+## OptionalDeps: LibStub, OptionHouse, HousingAuthority
+
+lib\Dongle.lua
+lib\OptionHouse.lua
+lib\HousingAuthority.lua
+
+localization.enUS.lua
+localization.deDE.lua
+localization.frFR.lua
+
+SSPVP.lua
+
+extras\config.lua
+extras\mover.lua
+extras\overlay.lua
+extras\sync.lua
+extras\score.lua
+extras\arena.lua
+
+battlegrounds\ab.lua
+battlegrounds\av.lua
+battlegrounds\eots.lua
+battlegrounds\wsg.lua
