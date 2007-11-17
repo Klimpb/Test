@@ -8,10 +8,17 @@ local dataSent = {}
 local timers = {}
 local intervalAlerts = {}
 
+local allianceReinf = 0
+local hordeReinf = 0
+
+
 function AV:Initialize()
 	self:RegisterMessage("SS_QUEUEAV_REQ", "SyncQueue")
 	self:RegisterMessage("SS_CANCELAV_REQ", "ClearSyncOverlay")
 	self:RegisterMessage("SS_QUEUECD_DATA", "SyncOverlay")
+
+	self:RegisterEvent("CHAT_MSG_PARTY", "ParseQueueMsg")
+	self:RegisterEvent("CHAT_MSG_RAID", "ParseQueueMsg")
 	
 	local cmd = self:InitializeSlashCommand(L["SSPVP Alterac Valley commands"], "SSAV", "ssav")
 	cmd:RegisterSlashHandler(L["sync <count> - Starts an Alterac Valley sync queue count down."], "sync (%d+)", "StartAVSync")
@@ -45,13 +52,15 @@ function AV:EnableModule()
 	self:RegisterEvent("CHAT_MSG_MONSTER_YELL", "ParseYell")
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "ParseHorde")
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "ParseAlliance")
-	self:RegisterEvent("CHAT_MSG_PARTY", "ParseQueueMsg")
-	self:RegisterEvent("CHAT_MSG_RAID", "ParseQueueMsg")
-
+	self:RegisterEvent("UPDATE_WORLD_STATES")
+	
 	self:RegisterMessage("SS_AVTIMERS_REQ", "ResponseDelay")
 	self:RegisterMessage("SS_AVTIMERS_DATA", "ParseSync")
 
 	PVPSync:SendMessage("AVTIMERS")
+	
+	allianceReinf = 0
+	hordeReinf = 0
 	
 	for _, item in pairs(flavorItems) do
 		if( SSPVP.db.profile.av[item.type] ) then
@@ -71,6 +80,13 @@ function AV:DisableModule()
 
 	self:UnregisterAllMessages()
 	self:UnregisterAllEvents()
+	
+	self:RegisterEvent("CHAT_MSG_PARTY", "ParseQueueMsg")
+	self:RegisterEvent("CHAT_MSG_RAID", "ParseQueueMsg")
+
+	self:RegisterMessage("SS_QUEUEAV_REQ", "SyncQueue")
+	self:RegisterMessage("SS_CANCELAV_REQ", "ClearSyncOverlay")
+	self:RegisterMessage("SS_QUEUECD_DATA", "SyncOverlay")
 	
 	SSOverlay:RemoveCategory("av")
 	SSOverlay:RemoveCategory("avitems")
@@ -95,6 +111,36 @@ function AV:Reload()
 		
 		PVPSync:SendMessage("AVTIMERS")
 	end
+end
+
+-- Figure out when captains died
+function AV:UPDATE_WORLD_STATES()
+	local _, _, allianceText = GetWorldStateUIInfo(1)
+	local _, _, hordeText = GetWorldStateUIInfo(2)
+	
+	-- Figure out how many reinforcements Alliance lost
+	local reinf = string.match(allianceText, L["Reinforcements: ([0-9]+)"])
+	reinf = tonumber(reinf) or 0
+	
+	if( allianceReinf > 0 ) then
+		if( (allianceReinf - reinf) == 100 ) then
+			SSPVP:Message(L["The Horde have slain Captain Balinda Stonehearth."], SSOverlay:GetFactionColor("Horde"))
+		end
+	end
+	
+	allianceReinf = reinf
+	
+	-- Now figure out how many Horde lost
+	local reinf = string.match(hordeText, L["Reinforcements: ([0-9]+)"])
+	reinf = tonumber(reinf) or 0
+
+	if( hordeReinf > 0 ) then
+		if( (hordeReinf - reinf) == 100 ) then
+			SSPVP:Message(L["The Alliance have slain Captain Galvangar."], SSOverlay:GetFactionColor("Alliance"))
+		end
+	end
+	
+	hordeReinf = reinf
 end
 
 -- Print all timers to chat
@@ -386,14 +432,14 @@ function AV:ParseYell(event, msg, from)
 	elseif( from == L["Ivus the Forest Lord"] and string.match(arg1, L["Wicked, wicked, mortals"]) ) then
 		timers[L["Ivus the Forest Lord"]] = {faction = "Alliance", endTime = GetTime() + 600}
 
-		SSOverlay:UpdateTimer("av", "timer", L["Ivus the Forest Lord Moving: %s"], 600, SSOverlay:GetFactionColor("Horde"))
+		SSOverlay:UpdateTimer("av", L["Ivus the Forest Lord Moving: %s"], 600, SSOverlay:GetFactionColor("Horde"))
 		SSOverlay:AddOnClick("timer", "av", L["Ivus the Forest Lord Moving: %s"], SSPVP, "PrintTimer", name, GetTime() + 600, faction)
 	
 	-- Lokholar the Ice Lord was summoned successfully
 	elseif( from == L["Lokholar the Ice Lord"] and string.match(arg1, L["WHO DARES SUMMON LOKHOLA"]) ) then
 		timers[L["Lokholar the Ice Lord"]] = {faction = "Horde", endTime = GetTime() + 600}
 
-		SSOverlay:UpdateTimer("av", "timer", L["Lokholar the Ice Lord Moving: %s"], 600, SSOverlay:GetFactionColor("Horde"))
+		SSOverlay:UpdateTimer("av", L["Lokholar the Ice Lord Moving: %s"], 600, SSOverlay:GetFactionColor("Horde"))
 		SSOverlay:AddOnClick("timer", "av", L["Lokholar the Ice Lord Moving: %s"], SSPVP, "PrintTimer", name, GetTime() + 600, faction)
 	end
 end

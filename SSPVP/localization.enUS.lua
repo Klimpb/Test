@@ -242,7 +242,9 @@ SSPVPLocals = {
 		["IVUS"] = "Ivus the Forst Lord",
 		["LOKH"] = "Lokholar the Ice Lord",
 	},
-		
+	
+	["Reinforcements: ([0-9]+)"] = "Reinforcements: ([0-9]+)",
+	
 	-- Gods
 	["Ivus the Forest Lord"] = "Ivus the Forest Lord",
 	["Lokholar the Ice Lord"] = "Lokholar the Ice Lord",
@@ -260,6 +262,7 @@ SSPVPLocals = {
 	-- Captain Galvangar
 	["Captain Galvangar"] = "Captain Galvangar",
 	
+	["The Alliance have slain Captain Galvangar."] = "The Alliance have slain Captain Galvangar.",
 	["The Alliance have engaged Captain Galvangar."] = "The Alliance have engaged Captain Galvangar.",
 	["The Alliance have reset Captain Galvangar."] = "The Alliance have reset Captain Galvangar.",
 	
@@ -269,6 +272,7 @@ SSPVPLocals = {
 	-- Captain Balinda
 	["Captain Balinda Stonehearth"] = "Captain Balinda Stonehearth",
 	
+	["The Horde have slain Captain Balinda Stonehearth."] = "The Horde have slain Captain Balinda Stonehearth.",
 	["The Horde have engaged Captain Balinda Stonehearth."] = "The Horde have engaged Captain Balinda Stonehearth.",
 	["The Horde have reset Captain Balinda Stonehearth."] = "The Horde have reset Captain Balinda Stonehearth.",
 	
