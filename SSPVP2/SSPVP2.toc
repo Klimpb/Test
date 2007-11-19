@@ -6,24 +6,17 @@
 ## SavedVariables: SSPVPDB
 ## OptionalDeps: LibStub, OptionHouse, HousingAuthority
 
-lib\Dongle.lua
+lib\AceAddon-3.0\AceAddon-3.0.xml
+lib\AceConsole-3.0\AceConsole-3.0.xml
+lib\AceDB-3.0\AceDB-3.0.xml
+lib\AceEvent-3.0\AceEvent-3.0.xml
+lib\AceTimer-3.0\AceTimer-3.0.xml
 lib\OptionHouse.lua
 lib\HousingAuthority.lua
+
 
 localization.enUS.lua
 localization.deDE.lua
 localization.frFR.lua
 
-SSPVP.lua
-
-extras\config.lua
-extras\mover.lua
-extras\overlay.lua
-extras\sync.lua
-extras\score.lua
-extras\arena.lua
-
-battlegrounds\ab.lua
-battlegrounds\av.lua
-battlegrounds\eots.lua
-battlegrounds\wsg.lua
+SSPVP2.lua
