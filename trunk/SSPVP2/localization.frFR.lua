@@ -1,8 +1,7 @@
 if( GetLocale() ~= "frFR" ) then
-	return;
+	return
 end
 
-SSPVPLocals = setmetatable( {
+SSPVPLocals = setmetatable({
 
-}, { __index = SSPVPLocals } );
-
+}, {__index = SSPVPLocals})
