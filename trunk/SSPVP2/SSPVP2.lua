@@ -197,7 +197,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				for name, module in pairs(self.modules) do
 					if( module.EnableModule and ( ( abbrev == module.activeIn ) or ( abbrev ~= "arena" and module.activeIn == "bg" ) or ( module.activeIn == "bf" ) ) ) then
 						module.isActive = true
-						module.EnableModule(module)
+						module.EnableModule(module, abbrev)
 					end
 				end
 
@@ -376,6 +376,28 @@ function SSPVP:GetAbbrev(map)
 	return ""
 end
 
+function SSPVP:ParseNode(node)
+	node = string.gsub(string.lower(node), "^" .. L["The"], "")
+	node = string.trim(node)
+	
+	-- Mostly for looks
+	if( GetLocale() == "enUS" ) then
+		node = string.upper(string.sub(node, 0, 1)) .. string.sub(node, 2)
+	end
+
+	return node
+end
+
+function SSPVP:GetFactionColor(faction)
+	if( faction == "Alliance" or faction == "CHAT_MSG_BG_SYSTEM_ALLIANCE" ) then
+		return ChatTypeInfo["BG_SYSTEM_ALLIANCE"]
+	elseif( faction == "Horde" or faction == "CHAT_MSG_BG_SYSTEM_HORDE" ) then
+		return ChatTypeInfo["BG_SYSTEM_HORDE"]
+	end
+	
+	return ChatTypeInfo["BG_SYSTEM_NEUTRAL"]
+end
+
 function SSPVP:Echo(msg)
 	DEFAULT_CHAT_FRAME:AddMessage(msg)
 end
@@ -383,6 +405,7 @@ end
 function SSPVP:Print(msg)
 	DEFAULT_CHAT_FRAME:AddMessage("|cFF33FF99SSPVP|r: " .. msg)
 end
+
 
 -- Queuing things to run when we leave combat
 function SSPVP:PLAYER_REGEN_ENABLED()
