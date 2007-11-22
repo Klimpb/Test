@@ -25,3 +25,5 @@ modules\sync.lua
 modules\score.lua
 modules\overlay.lua
 modules\arena.lua
+modules\ab.lua
+modules\battleground.lua
