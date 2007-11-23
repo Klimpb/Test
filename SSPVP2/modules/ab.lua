@@ -28,6 +28,11 @@ end
 
 function AB:DisableModule()
 	self:UnregisterAllEvents()
+	
+	for k in pairs(timers) do
+		timers[k] = nil
+		SSOverlay:RemoveRow(k)
+	end
 end
 
 function AB:PrintTimer(node, captureTime, faction)
@@ -37,23 +42,34 @@ function AB:PrintTimer(node, captureTime, faction)
 		faction = L["Alliance"]
 	end
 	
-	Debug(string.format(L["[%s] %s: %s"], faction, node, SecondsToTime(captureTime - GetTime())))
+	SSPVP:ChannelMessage(string.format(L["[%s] %s: %s"], faction, node, SecondsToTime(captureTime - GetTime())))
 end
 
 function AB:ParseCombat(event, msg)
 	if( string.match(msg, L["claims the ([^!]+)"]) ) then
 		local name = string.match(msg, L["claims the ([^!]+)"])
 		local node = SSPVP:ParseNode(name)
+		timers[name] = GetTime() + 62
+		
 		SSOverlay:RegisterTimer(name, "timer", node .. ": %s", 62, SSPVP:GetFactionColor(event))
-		SSOverlay:RegisterOnClick(name, self, "PrintTimer", node, GetTime() + 62, event)
+		SSOverlay:RegisterOnClick(name, self, "PrintTimer", node, timers[name], event)
+				
 	elseif( string.match(msg, L["has assaulted the ([^!]+)"]) ) then
 		local name = string.match(msg, L["has assaulted the ([^!]+)"])
 		local node = SSPVP:ParseNode(name)
+		timers[name] = GetTime() + 62
+		
 		SSOverlay:RegisterTimer(name, "timer", node .. ": %s", 62, SSPVP:GetFactionColor(event))
-		SSOverlay:RegisterOnClick(name, self, "PrintTimer", node, GetTime() + 62, event)
+		SSOverlay:RegisterOnClick(name, self, "PrintTimer", node, timers[name], event)
 	elseif( string.match(msg, L["has taken the ([^!]+)"]) ) then
-		SSOverlay:RemoveRow(string.match(msg, L["has taken the ([^!]+)"]))
+		local name = string.match(msg, L["has taken the ([^!]+)"])
+		
+		timers[name] = nil
+		SSOverlay:RemoveRow(name)
 	elseif( string.match(msg, L["has defended the ([^!]+)"]) ) then
-		SSOverlay:RemoveRow(string.match(msg, L["has defended the ([^!]+)"]))
+		local name = string.match(msg, L["has defended the ([^!]+)"])
+		
+		timers[name] = nil
+		SSOverlay:RemoveRow(name)
 	end
 end
