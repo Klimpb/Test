@@ -21,6 +21,10 @@ local confirmPortLeave = {}
 function SSPVP:OnInitialize()
 	self.defaults = {
 		profile = {
+			general = {
+				sound = "",
+				channel = "BATTLEGROUND",
+			},
 			priorities = {
 				afk = 1,
 				ratedArena = 2,
@@ -377,7 +381,7 @@ function SSPVP:GetAbbrev(map)
 end
 
 function SSPVP:ParseNode(node)
-	node = string.gsub(string.lower(node), "^" .. L["The"], "")
+	node = string.gsub(node, "^" .. L["The"], "")
 	node = string.trim(node)
 	
 	-- Mostly for looks
@@ -398,14 +402,26 @@ function SSPVP:GetFactionColor(faction)
 	return ChatTypeInfo["BG_SYSTEM_NEUTRAL"]
 end
 
-function SSPVP:Echo(msg)
-	DEFAULT_CHAT_FRAME:AddMessage(msg)
+function SSPVP:Echo(msg, color)
+	if( color ) then
+		DEFAULT_CHAT_FRAME:AddMessage(msg, color.r, color.g, color.b)	
+
+	else
+		DEFAULT_CHAT_FRAME:AddMessage(msg)
+	end
 end
 
 function SSPVP:Print(msg)
 	DEFAULT_CHAT_FRAME:AddMessage("|cFF33FF99SSPVP|r: " .. msg)
 end
 
+function SSPVP:ChannelMessage(msg)
+	if( GetNumRaidMembers() == 0 and GetNumPartyMembers() == 0 ) then
+		return
+	end
+	
+	SendChatMessage("[SS] " .. msg, self.db.profile.general.channel)
+end
 
 -- Queuing things to run when we leave combat
 function SSPVP:PLAYER_REGEN_ENABLED()

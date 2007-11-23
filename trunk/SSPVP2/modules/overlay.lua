@@ -15,6 +15,7 @@ local categories = {
 	["timer"] = { label = L["Timers"], order = 20 },
 	["match"] = { label = L["Match Info"], order = 30 },
 	["base"] = { label = L["Bases to win"], order = 40 },
+	["mine"] = { label = L["Mine Reinforcement"], order = 50 },
 }
 
 function SSOverlay:OnEnable()
@@ -37,9 +38,7 @@ end
 
 local function onClick(self)
 	-- So you won't accidentally click the overlay, make sure we have an on click too
-
 	if( not IsModifierKeyDown() or not rows[self.dataID].func ) then
-
 		return
 	end
 	
@@ -111,8 +110,9 @@ end
 function SSOverlay:UpdateOverlay()
 	local totalRows = #(rows)
 	if( totalRows == 0 ) then
+		longestText = 0
+		
 		if( self.frame ) then
-
 			self.frame:Hide()
 
 		end
@@ -162,7 +162,7 @@ function SSOverlay:UpdateOverlay()
 		row:Show()
 		
 		if( longestText < row.text:GetStringWidth() ) then
-			longestText = row.text:GetStringWidth() + 20
+			longestText = row.text:GetStringWidth() + 30
 		end
 	end
 	
@@ -184,6 +184,9 @@ end
 
 -- Remove an entry by id or category
 function SSOverlay:RemoveAll()
+	longestText = 0
+	
+
 	for i=#(rows), 1, -1 do
 		table.remove(rows, i)
 	end
@@ -215,7 +218,6 @@ function SSOverlay:RemoveRow(id)
 
 			
 			self:UpdateOverlay()
-
 		end
 	end
 end
