@@ -46,6 +46,16 @@ SSPVPLocals = {
 	
 	["[%s] %s: %s"] = "[%s] %s: %s",
 	
+	-- Sync queuing for AV
+	["Alterac Valley queue stopped."] = "Alterac Valley queue stopped.",
+	["Queuing for Alterac Valley in %d seconds."] = "Queueing for Alterac Valley in %d seconds.",
+	["Queuing for Alterac Valley in %d second."] = "Queueing for Alterac Valley in %d second.",
+	["Queue for Alterac Valley!"] = "Queue for Alterac Valley!",
+	
+	["You must be in a raid or party to do this."] = "You must be in a raid or party to do this.",
+	["You have been queued for Alterac Valley by %s."] = "You have been queued for Alterac Valley by %s.",
+	["Invalid number entered for sync queue."] = "Invalid number entered for sync queue.",
+	
 	-- CT support
 	["-%d Reinforcements"] = "-%d Reinforcements",
 	["+%d Points"] = "+%d Points",
@@ -134,6 +144,10 @@ SSPVPLocals = {
 	["SSPVP Arena slash commands"] = "SSPVP Arena slash commands",
 	[" - points <rating> - Calculates points given from the passed rating."] = " - points <rating> - Calculates points given from the passed rating.",
 	[" - rating <points> - Calculates rating required to reach the passed points."] = " - rating <points> - Calculates rating required to reach the passed points.",
+	
+	["SSPVP Alterac Valley slash commands"] = "SSPVP Alterac Valley slash commands",
+	[" - sync <seconds> - Starts a count down for an Alterac Valley sync queue."] = " - sync <seconds> - Starts a count down for an Alterac Valley sync queue.",
+	[" - cancel - Cancels a running sync."] = " - cancel - Cancels a running sync.",
 
 	["[%d vs %d] %d rating = %d points"] = "[%d vs %d] %d rating = %d points",
 	["[%d vs %d] %d rating = %d points - %d%% = %d points"] = "[%d vs %d] %d rating = %d points - %d%% = %d points",

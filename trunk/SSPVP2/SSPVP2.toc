@@ -21,10 +21,10 @@ localization.frFR.lua
 
 SSPVP2.lua
 
-modules\sync.lua
 modules\score.lua
 modules\overlay.lua
 modules\arena.lua
 modules\av.lua
+modules\avsync.lua
 modules\ab.lua
 modules\battleground.lua
