@@ -46,6 +46,10 @@ SSPVPLocals = {
 	
 	["[%s] %s: %s"] = "[%s] %s: %s",
 	
+	-- CT support
+	["-%d Reinforcements"] = "-%d Reinforcements",
+	["+%d Points"] = "+%d Points",
+	
 	-- Score tooltip
 	["%s (%d players)"] = "%s (%d players)",
 	["Servers"] = "Servers",
