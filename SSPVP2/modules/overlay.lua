@@ -73,7 +73,7 @@ local function onUpdate(self)
 			
 		-- Do a quick recheck incase the text got bigger in the update without
 		-- something being removed/added
-		if( longestText < self.text:GetStringWidth() ) then
+		if( longestText < (self.text:GetStringWidth() + 10) ) then
 			longestText = self.text:GetStringWidth() + 20
 			SSOverlay.frame:SetWidth(longestText)
 		end
@@ -110,6 +110,16 @@ function SSOverlay:UpdateCategoryText()
 			self:RegisterRow("catText", "cat" .. name, name, categories[name].label, nil, nil, 1)
 		else
 			self:RemoveRow("cat" .. name)
+		end
+	end
+end
+
+function SSOverlay:Dump()
+	SSPVP:Echo("Longest " .. longestText)
+	
+	for i=1, CREATED_ROWS do
+		if( self.rows[i]:IsVisible() ) then
+			SSPVP:Echo("[" .. self.rows[i].text:GetStringWidth() .. "] " .. self.rows[i].text:GetText())
 		end
 	end
 end
@@ -168,7 +178,7 @@ function SSOverlay:UpdateOverlay()
 		row.dataID = id
 		row:Show()
 		
-		if( longestText < row.text:GetStringWidth() ) then
+		if( longestText < (row.text:GetStringWidth() + 10) ) then
 			longestText = row.text:GetStringWidth() + 20
 		end
 	end
