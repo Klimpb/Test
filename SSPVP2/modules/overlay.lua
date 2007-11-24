@@ -70,6 +70,13 @@ local function onUpdate(self)
 		SSOverlay:RemoveRow(row.id)
 	else
 		self.text:SetFormattedText(row.text, SecondsToTime(row.seconds))
+			
+		-- Do a quick recheck incase the text got bigger in the update without
+		-- something being removed/added
+		if( longestText < self.text:GetStringWidth() ) then
+			longestText = self.text:GetStringWidth() + 20
+			SSOverlay.frame:SetWidth(longestText)
+		end
 	end
 end
 
@@ -162,7 +169,7 @@ function SSOverlay:UpdateOverlay()
 		row:Show()
 		
 		if( longestText < row.text:GetStringWidth() ) then
-			longestText = row.text:GetStringWidth() + 30
+			longestText = row.text:GetStringWidth() + 20
 		end
 	end
 	
@@ -236,7 +243,6 @@ function SSOverlay:RemoveCategory(category)
 		catCount[category] = nil
 		
 		self:UpdateCategoryText()
-
 		self:UpdateOverlay()
 	end
 end

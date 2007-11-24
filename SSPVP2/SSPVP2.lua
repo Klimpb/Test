@@ -423,6 +423,27 @@ function SSPVP:ChannelMessage(msg)
 	SendChatMessage("[SS] " .. msg, self.db.profile.general.channel)
 end
 
+-- Quick access to whatever combat text mod is being used
+function SSPVP:CombatText(text, color)	
+	-- SCT
+	if( IsAddOnLoaded("sct") ) then
+		SCT:DisplayText(text, color, nil, "event", 1)
+	
+	-- MSBT
+	elseif( IsAddOnLoaded("MikScrollingBattleText") ) then
+		MikSBT:DisplayMessage(text, MikSBT.DISPLAYTYPE_NOTIFICATION, false, color.r, color.g, color.b)		
+	
+	-- Blizzard custom text
+	elseif( IsAddOnLoaded("Blizzard_CombatText") ) then
+		-- Haven't cached the movement function yet
+		if( not COMBAT_TEXT_SCROLL_FUNCTION ) then
+			CombatText_UpdateDisplayedMessages()
+		end
+		
+		CombatText_AddMessage(text, COMBAT_TEXT_SCROLL_FUNCTION, color.r, color.g, color.b)
+	end
+end
+
 -- Queuing things to run when we leave combat
 function SSPVP:PLAYER_REGEN_ENABLED()
 	for i=#(queuedUpdates), 1, -1 do

@@ -19,6 +19,7 @@ function AV:OnEnable()
 			mine = false,
 			speed = 0.50,
 			interval = 60,
+			combat = true,
 		},
 	}
 
@@ -63,7 +64,6 @@ function AV:Message(alert)
 	-- so we have to do extra checks here to be safe
 	if( not timers[alert.name] or not self.db.profile.announce ) then
 		return
-
 	end
 	
 
@@ -102,6 +102,11 @@ function AV:UPDATE_WORLD_STATES()
 		local diff = allianceReinf - reinf
 		if( diff == 100 ) then
 			SSPVP:Echo(L["The Horde has slain Captain Balinda Stonehearth."], SSPVP:GetFactionColor("Horde"))
+			
+			if( self.db.profile.combat ) then
+				SSPVP:CombatText(string.format(L["-%d Reinforcements"], 100), SSPVP:GetFactionColor("Alliance"))
+			end
+			
 		elseif( diff < 0 ) then
 			allianceGain = allianceGain + (diff * -1)
 			
@@ -121,6 +126,10 @@ function AV:UPDATE_WORLD_STATES()
 		local diff = hordeReinf - reinf
 		if( diff == 100 ) then
 			SSPVP:Echo(L["The Alliance has slain Captain Galvangar."], SSPVP:GetFactionColor("Alliance"))
+
+			if( self.db.profile.combat ) then
+				SSPVP:CombatText(string.format(L["-%d Reinforcements"], 100), SSPVP:GetFactionColor("Horde"))
+			end
 		elseif( diff < 0 ) then
 			hordeGain = hordeGain + (diff * -1)
 			
@@ -174,6 +183,18 @@ function AV:CHAT_MSG_MONSTER_YELL(event, msg, npc)
 			
 			timers[name] = nil
 			SSOverlay:RemoveRow(name)
+			
+			-- Show reinforcement lost on CT
+			if( self.db.profile.combat ) then
+				local revFaction
+				if( faction == "Alliance" ) then
+					revFaction = "Horde"
+				else
+					revFaction = "Alliance"
+				end
+				
+				SSPVP:CombatText(string.format(L["-%d Reinforcements"], 75), SSPVP:GetFactionColor(revFaction))
+			end
 		end
 	
 	-- Ivus the Forest Lord was summoned successfully
