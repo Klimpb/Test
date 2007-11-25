@@ -14,8 +14,9 @@ local categories = {
 	["faction"] = { label = L["Faction Balance"], order = 0 },
 	["timer"] = { label = L["Timers"], order = 20 },
 	["match"] = { label = L["Match Info"], order = 30 },
-	["base"] = { label = L["Bases to win"], order = 40 },
+	--["base"] = { label = L["Bases to win"], order = 40 },
 	["mine"] = { label = L["Mine Reinforcement"], order = 50 },
+	["queue"] = { label = L["Battlefield Queue"], order = 60 },
 }
 
 function SSOverlay:OnEnable()
@@ -66,11 +67,11 @@ local function onUpdate(self)
 	
 	row.lastUpdate = time
 	
-	if( floor(row.seconds) <= 0 ) then
+	if( floor(row.seconds) <= 0 and row.type == "down" ) then
 		SSOverlay:RemoveRow(row.id)
 	else
 		self.text:SetFormattedText(row.text, SecondsToTime(row.seconds))
-			
+		
 		-- Do a quick recheck incase the text got bigger in the update without
 		-- something being removed/added
 		if( longestText < (self.text:GetStringWidth() + 10) ) then
@@ -114,15 +115,6 @@ function SSOverlay:UpdateCategoryText()
 	end
 end
 
-function SSOverlay:Dump()
-	SSPVP:Echo("Longest " .. longestText)
-	
-	for i=1, CREATED_ROWS do
-		if( self.rows[i]:IsVisible() ) then
-			SSPVP:Echo("[" .. self.rows[i].text:GetStringWidth() .. "] " .. self.rows[i].text:GetText())
-		end
-	end
-end
 
 function SSOverlay:UpdateOverlay()
 	local totalRows = #(rows)
@@ -259,15 +251,15 @@ end
 
 -- Adding new rows
 function SSOverlay:RegisterText(id, category, text, color)
-	self:RegisterRow("text", id, category, text, color, nil, 4)
+	self:RegisterRow("text", id, category, text, color, nil, 2)
 end
 
 function SSOverlay:RegisterTimer(id, category, text, seconds, color)
-	self:RegisterRow("down", id, category, text, color, seconds, 2)
+	self:RegisterRow("down", id, category, text, color, seconds, 3)
 end
 
 function SSOverlay:RegisterElapsed(id, category, text, seconds, color)
-	self:RegisterRow("up", id, category, text, color, seconds, 3)
+	self:RegisterRow("up", id, category, text, color, seconds, 4)
 end
 
 -- Generic register, only used internally
@@ -300,7 +292,10 @@ function SSOverlay:RegisterRow(type, id, category, text, color, seconds, priorit
 	if( type == "up" or type == "down" ) then
 		row.seconds = seconds
 		row.lastUpdate = GetTime()
-	end	
+	else
+		row.seconds = nil
+		row.lastUpdate = nil
+	end
 
 	-- New row time
 	if( newRow ) then

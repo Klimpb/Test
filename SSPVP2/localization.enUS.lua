@@ -12,7 +12,11 @@ SSPVPLocals = {
 	
 	["Rated"] = "Rated",
 	["Skirmish"] = "Skirmish",
-	
+	["Arena"] = "Arena",
+	["All Arenas"] = "All Arenas",
+	["%s (%dvs%d)"] = "%s (%dvs%d)",
+	["Rated Arena"] = "Rated Arena",
+	["Skirmish Arena"] = "Skirmish Arena",
 
 	["You are now in the queue for %s Arena (%dvs%d)."] = "You are now in the queue for %s Arena (%dvs%d).",
 	["You are now in the queue for %s."] = "You are now in the queue for %s.",
@@ -46,10 +50,16 @@ SSPVPLocals = {
 	
 	["[%s] %s: %s"] = "[%s] %s: %s",
 	
+	["Unavailable"] = "Unavailable",
+	["<1 minute"] = "<1 minute",
+	["Join Suspended"] = "Join Suspended",
+	["Joining"] = "Joining",
+	["(.+) Mark of Honor"] = "(.+) Mark of Honor",
+	
 	-- Sync queuing for AV
 	["Alterac Valley queue stopped."] = "Alterac Valley queue stopped.",
-	["Queuing for Alterac Valley in %d seconds."] = "Queueing for Alterac Valley in %d seconds.",
-	["Queuing for Alterac Valley in %d second."] = "Queueing for Alterac Valley in %d second.",
+	["Queuing for Alterac Valley in %d seconds."] = "Queuing for Alterac Valley in %d seconds.",
+	["Queuing for Alterac Valley in %d second."] = "Queuing for Alterac Valley in %d second.",
 	["Queue for Alterac Valley!"] = "Queue for Alterac Valley!",
 	
 	["You must be in a raid or party to do this."] = "You must be in a raid or party to do this.",
@@ -70,6 +80,12 @@ SSPVPLocals = {
 	["has taken the ([^!]+)"] = "has taken the ([^!]+)",
 	["has assaulted the ([^!]+)"] = "has assaulted the ([^!]+)",
 	["has defended the ([^!]+)"] = "has defended the ([^!]+)",
+	
+	["Bases: ([0-9]+)  Resources: ([0-9]+)/2000"] = "Bases: ([0-9]+)  Resources: ([0-9]+)/2000",
+	["Final Score: %d"] = "Final Score: %d",
+	["Time Left: %s"] = "Time Left: %s",
+	["Bases to win: %d"] = "Bases to win: %d",
+	["Base Final: %d"] = "Base Final: %d",
 	
 	-- Alterac valley stuff
 	["Herald"] = "Herald",
@@ -148,7 +164,14 @@ SSPVPLocals = {
 	["SSPVP Alterac Valley slash commands"] = "SSPVP Alterac Valley slash commands",
 	[" - sync <seconds> - Starts a count down for an Alterac Valley sync queue."] = " - sync <seconds> - Starts a count down for an Alterac Valley sync queue.",
 	[" - cancel - Cancels a running sync."] = " - cancel - Cancels a running sync.",
-
+	
+	["SSPVP slash commands"] = "SSPVP slash commands",
+	[" - suspend - Suspends auto join and leave for 5 minutes, or until you log off."] = " - suspend - Suspends auto join and leave for 5 minutes, or until you log off.",
+	
+	["Auto join and leave has been suspended for the next 5 minutes, or until you log off."] = "Auto join and leave has been suspended for the next 5 minutes, or until you log off.",
+	["Suspension has been removed, you will now auto join and leave again."] = "Suspension has been removed, you will now auto join and leave again.",
+	["Suspension is still active, will not auto join or leave."] = "Suspension is still active, will not auto join or leave.",
+	
 	["[%d vs %d] %d rating = %d points"] = "[%d vs %d] %d rating = %d points",
 	["[%d vs %d] %d rating = %d points - %d%% = %d points"] = "[%d vs %d] %d rating = %d points - %d%% = %d points",
 	["[%d vs %d] %d points = %d rating"] = "[%d vs %d] %d points = %d rating",
@@ -157,6 +180,7 @@ SSPVPLocals = {
 	["Faction Balance"] = "Faction Balance",
 	["Timers"] = "Timers",
 	["Match Info"] = "Match Info",
-	["bases to win"] = "Bases to win",
+	["Bases to win"] = "Bases to win",
 	["Mine Reinforcement"] = "Mine Reinforcement",
+	["Battlefield Queue"] = "Battlefield Queue",
 }
