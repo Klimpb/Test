@@ -50,15 +50,25 @@ function AVSync:OnDisable()
 end
 
 function AVSync:Message(seconds)
+	local type = "PARTY"
+	if( GetNumRaidMembers() > 0 ) then
+		type = "RAID"
+	end
+
 	if( seconds > 1 ) then
-		SendChatMessage(string.format(L["Queuing for Alterac Valley in %d seconds."], seconds), "RAID")
+		SendChatMessage(string.format(L["Queuing for Alterac Valley in %d seconds."], seconds), type)
 	else
-		SendChatMessage(string.format(L["Queuing for Alterac Valley in %d second."], seconds), "RAID")
+		SendChatMessage(string.format(L["Queuing for Alterac Valley in %d second."], seconds), type)
 	end
 end
 
 function AVSync:SendQueue()
-	SendChatMessage(L["Queue for Alterac Valley!"], "RAID")
+	local type = "PARTY"
+	if( GetNumRaidMembers() > 0 ) then
+		type = "RAID"
+	end
+	
+	SendChatMessage(L["Queue for Alterac Valley!"], type)
 	SendAddonMessage("SSPVP", "QUEUEAV", "RAID")
 end
 

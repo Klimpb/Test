@@ -11,7 +11,7 @@ SSPVP = LibStub("AceAddon-3.0"):NewAddon("SSPVP", "AceConsole-3.0", "AceEvent-3.
 
 local L = SSPVPLocals
 
-local activeBF, activeID, joinID, joinAt, joinPriority, screenTaken, confirmLeavel
+local activeBF, activeID, joinID, joinAt, joinPriority, screenTaken, confirmLeavel, suspendMod
 
 local teamTotals = {[2] = 0, [3] = 0, [5] = 0}
 local statusInfo = {}
@@ -56,10 +56,35 @@ function SSPVP:OnInitialize()
 				leaveConfirm = false,
 				delay = 10,
 			},
+			queue = {
+				enabled = true,
+				inBattle = false,
+			},
+			modules = {},
 		}
 	}
 	
 	self.db = LibStub:GetLibrary("AceDB-3.0"):New("SSPVPDB", self.defaults)
+	
+	-- SSPVP slash commands
+	self:RegisterChatCommand("sspvp", function(input)
+		if( input == "suspend" ) then
+			if( suspendMod ) then
+				self:DisableSuspense()
+				self:CancelTimer("DisableSuspense")
+			else
+				suspendMod = true
+				self:Print(L["Auto join and leave has been suspended for the next 5 minutes, or until you log off."])
+				self:ScheduleTimer("DisableSuspense", 300)
+			end
+			
+			-- Update queue overlay if required
+			SSPVP:UPDATE_BATTLEFIELD_STATUS()
+		else
+			DEFAULT_CHAT_FRAME:AddMessage(L["SSPVP slash commands"])
+			DEFAULT_CHAT_FRAME:AddMessage(L[" - suspend - Suspends auto join and leave for 5 minutes, or until you log off."])
+		end
+	end)
 
 	-- Not the funnest method, but Blizzard requires us to call this to get arena team info
 	for i=1, MAX_ARENA_TEAMS do
@@ -75,6 +100,13 @@ end
 
 function SSPVP:OnDisable()
 	self:UnregisterAllEvents()
+end
+
+function SSPVP:DisableSuspense()
+	if( suspendMod ) then
+		suspendMod = nil
+		self:Print(L["Suspension has been removed, you will now auto join and leave again."])
+	end
 end
 
 function SSPVP:BATTLEFIELDS_SHOW()
@@ -149,6 +181,8 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			if( status == "confirm" ) then
 				local delay = 0
 				local abbrev = self:GetAbbrev(map)
+				
+				-- Figure out auto joind elay
 				if( abbrev == "arena" ) then
 					delay = self.db.profile.join.arena
 				elseif( UnitIsAFK("player") ) then
@@ -156,34 +190,28 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				else
 					delay = self.db.profile.join.battleground
 				end
-				
+
+				-- Figure out join priority
+				local priority
+				if( abbrev == "arena" and isRegistered ) then
+					priority = self.db.profile.priorities.ratedArena
+				elseif( abbrev == "arena" and not isRegistered ) then
+					priority = self.db.profile.priorities.skirmArena
+				else
+					priority = self.db.profile.priorities[abbrev]
+				end
+								
 				-- No queue timer going
 				if( not joinID ) then
 					joinID = i
 					joinAt = GetTime() + delay
+					joinPriority = priority
 
-					local priority
-					if( abbrev == "arena" and isRegistered ) then
-						joinPriority = self.db.profile.priorities.ratedArena
-					elseif( abbrev == "arena" and not isRegistered ) then
-						joinPriority = self.db.profile.priorities.skirmArena
-					else
-						joinPriority = self.db.profile.priorities[abbrev]
-					end
 					
 					self:ScheduleTimer("JoinBattlefield", delay)
 					
 				-- Check if priority is higher
 				elseif( joinID ~= i ) then
-					local priority
-					if( abbrev == "arena" and isRegistered ) then
-						priority = self.db.profile.priorities.ratedArena
-					elseif( abbrev == "arena" and not isRegistered ) then
-						priority = self.db.profile.priorities.skirmArena
-					else
-						priority = self.db.profile.priorities[abbrev]
-					end
-						
 					if( ( self.db.profile.join.priority == "less" and joinPriority < priority ) or ( self.db.profile.join.priority == "lseql" and joinPriority <= priority ) ) then
 						joinID = i
 						joiningAt = GetTime() + delay
@@ -199,9 +227,19 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			elseif( status == "active" and activeID ~= i and instanceID > 0 ) then
 				local abbrev = self:GetAbbrev(map)
 				for name, module in pairs(self.modules) do
-					if( module.EnableModule and ( ( abbrev == module.activeIn ) or ( abbrev ~= "arena" and module.activeIn == "bg" ) or ( module.activeIn == "bf" ) ) ) then
-						module.isActive = true
-						module.EnableModule(module, abbrev)
+					-- Make sure the module is enabled, and that it can actually be enabled
+					if( not self.db.profile.modules[name] and module.EnableModule ) then
+						-- Some modules have to be disabled even if they're about to be re-enabled
+						-- when switching battlefields, this is mostly to be safe
+						if( module.isActive ) then
+							module.isActive = nil
+							module.DisableModule(module, abbrev)
+						end
+						
+						if( ( abbrev == module.activeIn ) or ( abbrev ~= "arena" and module.activeIn == "bg" ) or ( module.activeIn == "bf" ) ) then
+							module.isActive = true
+							module.EnableModule(module, abbrev)
+						end
 					end
 				end
 
@@ -230,7 +268,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			elseif( status == "queued" and GetBattlefieldTimeWaited(i) <= 2000 ) then
 				-- Blizzards queued doesn't cover all battlefields, just arenas
 				if( teamSize > 0 ) then
-					if( registeredMatch ) then
+					if( isRegistered ) then
 						self:Print(string.format(L["You are now in the queue for %s Arena (%dvs%d)."], L["Rated"], teamSize, teamSize))
 					else
 						self:Print(string.format(L["You are now in the queue for %s Arena (%dvs%d)."], L["Skirmish"], teamSize, teamSize))
@@ -239,7 +277,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 					self:Print(string.format(L["You are now in the queue for %s."], map))
 				end
 
-				-- Hide the queue window!
+				-- Hide the queue window
 				if( (GetBattlefieldInfo()) == map and BattlefieldFrame:IsShown() ) then
 					HideUIPanel(BattlefieldFrame)
 				end
@@ -261,7 +299,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 	if( self.db.profile.leave.enabled and GetBattlefieldWinner() ) then
 		if( self.db.profile.leave.screen ) then
 			if( not screenTaken ) then
-				-- It's possible to have a bug where the battlefield ends and we take
+				-- It's possible to have for the battlefield ends and we take
 				-- a screenshot before the score frame is shown
 				if( not WorldStateScoreFrame:IsVisible() ) then
 					ShowUIPanel(WorldStateScoreFrame)
@@ -277,6 +315,58 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			self:ScheduleTimer("LeaveBattlefield", self.db.profile.leave.delay)
 		end
 	end
+	
+	-- Queue overlay, we have to do it after the first check due to auto join
+	if( self.db.profile.queue.enabled ) then
+		if( activeID and not self.db.profile.queue.inBattle ) then
+			SSOverlay:RemoveCategory("queue")
+			return
+		end
+		
+		for i=1, MAX_BATTLEFIELD_QUEUES do
+			local status, map, instanceID, _, _, teamSize, isRegistered = GetBattlefieldStatus(i)
+			
+			if( teamSize > 0 ) then
+				-- Before arenas start you're queued for all arena maps
+				-- once queues ready, they tell us specifically what map we're going into
+				if( map == L["All Arenas"] ) then
+					if( isRegistered ) then
+						map = L["Rated Arena"]
+					else
+						map = L["Skirmish Arena"]
+					end
+				end
+				
+				map = string.format(L["%s (%dvs%d)"], map, teamSize, teamSize)
+			end
+
+			if( status == "active" ) then
+				SSOverlay:RegisterText("queue" .. i, "queue", map .. ": #" .. instanceID)
+			elseif( status == "confirm" ) then
+				if( suspendMod and joinID == i ) then
+					SSOverlay:RegisterText("queue" .. i, "queue", map .. ": " .. L["Join Suspended"])
+				elseif( not suspendMod and joinID == i ) then
+					SSOverlay:RegisterTimer("queue" .. i, "queue", map .. ": " .. L["Joining"] .. " %s", joinAt - GetTime())
+				else
+					SSOverlay:RegisterTimer("queue" .. i, "queue", map .. ": %s", GetBattlefieldPortExpiration(i) / 1000)
+				end
+			elseif( status == "queued" ) then
+				local etaTime = GetBattlefieldEstimatedWaitTime(i) / 1000
+				if( etaTime > 0 ) then
+					etaTime = SecondsToTime(etaTime, true)
+					if( etaTime == "" ) then
+						etaTime = L["<1 minute"]
+					end
+				else
+					etaTime = L["Unavailable"]
+				end
+								
+				SSOverlay:RegisterElapsed("queue" .. i, "queue", map .. ": %s (" .. etaTime .. ")", GetBattlefieldTimeWaited(i) / 1000)
+			else
+				SSOverlay:RemoveRow("queue" .. i)
+			end
+		end
+	end
 end
 
 -- Actually leave the battlefield (if we can)
@@ -287,6 +377,12 @@ function SSPVP:LeaveBattlefield()
 		return
 	end
 	
+	-- Make sure we can leave
+	if( suspendMod ) then
+		self:Print(L["Suspension is still active, will not auto join or leave."])
+		return
+	end
+
 	confirmLeave = true
 	LeaveBattlefield()
 end
@@ -318,6 +414,16 @@ function SSPVP:JoinBattlefield()
 		return
 	end
 	
+	-- Not auto joining still for 5 minutes
+	if( suspendMod ) then
+		joinID = nil
+		joinAt = nil
+		joinPriority = nil
+		
+		self:Print(L["Suspension is still active, will not auto join or leave."])
+		return
+	end
+	
 	-- Disable auto join if the windows hidden
 	if( self.db.profile.join.window and not StaticPopup_FindVisible("CONFIRM_BATTLEFIELD_ENTRY", joinID) ) then
 		joinID = nil
@@ -329,7 +435,7 @@ function SSPVP:JoinBattlefield()
 	local priority
 	local instance, type = IsInInstance()
 	
-
+	-- Figure out our current priority
 	if( UnitIsAFK("player" ) ) then
 		priority = self.db.profile.priorities.afk
 	elseif( activeBF and type == "arena" ) then
