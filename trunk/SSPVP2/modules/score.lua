@@ -238,7 +238,9 @@ local function outputServerInfo(self, mouse)
 		-- Classes
 		local parsedClasses = {}
 		for _, row in pairs(classes) do
-			table.insert(parsedClasses, row.class .. ": " .. row.total)
+			if( row.total > 0 ) then
+				table.insert(parsedClasses, row.class .. ": " .. row.total)
+			end
 		end
 		
 		SSPVP:ChannelMessage(table.concat(parsedClasses, ", "))

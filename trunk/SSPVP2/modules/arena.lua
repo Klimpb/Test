@@ -31,14 +31,9 @@ function Arena:OnEnable()
 	
 	-- Load the inspection stuff, or wait for it to load
 	if( IsAddOnLoaded("Blizzard_InspectUI") ) then
-		hooksecurefunc("InspectPVPTeam_Update", InspectPVPTeam_Update)
+		hooksecurefunc("InspectPVPTeam_Update", self.InspectPVPTeam_Update)
 	else
-		self:RegisterEvent("ADDON_LOADED", function(self, event, addon)
-			if( addon == "Blizzard_InspectUI" ) then
-				hooksecurefunc("InspectPVPTeam_Update", InspectPVPTeam_Update)
-				self:UnregisterEvent("ADDON_LOADED")
-			end
-		end)
+		self:RegisterEvent("ADDON_LOADED")
 	end
 end
 
@@ -56,6 +51,14 @@ function Arena:Reload()
 	if( self.isActive ) then
 		self:UnregisterAllEvents()
 		self:EnableModule()
+	end
+end
+
+-- Check if inspect UI loaded
+function Arena:ADDON_LOADED(event, addon)
+	if( addon == "Blizzard_InspectUI" ) then
+		hooksecurefunc("InspectPVPTeam_Update", self.InspectPVPTeam_Update)
+		self:UnregisterEvent("ADDON_LOADED")
 	end
 end
 
@@ -146,14 +149,14 @@ function Arena:SetRating(parent, teamSize, teamRating)
 
 	-- Shift the actual rating text down to the left to make room for our changes
 	label:SetText(L["Rating"])
-	label:SetPoint("LEFT", parent .. "DataName", "RIGHT", -44, 0)
+	label:SetPoint("LEFT", parent .. "DataName", "RIGHT", -32, 0)
 
 	-- Add points gained next to the rating
 	ratingText:SetText(string.format("%d |cffffffff(%d)|r", teamRating, getPoints(teamRating, teamSize)))
 	ratingText:SetWidth(70)
 
 	-- Resize team name so it doesn't overflow into our rating
-	getglobal(parent .. "DataName"):SetWidth(160)
+	getglobal(parent .. "DataName"):SetWidth(150)
 end
 
 -- Modifies the team details page to show percentage of games played
@@ -216,7 +219,7 @@ hooksecurefunc("PVPTeam_Update", function()
 end)
 
 -- Inspection frame
-local function InspectPVPTeam_Update()
+function Arena:InspectPVPTeam_Update()
 	-- Recycle table
 	for _, data in pairs(teams) do
 		for k, v in pairs(data) do
@@ -244,8 +247,10 @@ local function InspectPVPTeam_Update()
 			buttonIndex = buttonIndex + 1
 			
 			local teamName, teamSize, teamRating = GetInspectArenaTeamData(value.index)
-			getglobal("InspectPVPTeam" .. buttonIndex .. "DataName"):SetText(string.format(L["%s |cffffffff(%dvs%d)|r"], teamName, teamSize, teamSize))
-			Arena:SetRating("InspectPVPTeam" .. buttonIndex, teamSize, teamRating)
+			if( teamName ) then
+				getglobal("InspectPVPTeam" .. buttonIndex .. "DataName"):SetText(string.format(L["%s |cffffffff(%dvs%d)|r"], teamName, teamSize, teamSize))
+				Arena:SetRating("InspectPVPTeam" .. buttonIndex, teamSize, teamRating)
+			end
 		end
 	end
 end

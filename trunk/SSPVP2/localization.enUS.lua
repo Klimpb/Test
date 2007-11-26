@@ -55,6 +55,20 @@ SSPVPLocals = {
 	["Join Suspended"] = "Join Suspended",
 	["Joining"] = "Joining",
 	["(.+) Mark of Honor"] = "(.+) Mark of Honor",
+	["%s |cffffffff(%dvs%d)|r"] = "%s |cffffffff(%dvs%d)|r",
+	
+	-- Flags
+	["Alliance flag carrier %s, held for %s."] = "Alliance flag carrier %s, held for %s.",
+	["Horde flag carrier %s, held for %s."] = "Horde flag carrier %s, held for %s.",
+	
+	["was picked up by (.+)!"] = "was picked up by (.+)!",
+	["captured the"] = "captured the",
+	["was dropped by (.+)!"] = "was dropped by (.+)!",
+	["was returned to its base"] = "was returned to its base",
+	
+	["(.+) has taken the flag!"] = "(.+) has taken the flag!",
+	["The flag has been dropped"] = "The flag has been dropped",
+	
 	
 	-- Sync queuing for AV
 	["Alterac Valley queue stopped."] = "Alterac Valley queue stopped.",
@@ -75,7 +89,7 @@ SSPVPLocals = {
 	["Servers"] = "Servers",
 	["Classes"] = "Classes",
 	
-	-- Arathi basin stuff
+	-- Arathi basin
 	["claims the ([^!]+)"] = "claims the ([^!]+)",
 	["has taken the ([^!]+)"] = "has taken the ([^!]+)",
 	["has assaulted the ([^!]+)"] = "has assaulted the ([^!]+)",
@@ -87,7 +101,7 @@ SSPVPLocals = {
 	["Bases to win: %d"] = "Bases to win: %d",
 	["Base Final: %d"] = "Base Final: %d",
 	
-	-- Alterac valley stuff
+	-- Alterac valley
 	["Herald"] = "Herald",
 	["Snowfall Graveyard"] = "Snowfall Graveyard",
 	["claims the Snowfall graveyard"] = "claims the Snowfall graveyard",
@@ -97,6 +111,9 @@ SSPVPLocals = {
 	
 	["Reinforcements: ([0-9]+)"] = "Reinforcements: ([0-9]+)",
 	["%s will be captured by the %s in %s"] = "%s will be captured by the %s in %s",
+	
+	-- Eye of the Storm
+	["Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000"] = "Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000",
 	
 	-- Gods
 	["Ivus the Forest Lord"] = "Ivus the Forest Lord",
@@ -184,3 +201,7 @@ SSPVPLocals = {
 	["Mine Reinforcement"] = "Mine Reinforcement",
 	["Battlefield Queue"] = "Battlefield Queue",
 }
+
+BINDING_HEADER_SSPVP = "SSPVP";
+BINDING_NAME_ETARFLAG = "Target enemy flag carrier";
+BINDING_NAME_FTARFLAG = "Target friendly flag carrier";
