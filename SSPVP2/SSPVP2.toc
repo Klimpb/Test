@@ -24,6 +24,8 @@ SSPVP2.lua
 modules\score.lua
 modules\overlay.lua
 modules\arena.lua
+modules\match.lua
+modules\flag.lua
 modules\av.lua
 modules\avsync.lua
 modules\ab.lua

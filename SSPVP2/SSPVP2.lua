@@ -22,7 +22,6 @@ function SSPVP:OnInitialize()
 	self.defaults = {
 		profile = {
 			general = {
-				sound = "",
 				channel = "BATTLEGROUND",
 			},
 			priorities = {
@@ -182,6 +181,9 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				local delay = 0
 				local abbrev = self:GetAbbrev(map)
 				
+				-- Ready sound
+				self:PlaySound()
+				
 				-- Figure out auto joind elay
 				if( abbrev == "arena" ) then
 					delay = self.db.profile.join.arena
@@ -233,7 +235,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 						-- when switching battlefields, this is mostly to be safe
 						if( module.isActive ) then
 							module.isActive = nil
-							module.DisableModule(module, abbrev)
+							module.DisableModule(module)
 						end
 						
 						if( ( abbrev == module.activeIn ) or ( abbrev ~= "arena" and module.activeIn == "bg" ) or ( module.activeIn == "bf" ) ) then
@@ -466,10 +468,35 @@ function SSPVP:JoinBattlefield()
 	joinPriority = nil
 end
 
-function SSPVP:GetAutoJoin()
-	return joinID, joinAt
+-- For playing sound
+function SSPVP:PlaySound()
+	if( not self.db.profile.general.sound ) then
+		return
+	end
+	
+	self:StopSound()
+	
+	-- MP3 files have to be played as music, everthing else as sound
+	if( string.match(self.db.profile.general.sound, "mp3$") ) then
+		PlayMusic("Interface\\AddOns\\SSPVP\\" .. self.db.profile.general.sound)
+	else
+		PlaySoundFile("Interface\\AddOns\\SSPVP\\" .. self.db.profile.general.sound)
+	end
 end
 
+function SSPVP:StopSound()
+	-- Things played as music can be stopped using StopMusic()
+	-- sound file ones can only be stopped by toggling it
+	if( string.match(self.db.profile.general.sound, "mp3$") ) then
+		StopMusic()
+	else
+		local old = GetCVar("Sound_EnableAllSound")
+		SetCVar("Sound_EnableAllSound", 0)
+		SetCVar("Sound_EnableAllSound", old)
+	end
+end
+
+-- Lets us do quick and easy checks for battleground
 function SSPVP:GetAbbrev(map)
 	if( map == L["Warsong Gulch"] ) then
 		return "wsg"
@@ -486,6 +513,7 @@ function SSPVP:GetAbbrev(map)
 	return ""
 end
 
+-- Stylish!
 function SSPVP:ParseNode(node)
 	node = string.gsub(node, "^" .. L["The"], "")
 	node = string.trim(node)
