@@ -1,13 +1,19 @@
-local L = {	["|cffffffff%s|r (|cffffffff%d|rvs|cffffffff%d|r), rated %d ranked #%d."] = "|cffffffff%s|r (|cffffffff%d|rvs|cffffffff%d|r), rated %d ranked #%d.",
-		["PERSONAL"] = "PERSONAL",
-		["Personal Rating"] = "Personal Rating",
-		["POINTS"] = "POINTS",
+-- It looks weird without a comment up here
+-- so hi heres a comment
+
+local L = {	
+	["%s (|cffffffff%d|rvs|cffffffff%d|r), %d #%d"] = "%s (|cffffffff%d|rvs|cffffffff%d|r), %d #%d",
+	["Week: |cff20ff20%d|r:|cffff2020%d|r (%s)"] = "Week: |cff20ff20%d|r:|cffff2020%d|r (%s)",
+	["Season: |cff20ff20%d|r:|cffff2020%d|r (%s)"] = "Season: |cff20ff20%d|r:|cffff2020%d|r (%s)",
+	["PERSONAL"] = "PERSONAL",
+	["Personal Rating"] = "Personal Rating",
+	["POINTS"] = "POINTS",
 }
 
 local personalFrame
 local Orig_PVPHonor_Update = PVPHonor_Update
-function PVPHonor_Update()
-	Orig_PVPHonor_Update()
+function PVPHonor_Update(...)
+	Orig_PVPHonor_Update(...)
 
 	local highestPersonal = 0
 	local highestID
@@ -64,10 +70,41 @@ function PVPHonor_Update()
 	-- Set personal rating
 	if( highestID ) then
 		local name, bracket, rating, _, _, _, _, _, _, rank = GetArenaTeam(highestID)
+		local tooltip = string.format(L["%s (|cffffffff%d|rvs|cffffffff%d|r), %d #%d"], name, bracket, bracket, rating, rank)
+		
+		-- Add specific stats
+		for i=1, GetNumArenaTeamMembers(highestID) do
+			local name, _, _, _, _, played, win, seasonPlayed, seasonWin, personalRating = GetArenaTeamRosterInfo(highestID, i)
+			if( name == UnitName("player") ) then
+				-- THIS WEEK
+				local winPercent = win / played * 100
+				if( winPercent > 70 ) then
+					winPercent = GREEN_FONT_COLOR_CODE .. string.format("%.2f%%", winPercent) .. FONT_COLOR_CODE_CLOSE
+				elseif( winPercent < 30 ) then
+					winPercent = RED_FONT_COLOR_CODE .. string.format("%.2f%%", winPercent) .. FONT_COLOR_CODE_CLOSE
+				else
+					winPercent = "|cffffffff" .. string.format("%.2f%%", winPercent) .. "|r"
+				end
+				
+				tooltip = tooltip .. "\n\n" .. string.format(L["Week: |cff20ff20%d|r:|cffff2020%d|r (%s)"], win, played - win, winPercent)
+
+				-- THIS SEASON
+				local winPercent = seasonWin / seasonPlayed * 100
+				if( winPercent > 70 ) then
+					winPercent = GREEN_FONT_COLOR_CODE .. string.format("%.2f", winPercent) .. FONT_COLOR_CODE_CLOSE
+				elseif( winPercent < 30 ) then
+					winPercent = RED_FONT_COLOR_CODE .. string.format("%.2f", winPercent) .. FONT_COLOR_CODE_CLOSE
+				else
+					winPercent = "|cffffffff" .. string.format("%.2f%%", winPercent) .. "|r"
+				end
+				
+				tooltip = tooltip .. "\n" .. string.format(L["Season: |cff20ff20%d|r:|cffff2020%d|r (%s)"], seasonWin, seasonPlayed - seasonWin, winPercent)
+				break
+			end
+		end
 
 		personalFrame.points:SetText(highestPersonal)
-		personalFrame.tooltip = string.format(L["|cffffffff%s|r (|cffffffff%d|rvs|cffffffff%d|r), rated %d ranked #%d."], name, bracket, bracket, rating, rank)
-	
+		personalFrame.tooltip = tooltip
 
 	-- None found, not that this should really ever happen
 	else
