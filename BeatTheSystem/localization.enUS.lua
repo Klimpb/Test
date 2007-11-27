@@ -1,0 +1,3 @@
+ArenaIgnoreLocals = {
+	["General"] = "General",
+}

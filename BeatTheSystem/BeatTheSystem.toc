@@ -1,0 +1,17 @@
+## Interface: 20300
+## Title: Beat The System
+## Version: $Revision: 354 $
+## Author: Mayen
+## Notes: Helps you get around AFK mods
+## SavedVariables: BTSDB
+## OptionalDeps: LibStub, OptionHouse, HousingAuthority
+
+lib\Dongle.lua
+lib\OptionHouse.lua
+lib\HousingAuthority.lua
+
+localization.enUS.lua
+localization.deDE.lua
+localization.frFR.lua
+
+BeatTheSystem.lua
