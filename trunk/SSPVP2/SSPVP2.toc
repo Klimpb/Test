@@ -1,6 +1,6 @@
 ## Interface: 20300
 ## Title: SSPVP 2
-## Version: $Revision: 362 $
+## Version: $Revision$
 ## Notes: PvP, Battleground and Arena mod
 ## Author: Mayen
 ## SavedVariables: SSPVPDB
@@ -21,12 +21,14 @@ localization.frFR.lua
 
 SSPVP2.lua
 
+modules\config.lua
 modules\score.lua
 modules\overlay.lua
 modules\arena.lua
 modules\match.lua
 modules\flag.lua
+modules\eots.lua
 modules\av.lua
 modules\avsync.lua
 modules\ab.lua
-modules\battleground.lua
+modules\battlefield.lua

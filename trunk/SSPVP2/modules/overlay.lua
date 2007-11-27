@@ -14,15 +14,17 @@ local categories = {
 	["faction"] = { label = L["Faction Balance"], order = 0 },
 	["timer"] = { label = L["Timers"], order = 20 },
 	["match"] = { label = L["Match Info"], order = 30 },
-	--["base"] = { label = L["Bases to win"], order = 40 },
 	["mine"] = { label = L["Mine Reinforcement"], order = 50 },
 	["queue"] = { label = L["Battlefield Queue"], order = 60 },
 }
 
 function SSOverlay:OnEnable()
+	if( self.defaults ) then return end
+	
+
 	self.defaults = {
 		profile = {
-			locked = false,
+			locked = true,
 			x = 300,
 			y = 600,
 			opacity = 1.0,
@@ -37,14 +39,29 @@ function SSOverlay:OnEnable()
 	self.db = SSPVP.db:RegisterNamespace("overlay", self.defaults)
 end
 
+function SSOverlay:Reload()
+	if( not self.frame ) then
+		return
+	end
+	
+	self.frame:SetScale(self.db.profile.scale)
+	self.frame:SetBackdropColor(self.db.profile.background.r, self.db.profile.background.g, self.db.profile.background.b, self.db.profile.opacity)
+	self.frame:SetBackdropBorderColor(self.db.profile.border.r, self.db.profile.border.g, self.db.profile.border.b, self.db.profile.opacity)
+	self:UpdateOverlay()
+	
+	for i=1, CREATED_ROWS do
+		self.rows[i]:EnableMouse(self.db.profile.locked)
+	end
+end
+
 local function onClick(self)
 	-- So you won't accidentally click the overlay, make sure we have an on click too
 	if( not IsModifierKeyDown() or not rows[self.dataID].func ) then
 		return
 	end
 	
-	local row = rows[self.dataID]
 	-- Trigger it
+	local row = rows[self.dataID]
 	if( row.handler ) then
 		row.handler[row.func](row.handler, unpack(row.args))
 	elseif( type(row.func) == "string" ) then

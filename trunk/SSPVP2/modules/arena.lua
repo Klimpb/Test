@@ -7,6 +7,8 @@ local L = SSPVPLocals
 local pointPenalty = {[5] = 1.0, [3] = 0.88, [2] = 0.76}
 
 function Arena:OnEnable()
+	if( self.defaults ) then return end
+
 	self.defaults = {
 		profile = {
 			score = true,
@@ -66,10 +68,10 @@ end
 function Arena:UPDATE_BATTLEFIELD_STATUS()
 	if( GetBattlefieldWinner() and select(2, IsActiveBattlefieldArena()) ) then
 		local win = ""
-		local teamName, oldRating, newRating = GetBattlefieldTeamInfo(0)
+		local teamName, oldRating, newRating = GetBattlefieldTeamInfo(1)
 		win = string.format(L["%s %d points (%d rating)"], teamName, newRating - oldRating, newRating)
 
-		local teamName, oldRating, newRating = GetBattlefieldTeamInfo(1)
+		local teamName, oldRating, newRating = GetBattlefieldTeamInfo(0)
 		win = win .. " / " .. string.format(L["%s %d points (%d rating)"], teamName, newRating - oldRating, newRating)
 		
 		SSPVP:Print(win)

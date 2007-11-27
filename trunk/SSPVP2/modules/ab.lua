@@ -6,6 +6,8 @@ local L = SSPVPLocals
 local timers = {}
 
 function AB:OnEnable()
+	if( self.defaults ) then return end
+
 	self.defaults = {
 		profile = {
 			timers = true,

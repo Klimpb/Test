@@ -5,10 +5,24 @@ local L = SSPVPLocals
 local carriers = {["alliance"] = {}, ["horde"] = {}}
 
 function Flag:OnEnable()
+	if( self.defaults ) then return end
+
 	self.defaults = {
 		profile = {
-			color = true,
-			health = true,
+			wsg = {
+				enabled = true,
+				color = true,
+				health = true,
+				respawn = true,
+				capture = true,
+			},
+			eots = {
+				enabled = true,
+				color = true,
+				health = true,
+				respawn = true,
+				capture = true,
+			},
 		},
 	}
 	
@@ -19,16 +33,16 @@ end
 
 function Flag:EnableModule(abbrev)
 	-- Flags are only used inside EoTS and WSG currently
-	if( abbrev ~= "eots" and abbrev ~= "wsg" ) then
+	if( ( abbrev ~= "eots" and abbrev ~= "wsg" ) or not self.db.profile[abbrev].enabled ) then
 		self.isActive = nil
 		return
 	end
 
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "ParseMessage")
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "ParseMessage")
-	self:RegisterEven2t("UPDATE_BINDINGS")
+	self:RegisterEvent("UPDATE_BINDINGS")
 	
-	if( self.db.profile.health ) then
+	if( self.db.profile[abbrev].health ) then
 		self:RegisterEvent("UNIT_HEALTH")
 	end
 	
@@ -43,6 +57,8 @@ function Flag:DisableModule()
 	self:CancelAllTimers()
 	self:UnregisterAllEvents()
 	
+	SSOverlay:RemoveCategory("timer")
+	
 	for k, v in pairs(carriers["alliance"]) do
 		v = nil
 	end
@@ -53,7 +69,7 @@ function Flag:DisableModule()
 end
 
 function Flag:Reload()
-	if( self.db.profile.health and self.isActive ) then
+	if( self.activeBF and self.db.profile[self.activeBF].health and self.isActive ) then
 		self:RegisterEvent("UNIT_HEALTH")
 	else
 		self:UnregisterEvent("UNIT_HEALTH")
@@ -116,7 +132,7 @@ end
 
 function Flag:UpdateCarrier(faction)
 	if( InCombatLockdown() ) then
-		SSPVP:RegisterOOCUpdate("UpdateCarriers")
+		SSPVP:RegisterOOCUpdate(self, "UpdateCarriers")
 		return
 	end
 	
@@ -127,14 +143,14 @@ function Flag:UpdateCarrier(faction)
 	end
 	
 	local health = ""
-	if( carriers[faction].health and self.db.profile.health ) then
+	if( carriers[faction].health and self.db.profile[self.activeBF].health ) then
 		health = " [" .. carriers[faction].health .. "%]"
 	end
 	
 	self[faction].text:SetText(carriers[faction].name .. health)
 
 	-- Carrier class color if enabled/not set
-	if( not self[faction].colorSet and self.db.profile.color ) then
+	if( not self[faction].colorSet and self.db.profile[self.activeBF].color ) then
 		for i=1, GetNumBattlefieldScores() do
 			local name, _, _, _, _, _, _, _, _, classToken = GetBattlefieldScore(i)
 			
@@ -148,7 +164,7 @@ function Flag:UpdateCarrier(faction)
 	
 	-- Update the color to the default because we couldn't find one
 	if( not self[faction].colorSet ) then
-		text:SetTextColor(GameFontNormal:GetTextColor())
+		self[faction].text:SetTextColor(GameFontNormal:GetTextColor())
 	end
 end
 
@@ -176,32 +192,63 @@ function Flag:ParseMessage(event, msg)
 	elseif( string.match(msg, L["(.+) has taken the flag!"]) ) then
 		self:PickUp(faction, string.match(msg, L["(.+) has taken the flag!"]))
 
+	-- WSG, returned
+	elseif( string.match(msg, L["was returned to its base"]) ) then
+		self:Returned(faction)
+	
 	-- WSG/EoTS, captured
 	elseif( string.match(msg, L["captured the"]) ) then
 		self:Captured(faction)
-
+	
 	-- EoTS/WSG, dropped
 	elseif( string.match(msg, L["was dropped by (.+)!"]) or string.match(msg, L["The flag has been dropped"]) ) then
 		self:Dropped(faction)
 	end
 end
 
--- Respawn = 21s wsg, 10s eots
+-- Flag captured = time reset as well
 function Flag:Captured(faction)
+	if( self.db.profile[self.activeBF].respawn ) then
+		if( self.activeBF == "eots" ) then
+			SSOverlay:RegisterTimer("respawn", "timer", L["Flag Respawn: %s"], 10, SSPVP:GetFactionColor(faction))
+		else
+			SSOverlay:RegisterTimer("respawn", "timer", L["Flag Respawn: %s"], 21, SSPVP:GetFactionColor(faction))
+		end
+	end
+	
+	-- Remove held time, show time taken to capture
+	SSOverlay:RemoveRow(faction .. "time")
+	
+	if( carriers[faction].time ) then
+		SSOverlay:RegisterText(faction .. "capture", "timer", string.format(L["Capture Time: %s"], SecondsToTime(GetTime() - carriers[faction].time)), SSPVP:GetFactionColor(faction))
+	end
+	
+	-- Clear out
 	carriers[faction].time = nil
 	carriers[faction].name = nil
 	self:Hide(faction)
 end
 
 function Flag:Dropped(faction)
-	carriers[faction].time = nil
 	carriers[faction].name = nil
 	self:Hide(faction)
 end
 
+-- Return = time reset
+function Flag:Returned(faction)
+	carriers[fation].time = nil
+	SSOverlay:RemoveRow(faction .. "time")
+end
+
 function Flag:PickUp(faction, name)
-	carriers[faction].time = GetTime()
 	carriers[faction].name = name
+
+	-- If the flags dropped then picked up, we don't want to reset time
+	if( not carriers[faction].time ) then
+		carriers[faction].time = GetTime()
+		SSOverlay:RegisterTimer(faction .. "time", "timer", L["Held Time: %s"], 0, SSPVP:GetFactionColor(faction))
+	end
+	
 	self:Show(faction)
 end
 
@@ -209,7 +256,7 @@ end
 function Flag:Show(faction)
 	if( InCombatLockdown() ) then
 		self[faction]:SetAlpha(0.75)
-		SSPVP:RegisterOOCUpdate("Show", faction)
+		SSPVP:RegisterOOCUpdate(self, "Show", faction)
 	else
 		self:UpdateCarrier(faction)
 		self[faction]:SetAlpha(1.0)
@@ -221,7 +268,7 @@ end
 function Flag:Hide(faction)
 	if( InCombatLockdown() ) then
 		self[faction]:SetAlpha(0.75)
-		SSPVP:RegisterOOCUpdate("Hide", faction)
+		SSPVP:RegisterOOCUpdate(self, "Hide", faction)
 	else
 		self[faction].colorSet = nil
 		self[faction]:Hide()
@@ -271,6 +318,7 @@ function Flag:CreateButtons()
 		end)
 
 		self.alliance.text = self.alliance:CreateFontString(nil, "BACKGROUND")
+		self.alliance.text:SetFontObject(GameFontNormal)
 		self.alliance.text:SetJustifyH("LEFT")
 		self.alliance.text:SetHeight(25)
 		self.alliance.text:SetWidth(150)
@@ -288,6 +336,7 @@ function Flag:CreateButtons()
 		end)
 
 		self.horde.text = self.horde:CreateFontString(nil, "BACKGROUND")
+		self.horde.text:SetFontObject(GameFontNormal)
 		self.horde.text:SetJustifyH("LEFT")
 		self.horde.text:SetHeight(25)
 		self.horde.text:SetWidth(150)

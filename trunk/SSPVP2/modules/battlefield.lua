@@ -4,6 +4,8 @@ BF.activeIn = "bf"
 local L = SSPVPLocals
 
 function BF:OnEnable()
+	if( self.defaults ) then return end
+
 	self.defaults = {
 		profile = {
 			release = true,
@@ -18,16 +20,27 @@ end
 function BF:EnableModule(abbrev)
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL")
 	
-
 	-- May not want to auto release in arenas incase a team mates going to try
 	-- and ressurect you
 	if( abbrev ~= "arena" ) then
 		self:RegisterEvent("PLAYER_DEAD")
+
+		if( SHOW_BATTLEFIELD_MINIMAP == "1" ) then
+			if( not BattlefieldMinimap ) then
+				BattlefieldMinimap_LoadUI()
+			end
+			BattlefieldMinimap:Show()
+		end
 	end
 end
 function BF:DisableModule()
 	SSOverlay:RemoveRow("start")
 	self:UnregisterAllEvents()
+
+	-- Hide minimap if it shouldn't be hidden in all zones
+	if( SHOW_BATTLEFIELD_MINIMAP ~= "2" and BattlefieldMinimap and BattlefieldMinimap:IsShown() ) then
+		BattlefieldMinimap:Hide()
+	end
 end
 
 -- Start timers
@@ -111,4 +124,15 @@ function SendChatMessage(text, type, language, target, ...)
 	end
 	
 	return Orig_SendChatMessage(text, type, language, target, ...)
+end
+
+-- Blizzards code for hiding while inside of a PvP instance doesn't work very well, so override it with our own
+local Orig_WorldStateFrame_CanShowBattlefieldMinimap = WorldStateFrame_CanShowBattlefieldMinimap
+function WorldStateFrame_CanShowBattlefieldMinimap(...)
+	-- Never show it in PvP, because we override it ourself
+	if( select(2, IsInInstance()) == "pvp" ) then
+		return false
+	end
+	
+	return Orig_WorldStateFrame_CanShowBattlefieldMinimap(...)
 end

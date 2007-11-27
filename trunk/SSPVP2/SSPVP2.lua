@@ -64,7 +64,7 @@ function SSPVP:OnInitialize()
 	}
 	
 	self.db = LibStub:GetLibrary("AceDB-3.0"):New("SSPVPDB", self.defaults)
-	
+		
 	-- SSPVP slash commands
 	self:RegisterChatCommand("sspvp", function(input)
 		if( input == "suspend" ) then
@@ -357,7 +357,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				if( etaTime > 0 ) then
 					etaTime = SecondsToTime(etaTime, true)
 					if( etaTime == "" ) then
-						etaTime = L["<1 minute"]
+						etaTime = L["<1 Min"]
 					end
 				else
 					etaTime = L["Unavailable"]
@@ -527,9 +527,10 @@ function SSPVP:ParseNode(node)
 end
 
 function SSPVP:GetFactionColor(faction)
-	if( faction == "Alliance" or faction == "CHAT_MSG_BG_SYSTEM_ALLIANCE" ) then
+	faction = string.lower(faction or "")
+	if( faction == "alliance" or faction == "chat_msg_bg_system_alliance" ) then
 		return ChatTypeInfo["BG_SYSTEM_ALLIANCE"]
-	elseif( faction == "Horde" or faction == "CHAT_MSG_BG_SYSTEM_HORDE" ) then
+	elseif( faction == "horde" or faction == "chat_msg_bg_system_horde" ) then
 		return ChatTypeInfo["BG_SYSTEM_HORDE"]
 	end
 	
@@ -600,11 +601,11 @@ function SSPVP:UnregisterOOCUpdate(func)
 	end
 end
 
-function SSPVP.RegisterOOCUpdate(self, func, ...)
+function SSPVP:RegisterOOCUpdate(self, func, ...)
 	if( type(func) == "string" ) then
 		table.insert(queuedUpdates, {func = func, handler = self, ...})
 	else
-		table.insert(queuedUpdates, {func = func, ...})
+		table.insert(queuedUpdates, {func = self, ...})
 	end
 end
 
@@ -658,7 +659,6 @@ function AcceptBattlefieldPort(id, accept, ...)
 	
 	Orig_AcceptBattlefieldPort(id, accept, ...)
 end
-
 
 -- Confirmation popups
 StaticPopupDialogs["CONFIRM_PORT_LEAVE"] = {

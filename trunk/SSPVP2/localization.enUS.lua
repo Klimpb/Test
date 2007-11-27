@@ -51,11 +51,12 @@ SSPVPLocals = {
 	["[%s] %s: %s"] = "[%s] %s: %s",
 	
 	["Unavailable"] = "Unavailable",
-	["<1 minute"] = "<1 minute",
+	["<1 Min"] = "<1 Min",
 	["Join Suspended"] = "Join Suspended",
 	["Joining"] = "Joining",
 	["(.+) Mark of Honor"] = "(.+) Mark of Honor",
 	["%s |cffffffff(%dvs%d)|r"] = "%s |cffffffff(%dvs%d)|r",
+	["Flag Respawn: %s"] = "Flag Respawn: %s",
 	
 	-- Flags
 	["Alliance flag carrier %s, held for %s."] = "Alliance flag carrier %s, held for %s.",
@@ -69,6 +70,8 @@ SSPVPLocals = {
 	["(.+) has taken the flag!"] = "(.+) has taken the flag!",
 	["The flag has been dropped"] = "The flag has been dropped",
 	
+	["Held Time: %s"] = "Held Time: %s",
+	["Capture Time: %s"] = "Capture Time: %s",
 	
 	-- Sync queuing for AV
 	["Alterac Valley queue stopped."] = "Alterac Valley queue stopped.",
@@ -114,6 +117,7 @@ SSPVPLocals = {
 	
 	-- Eye of the Storm
 	["Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000"] = "Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000",
+	["Bases %d  Points %d/2000"] = "Bases %d  Points %d/2000",
 	
 	-- Gods
 	["Ivus the Forest Lord"] = "Ivus the Forest Lord",
@@ -200,6 +204,141 @@ SSPVPLocals = {
 	["Bases to win"] = "Bases to win",
 	["Mine Reinforcement"] = "Mine Reinforcement",
 	["Battlefield Queue"] = "Battlefield Queue",
+	
+	-- GOOEY
+	["General"] = "General",
+	["Auto Queue"] = "Auto Queue",
+	["Battlefield"] = "Battlefield",
+	["Overlay"] = "Overlay",
+	["Auto Join"] = "Auto Join",
+	
+
+	-- GENERAL
+	["Play"] = "Play",
+	["Stop"] = "Stop",
+	
+	["Sound file"] = "Sound file",
+	["Timer channel"] = "Timer channel",
+	["Show team summary after rated arena ends"] = "Show team summary after rated arena ends",
+	["Auto append server name while in battlefields for whispers"] = "Auto append server name while in battlefields for whispers",
+	["Auto queue when inside of a group and leader"] = "Auto queue when inside of a group and leader",
+	["Battleground"] = "Battleground",
+	["Party"] = "Party",
+	["Raid"] = "Raid",
+	
+	["Automatically append \"-server\" to peoples names when you whisper them, if multiple people are found to match the same name then it won't add the server."] = "Automatically append \"-server\" to peoples names when you whisper them, if multiple people are found to match the same name then it won't add the server.",
+	["Shows team names, points change and the new ratings after the arena ends."] = "Shows team names, points change and the new ratings after the arena ends.",
+	["Channel to output to when you send timers out from the overlay."] = "Channel to output to when you send timers out from the overlay.",
+	["Sound file to play when a queue is ready, file must be inside Interface/AddOns/SSPVP before you started the game."] = "Sound file to play when a queue is ready, file must be inside Interface/AddOns/SSPVP before you started the game.",
+	
+	["Auto queue when outside of a group"] = "Auto queue when outside of a group",
+	["Auto queue when inside a group and leader"] = "Auto queue when inside of a group and leader",
+	
+	["Queue Overlay"] = "Queue Overlay",
+	["Enable battlefield queue status"] = "Enable battlefield queue status",
+	["Show inside an active battlefield"] = "Show inside an active battlefield",
+	
+	-- BATTLEFIELD
+	["Death"] = "Death",
+	["Scoreboard"] = "Scoreboard",
+	["Color player name by class"] = "Color player name by class",
+	["Hide class icon next to names"] = "Hide class icon next to names",
+	["Show player levels next to name"] = "Show player levels next to name",
+	["Release from corpse when inside an active battleground"] = "Release from corpse when inside an active battleground",
+	["Release even with a soul stone active"] = "Release even with a soul stone active",
+	
+	-- AUTO JOIN
+	["Delay"] = "Delay",
+	["Join priorities"] = "Join priorities",
+	["Enable auto join"] = "Enable auto join",
+	["Priority check mode"] = "Priority check mode",
+	["Less than"] = "Less than",
+	["Less than/equal"] = "Less than/equal",
+	["Battleground join delay"] = "Battleground join delay",
+	["AFK battleground join delay"] = "AFK battleground join delay",
+	["Arena join delay"] = "Arena join delay",
+	["Don't auto join a battlefield if the queue window is hidden"] = "Don't auto join a battlefield if the queue window is hidden",
+	
+	-- AUTO LEAVE
+	["Auto Leave"] = "Auto Leave",
+	["Confirmation"] = "Confirmation",
+	["Confirm when leaving a battlefield queue through minimap list"] = "Confirm when leaving a battlefield queue through minimap list",
+	["Confirm when leaving a finished battlefield through score"] = "Confirm when leaving a finished battlefield through score",
+	
+	["Battlefield leave delay"] = "Battlefield leave delay",
+	["Enable auto leave"] = "Enable auto leave",
+	["Screenshot score board when game ends"] = "Screenshot score board when game ends",
+	
+	-- OVERLAY
+	["Frame"] = "Frame",
+	["Color"] = "Color",
+	["Lock overlay"] = "Lock overlay",
+	["Background opacity: %d%%"] = "Background opacity: %d%%",
+	["Scale: %d%%"] = "Scale: %d%%",
+	["Background color"] = "Background color",
+	["Border color"] = "Border color",
+	["Category text color"] = "Category text",
+	["Text color"] = "Text color",
+	
+	-- AV
+	["Alerts"] = "Alerts",
+	["Timers"] = "Timers",
+	["Enable capture timers"] = "Enable capture timers",
+	["Enable interval capture messages"] = "Enable interval capture messages",
+	["Seconds between capture messages"] = "Seconds between capture messages",
+	["Show resources gained through mines"] = "Show resources gained through mines",
+	["Show resources lost from captains in towers in MSBT/SCT/FCT"] = "Show resources lost from captains in towers in MSBT/SCT/FCT",
+	["None"] = "None",
+	["25%"] = "25%",
+	["50%"] = "50%",
+	["75%"] = "75%",
+	
+	-- EOTS/AB/WSG
+	["Flag Carrier"] = "Flag Carrier",
+	["Match Info"] = "Match Info",
+	
+	["Show flag carrier"] = "Show flag carrier",
+	["Show carrier health when available"] = "Show carrier health when available",
+	["Color carrier name by class color"] = "Color carrier name by class color",
+	["Time until flag respawns"] = "Time until flag respawns",
+	
+	["Show basic match information"] = "Show basic match information",
+	["Show bases to win"] = "Show bases to win",
+	["Show flag held time and time taken to capture"] = "Show flag held time and time taken to capture",
+	
+	["Show points gained from flag captures in MSBT/SCT/FCT"] = "Show points gained from flag captures in MSBT/SCT/FCT",
+	
+	-- Disable modules
+	["Modules"] = "Modules",
+	["Disable %s"] = "Disable %s",
+	["match information"] = "match information",
+	["Time left in match, final scores and bases to win for Eye of the Storm and Arathi Basin."] = "Time left in match, final scores and bases to win for Eye of the Storm and Arathi Basin.",
+	
+	["flag carrier"] = "flag carrier",
+	["Who's holding the flag currently for Eye of the Storm and Warsong Gulch."] = "Who's holding the flag currently for Eye of the Storm and Warsong Gulch.",
+
+	["Timers for Arathi Basin when capturing nodes."] = "Timers for Arathi Basin when capturing nodes.",
+
+	["Timers for Alterac Valley when capturing nodes, as well interval alerts on time left before capture."] = "Timers for Alterac Valley when capturing nodes, as well interval alerts on time left before capture.",
+	["Cleaning up the text in the PvP objectives along with points gained from captures in Eye of the Storm."] = "Cleaning up the text in the PvP objectives along with points gained from captures in Eye of the Storm.",
+	
+	["battleground"] = "battleground",
+	["General battleground specific changes like auto release."] = "General battleground specific changes like auto release.",
+	
+	["score"] = "score",
+	["General scoreboard changes like coloring by class or hiding the class icons."] = "General scoreboard changes like coloring by class or hiding the class icons.",
+	
+	-- Priorities
+	["afk"] = "Away from Keyboard",
+	["ratedArena"] = "Rated Arena",
+	["skirmArena"] = "Skirmish Arena",
+	["eots"] = "Eye of the Storm",
+	["av"] = "Alterac Valley",
+	["ab"] = "Arathi Basin",
+	["wsg"] = "Warsong Gulch",
+	["group"] = "In raid/party",
+	["instance"] = "Instance",
+	["none"] = "Everything Else",
 }
 
 BINDING_HEADER_SSPVP = "SSPVP";

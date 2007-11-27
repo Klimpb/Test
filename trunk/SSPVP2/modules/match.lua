@@ -17,6 +17,8 @@ local playerFaction
 local MAX_NODES, ALLIANCE_ID, HORDE_ID, NODE_MATCH
 
 function Match:OnEnable()
+	if( self.defaults ) then return end
+
 	self.defaults = {
 		profile = {
 			ab = {
@@ -40,14 +42,10 @@ function Match:EnableModule(abbrev)
 	-- Only enable in AB/EoTS
 	if( abbrev ~= "ab" and abbrev ~= "eots" ) then
 		self.isActive = nil
-
 		return
 	end
 	
-
-	if( self.db.profile[abbrev].matchInfo or self.db.profile[abbrev].bases ) then
-		self:RegisterEvent("UPDATE_WORLD_STATES")
-	end
+	self.activeBF = abbrev
 	
 	-- AB specific configuration
 	if( abbrev == "ab" ) then
@@ -62,7 +60,13 @@ function Match:EnableModule(abbrev)
 		MAX_NODES = 4
 		ALLIANCE_ID = 2
 		HORDE_ID = 3
-		NODE_MATCH = L["Bases: ([0-9]+)  Victory Points: ([0-9]+)%/2000"]
+		NODE_MATCH = L["Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000"]
+	end
+	
+	if( self.db.profile[abbrev].matchInfo or self.db.profile[abbrev].bases ) then
+		self:RegisterEvent("UPDATE_WORLD_STATES")
+		self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "ParseMessage")
+		self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "ParseMessage")
 	end
 end
 
@@ -85,6 +89,16 @@ function Match:Reload()
 	end
 end
 
+-- Figure out if we need to force an update
+-- We only do a change when bases change, because it's better
+-- then recalculating every-single-point-change
+function Match:ParseMessage(event, msg)
+	if( string.match(msg, L["captured the"]) ) then
+		Alliance.bases = -1
+		Horde.bases = -1
+	end
+end
+
 -- Match info
 function Match:UPDATE_WORLD_STATES()	
 	-- Time left and final score
@@ -104,12 +118,12 @@ function Match:UPDATE_WORLD_STATES()
 	Alliance.bases = aBases
 	Alliance.points = aPoints
 	Alliance.left = 2000 - aPoints
-	Alliance.time = Alliance.left / pointsSec[aBases]		
+	Alliance.time = Alliance.left / pointsSec[self.activeBF][aBases]		
 
 	Horde.bases = hBases
 	Horde.points = hPoints
 	Horde.left = 2000 - hPoints
-	Horde.time = Horde.left / pointsSec[hBases]
+	Horde.time = Horde.left / pointsSec[self.activeBF][hBases]
 
 	-- Figure out time left in match
 	local lowest = min(Horde.time, Alliance.time)
@@ -168,9 +182,9 @@ function Match:GetEstPoints(time, bases)
 	end
 	
 	if( self.activeBF == "eots" ) then
-		return floor(time * pointsSec[bases] + 0.5)
+		return floor(time * pointsSec[self.activeBF][bases] + 0.5)
 	else
-		return floor
+		return floor((time * pointsSec[self.activeBF][bases] + 0.5) / 10) * 10
 	end
 end
 
