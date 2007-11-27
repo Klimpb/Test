@@ -12,10 +12,12 @@ local hordeReinf = 0
 
 
 function AV:OnEnable()
+	if( self.defaults ) then return end
+
 	self.defaults = {
 		profile = {
 			timer = true,
-			announce = tfalse,
+			announce = false,
 			mine = false,
 			speed = 0.50,
 			interval = 60,

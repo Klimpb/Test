@@ -13,6 +13,8 @@ local scoresRepositioned
 local playerName
 
 function Score:OnEnable()
+	if( self.defaults ) then return end
+
 	self.defaults = {
 		profile = {
 			level = false,

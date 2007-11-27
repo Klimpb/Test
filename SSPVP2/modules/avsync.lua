@@ -1,8 +1,12 @@
 local AVSync = SSPVP:NewModule("AVSync", "AceEvent-3.0", "AceTimer-3.0", "AceConsole-3.0")
 
 local L = SSPVPLocals
+local loaded
 
 function AVSync:OnEnable()
+	if( loaded ) then return end
+	loaded = true
+
 	self:RegisterEvent("CHAT_MSG_ADDON")
 
 	-- Slash commands for conversions
