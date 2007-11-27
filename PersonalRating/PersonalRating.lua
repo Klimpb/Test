@@ -93,7 +93,7 @@ function PVPHonor_Update(...)
 				if( winPercent > 70 ) then
 					winPercent = GREEN_FONT_COLOR_CODE .. string.format("%.2f", winPercent) .. FONT_COLOR_CODE_CLOSE
 				elseif( winPercent < 30 ) then
-					winPercent = RED_FONT_COLOR_CODE .. string.format("%.2f", winPercent) .. FONT_COLOR_CODE_CLOSE
+					winPercent = RED_FONT_COLOR_CODE .. string.format("%.2f%%", winPercent) .. FONT_COLOR_CODE_CLOSE
 				else
 					winPercent = "|cffffffff" .. string.format("%.2f%%", winPercent) .. "|r"
 				end
