@@ -85,7 +85,7 @@ function AVSync:Queue(author)
 end
 
 function AVSync:CHAT_MSG_ADDON(event, prefix, msg, type, author)
-	if( prefix == "SSPVP" and msg == "QUEUEAV" ) then
+	if( ( prefix == "SSPVP" or prefix == "SSAV" ) and msg == "QUEUEAV" ) then
 		self:Queue(author)
 	end
 end

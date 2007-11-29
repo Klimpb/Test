@@ -101,6 +101,10 @@ function SSPVP:OnDisable()
 	self:UnregisterAllEvents()
 end
 
+function SSPVP:Reload()
+	self:UPDATE_BATTLEFIELD_STATUS()
+end
+
 function SSPVP:DisableSuspense()
 	if( suspendMod ) then
 		suspendMod = nil
