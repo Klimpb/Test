@@ -131,9 +131,17 @@ end
 
 local Orig_AddIgnore
 local Orig_DelIgnore
+
+-- This fixes the bad ignore removing (I HOPE)
+local function Good_DelIgnore(name)
+	name = string.gsub(name, ourServer, "")
+	Orig_DelIgnore(name)
+end
+
 function ArenaIgnore:StartScan()
 	local self = ArenaIgnore
 	
+	ourServer = "-" .. GetRealmName()
 	scanRunning = true
 	scanStart = GetTime()
 	
@@ -161,10 +169,6 @@ function ArenaIgnore:StartScan()
 				if( ( self.db.profile.enableCutoff and timeSeen >= cutOff ) or not self.db.profile.enableCutoff ) then
 					ignoreQueue[player] = true
 					totalPlayers = totalPlayers + 1
-					
-					if( server == GetRealmName() ) then
-						sameServer[name] = player
-					end
 				end
 			end		
 		end
@@ -200,30 +204,21 @@ function ArenaIgnore:StopScan(suppress)
 	
 	-- Stop monitoring so we can send out new batches
 	self:UnregisterEvent("CHAT_MSG_SYSTEM")
-	
-	-- Special remove for people from our server
-	for player, fullName in pairs(sameServer) do
-		ignoresRemoved[player] = true
-		ignoreQueue[fullName] = nil
-		sentIgnores[fullName] = nil
 		
-		Orig_DelIgnore(player)
-	end
-	
 	-- Clear out the queue
 	for player in pairs(ignoreQueue) do
 		ignoresRemoved[player] = true
 		ignoreQueue[player] = nil
 		sentIgnores[player] = nil
 
-		Orig_DelIgnore(player)
+		Good_DelIgnore(player)
 	end
 	
 	for player in pairs(sentIgnores) do
 		ignoresRemoved[player] = true
 		sentIgnores[player] = nil
 			
-		Orig_DelIgnore(player)
+		Good_DelIgnore(player)
 	end
 	
 	
@@ -261,7 +256,7 @@ function ArenaIgnore:SendIgnoreBatch()
 		
 		totalRemoves = totalRemoves + 1
 		
-		Orig_DelIgnore(player)
+		Good_DelIgnore(player)
 	end
 	
 	-- Figure out who we're sending off now	
