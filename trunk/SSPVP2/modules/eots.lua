@@ -21,8 +21,6 @@ function EOTS:EnableModule()
 		self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "ParseCombat")
 		self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "ParseCombat")
 	end
-	
-	--self:RegisterEvent("UPDATE_WORLD_STATES")
 end
 
 function EOTS:DisableModule()
@@ -40,9 +38,14 @@ function EOTS:ParseCombat(event, msg)
 	if( string.match(msg, L["captured the"]) ) then
 		local bases
 		if( event == "CHAT_MSG_BG_SYSTEM_HORDE" ) then
-			bases = string.match(msg, L["Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000"])
+			bases = string.match(select(3, GetWorldStateUIInfo(3)), L["Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000"])
 		elseif( event == "CHAT_MSG_BG_SYSTEM_ALLIANCE" ) then
-			bases = string.match(msg, L["Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000"])
+			bases = string.match(select(3, GetWorldStateUIInfo(2)), L["Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000"])
+		end
+		
+		bases = tonumber(bases)
+		if( not bases ) then
+			return
 		end
 		
 		-- 4 towers = 500 points
@@ -62,42 +65,7 @@ function EOTS:ParseCombat(event, msg)
 	end
 end
 
---[[
-local allianceReinf = 0
-local hordeReinf = 0
-function EOTS:UPDATE_WORLD_STATES()
-	local _, _, allianceText = GetWorldStateUIInfo(2)
-	local _, _, hordeText = GetWorldStateUIInfo(3)
-	
-	-- Figure out points changed for Alliance
-	local _, reinf = string.match(allianceText, L["Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000"])
-	reinf = tonumber(reinf) or 0
-	
-	if( allianceReinf > 0 ) then
-		local diff = reinf - allianceReinf
-		if( diff > 20 ) then
-			Debug("Alliance point diff " .. tostring(diff))
-		end
-	end
-	
-	allianceReinf = reinf
-	
-	-- Figure out points changed for Horde
-	local _, reinf = string.match(hordeText, L["Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000"])
-	reinf = tonumber(reinf) or 0
-
-	if( hordeReinf > 0 ) then
-		local diff = reinf - hordeReinf
-		if( diff > 20 ) then
-			Debug("Horde point diff " .. tostring(diff))
-		end
-	end
-	
-	hordeReinf = reinf
-end
-]]
-
--- Reformatting
+-- Clean up score
 hooksecurefunc("WorldStateAlwaysUpFrame_Update", function()
 	if( AlwaysUpFrame1 ) then
 		local alliance = getglobal("AlwaysUpFrame1Text")

@@ -187,18 +187,9 @@ hooksecurefunc("PVPTeamDetails_Update", function()
 	end
 end)
 
-local teams = {{size = 2}, {size = 3}, {size = 5}}
-
 -- Player frame
 hooksecurefunc("PVPTeam_Update", function()
-	-- Recycle table
-	for _, data in pairs(teams) do
-		for k, v in pairs(data) do
-			if( k ~= "size" ) then
-				teams[k] = nil
-			end
-		end
-	end
+	local teams = {{size = 2}, {size = 3}, {size = 5}}
 	
 	-- Figure out which teams they have
 	for _, value in pairs(teams) do
@@ -222,15 +213,7 @@ end)
 
 -- Inspection frame
 function Arena:InspectPVPTeam_Update()
-	-- Recycle table
-	for _, data in pairs(teams) do
-		for k, v in pairs(data) do
-			if( k ~= "size" ) then
-				teams[k] = nil
-			end
-		end
-	end
-	
+	local teams = {{size = 2}, {size = 3}, {size = 5}}
 
 	-- Figure out which teams they have
 	for _, value in pairs(teams) do

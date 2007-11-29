@@ -73,6 +73,9 @@ SSPVPLocals = {
 	["Held Time: %s"] = "Held Time: %s",
 	["Capture Time: %s"] = "Capture Time: %s",
 	
+	["Targetting %s"] = "Targetting %s",
+	["%s is out of range"] = "%s is out of range",
+	
 	-- Sync queuing for AV
 	["Alterac Valley queue stopped."] = "Alterac Valley queue stopped.",
 	["Queuing for Alterac Valley in %d seconds."] = "Queuing for Alterac Valley in %d seconds.",
@@ -118,6 +121,7 @@ SSPVPLocals = {
 	-- Eye of the Storm
 	["Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000"] = "Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000",
 	["Bases %d  Points %d/2000"] = "Bases %d  Points %d/2000",
+	["flag has been reset"] = "flag has been reset",
 	
 	-- Gods
 	["Ivus the Forest Lord"] = "Ivus the Forest Lord",
@@ -307,6 +311,9 @@ SSPVPLocals = {
 	["Show flag held time and time taken to capture"] = "Show flag held time and time taken to capture",
 	
 	["Show points gained from flag captures in MSBT/SCT/FCT"] = "Show points gained from flag captures in MSBT/SCT/FCT",
+	
+	["Macro Text"] = "Macro Text",
+	["Text to execute when clicking on the flag carrier button"] = "Text to execute when clicking on the flag carrier button",
 	
 	-- Disable modules
 	["Modules"] = "Modules",

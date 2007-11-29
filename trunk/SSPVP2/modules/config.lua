@@ -284,6 +284,7 @@ function Config:EOTS()
 		{ order = 3, group = L["Flag Carrier"], text = L["Color carrier name by class color"], type = "check", var = {"Flag", "eots", "color"}},
 		{ order = 4, group = L["Flag Carrier"], text = L["Time until flag respawns"], type = "check", var = {"Flag", "eots", "respawn"}},
 		{ order = 5, group = L["Flag Carrier"], text = L["Show flag held time and time taken to capture"], type = "check", var = {"Flag", "eots", "capture"}},
+		{ order = 1, group = L["Macro Text"], text = L["Text to execute when clicking on the flag carrier button"], type = "editbox", default = "/targetexact *name", var = {"Flag", "eots", "macro"}},
 				
 		{ order = 1, group = L["Match Info"], text = L["Show basic match information"], type = "check", var = {"Match", "eots", "matchInfo"}},
 		{ order = 2, group = L["Match Info"], text = L["Show bases to win"], type = "check", var = {"Match", "eots", "bases"}},
