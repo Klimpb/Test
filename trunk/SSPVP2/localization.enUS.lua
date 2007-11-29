@@ -58,6 +58,14 @@ SSPVPLocals = {
 	["%s |cffffffff(%dvs%d)|r"] = "%s |cffffffff(%dvs%d)|r",
 	["Flag Respawn: %s"] = "Flag Respawn: %s",
 	
+	-- Win API is broken /wrist
+	["The Horde wins"] = "The Horde wins",
+	["The Alliance wins"] = "The Alliance wins",
+	
+	-- So we don't auto leave before completing
+	["Call to Arms: %s"] = "Call to Arms: %s",
+	["You currently have the battleground daily quest for %s, auto leave has been set to occure once the quest completes."] = "You currently have the battleground daily quest for %s, auto leave has been set to occure once the quest completes.",
+	
 	-- Flags
 	["Alliance flag carrier %s, held for %s."] = "Alliance flag carrier %s, held for %s.",
 	["Horde flag carrier %s, held for %s."] = "Horde flag carrier %s, held for %s.",

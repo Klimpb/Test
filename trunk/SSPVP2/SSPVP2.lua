@@ -18,6 +18,9 @@ local statusInfo = {}
 local queuedUpdates = {}
 local confirmPortLeave = {}
 
+local playerTeamWon
+local playerFaction
+
 function SSPVP:OnInitialize()
 	self.defaults = {
 		profile = {
@@ -95,6 +98,12 @@ function SSPVP:OnEnable()
 	self:RegisterEvent("BATTLEFIELDS_SHOW")
 	self:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
 	self:RegisterEvent("PLAYER_REGEN_ENABLED")
+	
+	-- REMOVE ME WHEN GetBattlefieldWinner() IS FIXED
+	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL", "CheckBattlegroundWinner")
+	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "CheckBattlegroundWinner")
+	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "CheckBattlegroundWinner")
+	playerFaction = select(2, UnitFactionGroup("player"))
 end
 
 function SSPVP:OnDisable()
@@ -109,6 +118,15 @@ function SSPVP:DisableSuspense()
 	if( suspendMod ) then
 		suspendMod = nil
 		self:Print(L["Suspension has been removed, you will now auto join and leave again."])
+	end
+end
+
+-- REMOVE ME WHEN GetBattlefieldWinner() IS FIXED
+function SSPVP:CheckBattlegroundWinner(event, msg)
+	if( string.match(msg, L["The Horde wins"]) and playerFaction == "Horde" ) then
+		playerTeamWon = true 
+	elseif( string.match(msg, L["The Alliance wins"]) and playerFaction == "Alliance" ) then
+		playerTeamWon = true
 	end
 end
 
@@ -260,7 +278,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			elseif( status ~= "active" and activeID == i ) then
 				activeID = nil
 				activeBF = nil
-				
+				playerTeamWon = nil
 			
 				self:CancelTimer(RequestBattlefieldScoreData)
 
@@ -388,9 +406,46 @@ function SSPVP:LeaveBattlefield()
 		self:Print(L["Suspension is still active, will not auto join or leave."])
 		return
 	end
+	
+
+	-- CHANGE ME BACK TO GetBattlefieldWinner() WHEN FIXED
+	if( playerTeamWon and select(2, IsInInstance()) == "pvp" ) then
+		-- NOW make sure we don't have to complete the daily quest first
+		local callToArms = string.format(L["Call to Arms: %s"], activeBF)
+		for i=1, GetNumQuestLogEntries() do
+			local questName, _, _, _, _, _, isComplete = GetQuestLogTitle(i)
+			
+
+			-- Quest isn't complete yet, AND we have it.
+
+			-- Meaning, schedule for a log update and auto leave once it's complete
+
+			if( string.match(questName, callToArms) and not isComplete ) then
+
+				self:Print(string.format(L["You currently have the battleground daily quest for %s, auto leave has been set to occure once the quest completes."], activeBF))
+				self:RegisterEvent("QUEST_LOG_UPDATE")
+				return
+			end
+		end
+	end
+	
 
 	confirmLeave = true
 	LeaveBattlefield()
+end
+
+-- Check if it's time to auto leave yet
+function SSPVP:QUEST_LOG_UPDATE()
+	-- NOW make sure we don't have to complete the daily quest first
+	local callToArms = string.format(L["Call to Arms: %s"], activeBF)
+	for i=1, GetNumQuestLogEntries() do
+		local questName, _, _, _, _, _, isComplete = GetQuestLogTitle(i)
+		if( string.match(questName, callToArms) and isComplete ) then
+			self:LeaveBattlefield()
+			self:UnregisterEvent("QUEST_LOG_UPDATE")
+			return
+		end
+	end
 end
 
 -- Screenshot taken
