@@ -21,13 +21,13 @@ function Arena:OnEnable()
 	-- Slash commands for conversions
 	self:RegisterChatCommand("arena", function(input)
 		if( string.match(input, "points ([0-9]+)") ) then
-			Arena:CalculatePoints(string.match(input, "points ([0-9]+)"))
+			Arena:CalculateRating(string.match(input, "points ([0-9]+)"))
 		elseif( string.match(input, "rating ([0-9]+)") ) then
-			Arena:CalculateRating(string.match(input, "rating ([0-9]+)"))
+			Arena:CalculatePoints(string.match(input, "rating ([0-9]+)"))
 		else
 			DEFAULT_CHAT_FRAME:AddMessage(L["SSPVP Arena slash commands"])
-			DEFAULT_CHAT_FRAME:AddMessage(L[" - points <rating> - Calculates points given from the passed rating."])
-			DEFAULT_CHAT_FRAME:AddMessage(L[" - rating <points> - Calculates rating required to reach the passed points."])
+			DEFAULT_CHAT_FRAME:AddMessage(L[" - rating <rating> - Calculates points given from the passed rating."])
+			DEFAULT_CHAT_FRAME:AddMessage(L[" - points <points> - Calculates rating required to reach the passed points."])
 		end
 	end)
 	

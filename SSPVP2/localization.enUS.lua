@@ -183,8 +183,8 @@ SSPVPLocals = {
 	
 	-- Slash commands
 	["SSPVP Arena slash commands"] = "SSPVP Arena slash commands",
-	[" - points <rating> - Calculates points given from the passed rating."] = " - points <rating> - Calculates points given from the passed rating.",
-	[" - rating <points> - Calculates rating required to reach the passed points."] = " - rating <points> - Calculates rating required to reach the passed points.",
+	[" - rating <rating> - Calculates points given from the passed rating."] = " - rating <rating> - Calculates points given from the passed rating.",
+	[" - points <points> - Calculates rating required to reach the passed points."] = " - points <points> - Calculates rating required to reach the passed points.",
 	
 	["SSPVP Alterac Valley slash commands"] = "SSPVP Alterac Valley slash commands",
 	[" - sync <seconds> - Starts a count down for an Alterac Valley sync queue."] = " - sync <seconds> - Starts a count down for an Alterac Valley sync queue.",
