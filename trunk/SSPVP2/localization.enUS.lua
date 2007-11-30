@@ -200,6 +200,7 @@ SSPVPLocals = {
 	
 	["SSPVP slash commands"] = "SSPVP slash commands",
 	[" - suspend - Suspends auto join and leave for 5 minutes, or until you log off."] = " - suspend - Suspends auto join and leave for 5 minutes, or until you log off.",
+	[" - ui - Opens the OptionHouse configuration for SSPVP."] = " - ui - Opens the OptionHouse configuration for SSPVP.",
 	
 	["Auto join and leave has been suspended for the next 5 minutes, or until you log off."] = "Auto join and leave has been suspended for the next 5 minutes, or until you log off.",
 	["Suspension has been removed, you will now auto join and leave again."] = "Suspension has been removed, you will now auto join and leave again.",
@@ -223,7 +224,7 @@ SSPVPLocals = {
 	["Battlefield"] = "Battlefield",
 	["Overlay"] = "Overlay",
 	["Auto Join"] = "Auto Join",
-	
+	["Display"] = "Display",
 
 	-- GENERAL
 	["Play"] = "Play",
@@ -291,6 +292,8 @@ SSPVPLocals = {
 	["Border color"] = "Border color",
 	["Category text color"] = "Category text",
 	["Text color"] = "Text color",
+	["Grow up"] = "Grow up",
+	["The overlay will grow up instead of down when new rows are added, a reloadui maybe required for this to take affect."] = "The overlay will grow up instead of down when new rows are added, a reloadui maybe required for this to take affect.",
 	
 	-- AV
 	["Alerts"] = "Alerts",
