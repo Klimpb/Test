@@ -43,6 +43,7 @@ function Flag:EnableModule(abbrev)
 
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "ParseMessage")
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "ParseMessage")
+	self:RegisterEvent("UPDATE_BATTLEFIELD_SCORE")
 	self:RegisterEvent("UPDATE_BINDINGS")
 	
 	if( self.db.profile[abbrev].health ) then
@@ -90,6 +91,17 @@ function Flag:Reload()
 	end
 end
 
+-- Update carriers incase we have class
+function Flag:UPDATE_BATTLEFIELD_SCORE()
+	if( carriers["alliance"].name ) then
+		self:UpdateCarrier("alliance", true)
+	end
+	
+	if( carriers["horde"].name ) then
+		self:UpdateCarrier("horde", true)
+	end
+end
+
 -- Scan unit updates
 function Flag:UNIT_HEALTH(event, unit)
 	self:UpdateHealth(unit)
@@ -115,7 +127,6 @@ end
 function Flag:UpdateHealth(unit)
 	if( not UnitExists(unit) ) then
 		return
-
 	end
 		
 
@@ -189,7 +200,7 @@ function Flag:UpdateCarrierAttributes(faction)
 	else
 		self[faction]:SetAlpha(1.0)
 	end
-	
+
 	if( not carrier ) then
 		return
 	end
@@ -200,30 +211,48 @@ function Flag:UpdateCarrierAttributes(faction)
 		return
 	end
 	
+	-- This should be changed later, to automatically position to the icon
+	-- button if it's being used for PvP objectives
 	local posFrame
-	if( faction == "alliance" ) then
-		posFrame = AlwaysUpFrame1Text
-	else
-		posFrame = AlwaysUpFrame2Text
+	local posY = 0
+	if( self.activeBF == "eots" ) then
+		posY = 5
+		if( faction == "alliance" ) then
+			posFrame = AlwaysUpFrame1Text
+		else
+			posFrame = AlwaysUpFrame2Text
+		end
+	elseif( self.activeBF == "wsg" ) then
+		posY = 13
+		
+		-- If we're updating an alliance carrier, then show it at the horde button
+		-- also, position at the dynamic icon instead of the text
+		if( faction == "horde" ) then
+			posFrame = AlwaysUpFrame2DynamicIconButton
+		else
+			posFrame = AlwaysUpFrame1DynamicIconButton
+		end
 	end
 	
 	self[faction].carrier = carrier
 	self[faction]:ClearAllPoints()
-	self[faction]:SetPoint("LEFT", UIParent, "BOTTOMLEFT", posFrame:GetRight() + 8, posFrame:GetTop() - 5)
+	self[faction]:SetPoint("LEFT", UIParent, "BOTTOMLEFT", posFrame:GetRight() + 8, posFrame:GetTop() - posY)
 	self[faction]:SetAttribute("type", "macro")
 	self[faction]:SetAttribute("macrotext", string.gsub(self.db.profile[self.activeBF].macro, "*name", carrier))
 end
 
-function Flag:UpdateCarrier(faction)
-	self:UpdateCarrierAttributes(faction)
+function Flag:UpdateCarrier(faction, skipAttrib)
+	if( not skipAttrib ) then
+		self:UpdateCarrierAttributes(faction)
+	end
+	
 	-- No carrier, hide it, this is bad
 	local carrier = carriers[faction].name
 	if( not carrier ) then
 		self:Hide(faction)
 		return
 	end
-	
-	
+		
 	local health = ""
 	if( carriers[faction].health and self.db.profile[self.activeBF].health and type(carriers[faction].health) == "number" ) then
 		health = " |cffffffff[" .. carriers[faction].health .. "%]|r"
@@ -232,20 +261,20 @@ function Flag:UpdateCarrier(faction)
 	self[faction].text:SetText(carrier .. health)
 
 	-- Carrier class color if enabled/not set
-	if( not self[faction].colorSet and self.db.profile[self.activeBF].color ) then
+	if( self[faction].colorSet ~= carrier and self.db.profile[self.activeBF].color ) then
 		for i=1, GetNumBattlefieldScores() do
 			local name, _, _, _, _, _, _, _, _, classToken = GetBattlefieldScore(i)
 			
 			if( string.match(name, "^" .. carrier) ) then
 				self[faction].text:SetTextColor(RAID_CLASS_COLORS[classToken].r, RAID_CLASS_COLORS[classToken].g, RAID_CLASS_COLORS[classToken].b)
-				self[faction].colorSet = true
+				self[faction].colorSet = carrier
 				break
 			end
 		end
 	end
-	
+		
 	-- Update the color to the default because we couldn't find one
-	if( not self[faction].colorSet ) then
+	if( self[faction].colorSet ~= carrier ) then
 		self[faction].text:SetTextColor(GameFontNormal:GetTextColor())
 	end
 end
@@ -258,10 +287,12 @@ function Flag:ParseMessage(event, msg)
 	-- More sane for us to do it here
 	local faction
 	if( self.activeBF == "wsg" ) then
+		-- Reverse the factions because alliance found = horde event
+		-- horde found = alliance event
 		if( string.match(msg, L["Alliance"]) ) then
-			faction = "alliance"
-		elseif( string.match(msg, L["Horde"]) ) then
 			faction = "horde"
+		elseif( string.match(msg, L["Horde"]) ) then
+			faction = "alliance"
 		end
 	elseif( event == "CHAT_MSG_BG_SYSTEM_HORDE" ) then
 		faction = "horde"
@@ -380,7 +411,6 @@ function Flag:Hide(faction)
 		self[faction]:SetAlpha(0.75)
 		SSPVP:RegisterOOCUpdate(self, "UpdateStatus")
 	else
-		self[faction].colorSet = nil
 		self[faction]:Hide()
 	end
 end

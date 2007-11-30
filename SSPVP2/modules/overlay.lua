@@ -3,9 +3,10 @@ SSOverlay = SSPVP:NewModule("Overlay")
 local L = SSPVPLocals
 
 local CREATED_ROWS = 0
-local MAX_ROWS = 25
+local MAX_ROWS = 20
 local ADDED_ENTRIES = 0
 local longestText = 0
+local growUp
 local resortRows
 
 local rows = {}
@@ -21,12 +22,12 @@ local categories = {
 function SSOverlay:OnEnable()
 	if( self.defaults ) then return end
 	
-
 	self.defaults = {
 		profile = {
 			locked = true,
 			x = 300,
 			y = 600,
+			growUp = false,
 			opacity = 1.0,
 			background = { r = 0, g = 0, b = 0 },
 			border = { r = 0.75, g = 0.75, b = 0.75 },
@@ -37,6 +38,7 @@ function SSOverlay:OnEnable()
 	}
 	
 	self.db = SSPVP.db:RegisterNamespace("overlay", self.defaults)
+	growUp = self.db.profile.growUp
 end
 
 function SSOverlay:Reload()
@@ -374,14 +376,25 @@ function SSOverlay:CreateFrame()
 	self.frame:SetMovable(true)
 	self.frame:EnableMouse(true)
 	self.frame:SetFrameStrata("BACKGROUND")
-	self.frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", self.db.profile.x, self.db.profile.y)
+	
+	-- Position to saved area
+	if( not growUp ) then
+		self.frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", self.db.profile.x, self.db.profile.y)
+	else
+		self.frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", self.db.profile.x, self.db.profile.y)
+	end
 
 	self.frame:SetScript("OnMouseUp", function(self)
 		if( self.isMoving ) then
 			self:StopMovingOrSizing()
 
 			SSOverlay.db.profile.x = self:GetLeft()
-			SSOverlay.db.profile.y = self:GetTop()
+			
+			if( not growUp ) then
+				SSOverlay.db.profile.y = self:GetTop()
+			else
+				SSOverlay.db.profile.y = self:GetBottom()
+			end
 		end
 	end)
 
@@ -423,14 +436,20 @@ function SSOverlay:CreateRow()
 	text:SetFontObject(GameFontNormalSmall)
 	text:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
 	row.text = text
-	
+
 	if( CREATED_ROWS > 1 ) then
 		row:SetPoint("TOPLEFT", self.rows[CREATED_ROWS - 1], "TOPLEFT", 0, -12)
 	else
 		row:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 5, -5)
 	end
+	
+
+	-- Reposition it if we're growing up
+	if( growUp ) then
+		self.frame:ClearAllPoints()
+		self.frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", self.db.profile.x, self.db.profile.y)
+	end
 
 	self.rows[CREATED_ROWS] = row
-	
 	return row
 end

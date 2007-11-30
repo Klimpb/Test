@@ -8,7 +8,7 @@ function Config:OnEnable()
 	if( OptionHouse ) then return end
 
 	-- For UI work
-	OptionHouse = LibStub("OptionHouse-1.1")
+	OptionHouse = SSPVP.OptionHouse
 	HousingAuthority = LibStub("HousingAuthority-1.2")
 	
 	local OHObj = OptionHouse:RegisterAddOn("SSPVP2", nil, "Mayen", "$Revision$")
@@ -246,6 +246,9 @@ function Config:Overlay()
 		{ order = 2, group = L["Frame"], format = L["Background opacity: %d%%"], type = "slider", var = {"Overlay", "opacity"}},
 		{ order = 4, group = L["Frame"], format = L["Scale: %d%%"], min = 0.0, max = 2.0, type = "slider", var = {"Overlay", "scale"}},
 
+		{ group = L["Display"], type = "groupOrder", order = 2 },
+		{ order = 1, group = L["Display"], text = L["Grow up"], tooltip = L["The overlay will grow up instead of down when new rows are added, a reloadui maybe required for this to take affect."], type = "check", var = {"Overlay", "growUp"}},
+		
 		{ group = L["Color"], type = "groupOrder", order = 3 },
 		{ order = 1, group = L["Color"], text = L["Background color"], type = "color", var = {"Overlay", "background"}},
 		{ order = 2, group = L["Color"], text = L["Border color"], type = "color", var = {"Overlay", "border"}},

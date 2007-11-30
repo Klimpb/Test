@@ -11,7 +11,7 @@ SSPVP = LibStub("AceAddon-3.0"):NewAddon("SSPVP", "AceConsole-3.0", "AceEvent-3.
 
 local L = SSPVPLocals
 
-local activeBF, activeID, joinID, joinAt, joinPriority, screenTaken, confirmLeavel, suspendMod
+local activeBF, activeID, joinID, joinAt, joinPriority, screenTaken, confirmLeave, suspendMod
 
 local teamTotals = {[2] = 0, [3] = 0, [5] = 0}
 local statusInfo = {}
@@ -68,6 +68,8 @@ function SSPVP:OnInitialize()
 	
 	self.db = LibStub:GetLibrary("AceDB-3.0"):New("SSPVPDB", self.defaults)
 		
+	self.OptionHouse = LibStub("OptionHouse-1.1")
+	
 	-- SSPVP slash commands
 	self:RegisterChatCommand("sspvp", function(input)
 		if( input == "suspend" ) then
@@ -82,9 +84,12 @@ function SSPVP:OnInitialize()
 			
 			-- Update queue overlay if required
 			SSPVP:UPDATE_BATTLEFIELD_STATUS()
+		elseif( input == "ui" ) then
+			SSPVP.OptionHouse:Open("SSPVP2")
 		else
 			DEFAULT_CHAT_FRAME:AddMessage(L["SSPVP slash commands"])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - suspend - Suspends auto join and leave for 5 minutes, or until you log off."])
+			DEFAULT_CHAT_FRAME:AddMessage(L[" - ui - Opens the OptionHouse configuration for SSPVP."])
 		end
 	end)
 
@@ -409,17 +414,17 @@ function SSPVP:LeaveBattlefield()
 	
 
 	-- CHANGE ME BACK TO GetBattlefieldWinner() WHEN FIXED
+	-- Theres a delay before the call to arms quest completes, sometimes it's
+	-- within 0.5 seconds, sometimes it's within 2 seconds. If you have auto leave set to 0
+	-- then you'll likely leave before you get credit, so delay the actual leave (if need be)
+	-- until the quest is credited to us
 	if( playerTeamWon and select(2, IsInInstance()) == "pvp" ) then
-		-- NOW make sure we don't have to complete the daily quest first
 		local callToArms = string.format(L["Call to Arms: %s"], activeBF)
 		for i=1, GetNumQuestLogEntries() do
 			local questName, _, _, _, _, _, isComplete = GetQuestLogTitle(i)
 			
-
 			-- Quest isn't complete yet, AND we have it.
-
 			-- Meaning, schedule for a log update and auto leave once it's complete
-
 			if( string.match(questName, callToArms) and not isComplete ) then
 
 				self:Print(string.format(L["You currently have the battleground daily quest for %s, auto leave has been set to occure once the quest completes."], activeBF))
