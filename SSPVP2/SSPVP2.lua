@@ -212,7 +212,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				-- Ready sound
 				self:PlaySound()
 				
-				-- Figure out auto joind elay
+				-- Figure out auto join delay
 				if( abbrev == "arena" ) then
 					delay = self.db.profile.join.arena
 				elseif( UnitIsAFK("player") ) then
@@ -236,7 +236,6 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 					joinID = i
 					joinAt = GetTime() + delay
 					joinPriority = priority
-
 					
 					self:ScheduleTimer("JoinBattlefield", delay)
 					
@@ -631,7 +630,7 @@ function SSPVP:CombatText(text, color)
 	
 	-- MSBT
 	elseif( IsAddOnLoaded("MikScrollingBattleText") ) then
-		MikSBT:DisplayMessage(text, MikSBT.DISPLAYTYPE_NOTIFICATION, false, color.r, color.g, color.b)		
+		MikSBT.DisplayMessage(text, MikSBT.DISPLAYTYPE_NOTIFICATION, false, color.r * 255, color.g * 255, color.b * 255)		
 	
 	-- Blizzard custom text
 	elseif( IsAddOnLoaded("Blizzard_CombatText") ) then
