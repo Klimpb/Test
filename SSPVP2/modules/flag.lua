@@ -30,7 +30,6 @@ function Flag:OnEnable()
 	}
 	
 	self.db = SSPVP.db:RegisterNamespace("score", self.defaults)	
-	
 	playerName = UnitName("player")
 end
 
