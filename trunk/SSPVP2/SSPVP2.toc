@@ -21,6 +21,7 @@ localization.frFR.lua
 
 SSPVP2.lua
 
+modules\move.lua
 modules\config.lua
 modules\score.lua
 modules\overlay.lua

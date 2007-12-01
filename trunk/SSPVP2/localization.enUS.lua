@@ -58,6 +58,11 @@ SSPVPLocals = {
 	["%s |cffffffff(%dvs%d)|r"] = "%s |cffffffff(%dvs%d)|r",
 	["Flag Respawn: %s"] = "Flag Respawn: %s",
 	
+	-- Mover
+	["PvP Objectives Anchor"] = "PvP Objectives Anchor",
+	["Score Objectives Anchor"] = "Score Objectives Anchor",
+	["Left Click + Drag to move the frame, Right Click + Drag to reset it to it's original position."] = "Left Click + Drag to move the frame, Right Click + Drag to reset it to it's original position.",
+	
 	-- Win API is broken /wrist
 	["The Horde wins"] = "The Horde wins",
 	["The Alliance wins"] = "The Alliance wins",
@@ -217,6 +222,7 @@ SSPVPLocals = {
 	["Bases to win"] = "Bases to win",
 	["Mine Reinforcement"] = "Mine Reinforcement",
 	["Battlefield Queue"] = "Battlefield Queue",
+	["Frame Moving"] = "Frame Moving",
 	
 	-- GOOEY
 	["General"] = "General",
@@ -250,6 +256,12 @@ SSPVPLocals = {
 	["Queue Overlay"] = "Queue Overlay",
 	["Enable battlefield queue status"] = "Enable battlefield queue status",
 	["Show inside an active battlefield"] = "Show inside an active battlefield",
+	
+	
+	["Lock PvP objectives"] = "Lock PvP objectives",
+	["Lock scoreboard"] = "Lock scoreboard",
+	["Lock capture bar"] = "Lock capture bar",
+	["Shows an anchor above the frame that lets you move it, the frame you're trying to move may have to be visible to actually move it."] = "Shows an anchor above the frame that lets you move it, the frame you're trying to move may have to be visible to actually move it.",
 	
 	-- BATTLEFIELD
 	["Death"] = "Death",
@@ -294,6 +306,9 @@ SSPVPLocals = {
 	["Text color"] = "Text color",
 	["Grow up"] = "Grow up",
 	["The overlay will grow up instead of down when new rows are added, a reloadui maybe required for this to take affect."] = "The overlay will grow up instead of down when new rows are added, a reloadui maybe required for this to take affect.",
+
+	["Disable overlay clicking"] = "Disable overlay clicking",
+	["Removes the ability to click on the overlay, allowing you to interact with the 3D world instead. While the overlay is unlocked, this option is ignored."] = "Removes the ability to click on the overlay, allowing you to interact with the 3D world instead. While the overlay is unlocked, this option is ignored.",
 	
 	-- AV
 	["Alerts"] = "Alerts",

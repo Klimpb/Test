@@ -105,6 +105,7 @@ function SSPVP:OnEnable()
 	self:RegisterEvent("PLAYER_REGEN_ENABLED")
 	
 	-- REMOVE ME WHEN GetBattlefieldWinner() IS FIXED
+	self:RegisterEvent("CHAT_MSG_MONSTER_YELL", "CheckBattlegroundWinner")
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL", "CheckBattlegroundWinner")
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "CheckBattlegroundWinner")
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "CheckBattlegroundWinner")

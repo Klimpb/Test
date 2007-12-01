@@ -25,6 +25,7 @@ function SSOverlay:OnEnable()
 	self.defaults = {
 		profile = {
 			locked = true,
+			noClick = false,
 			x = 300,
 			y = 600,
 			growUp = false,
@@ -51,8 +52,22 @@ function SSOverlay:Reload()
 	self.frame:SetBackdropBorderColor(self.db.profile.border.r, self.db.profile.border.g, self.db.profile.border.b, self.db.profile.opacity)
 	self:UpdateOverlay()
 	
+	-- If overlay is unlocked, enable the mouse. If they're locked then disable it
+	if( not self.db.profile.locked ) then
+		self.frame:EnableMouse(true)
+	else
+		self.frame:EnableMouse(false)
+	end
+	
+	
 	for i=1, CREATED_ROWS do
-		self.rows[i]:EnableMouse(self.db.profile.locked)
+		-- If overlay is unlocked, disable mouse so we can move
+		-- If it's locked, then enable it if we're not disabling it
+		if( not self.db.profile.locked ) then
+			self.rows[i]:EnableMouse(false)
+		else
+			self.rows[i]:EnableMouse(not self.db.profile.noClick)
+		end
 	end
 end
 
@@ -374,9 +389,15 @@ function SSOverlay:CreateFrame()
 	self.frame:SetScale(self.db.profile.scale)
 	self.frame:SetClampedToScreen(true)
 	self.frame:SetMovable(true)
-	self.frame:EnableMouse(true)
 	self.frame:SetFrameStrata("BACKGROUND")
-	
+
+	-- Locky, Clocky, Blocky, Tocky, Mocky
+	if( not self.db.profile.locked ) then
+		self.frame:EnableMouse(true)
+	else
+		self.frame:EnableMouse(false)
+	end
+		
 	-- Position to saved area
 	if( not growUp ) then
 		self.frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", self.db.profile.x, self.db.profile.y)
@@ -425,12 +446,17 @@ function SSOverlay:CreateRow()
 	CREATED_ROWS = CREATED_ROWS + 1
 
 	local row = CreateFrame("Frame", nil, self.frame)
-	row:EnableMouse(self.db.profile.locked)	
 	row:SetScript("OnMouseUp", onClick)
 	row:SetFrameStrata("LOW")
 	row:SetHeight(13)
 	row:SetWidth(250)
-
+	
+	if( not self.db.profile.locked ) then
+		row:EnableMouse(false)
+	else
+		row:EnableMouse(not self.db.profile.noClick)
+	end
+	
 	local text = row:CreateFontString(nil, "BACKGROUND")
 	text:SetJustifyH("LEFT")
 	text:SetFontObject(GameFontNormalSmall)
