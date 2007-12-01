@@ -391,6 +391,12 @@ end
 
 -- Show flag
 function Flag:Show(faction)
+	if( not faction ) then
+		return
+
+	end
+	
+
 	-- Just because flag changes in combat, doesn't mean 
 	-- we can't change name and such information
 	self:UpdateCarrier(faction)
@@ -406,6 +412,10 @@ end
 
 -- Hide flag
 function Flag:Hide(faction)
+	if( not faction ) then
+		return
+	end
+
 	if( InCombatLockdown() ) then
 		self[faction]:SetAlpha(0.75)
 		SSPVP:RegisterOOCUpdate(self, "UpdateStatus")
