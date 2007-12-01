@@ -37,9 +37,14 @@ function Config:General()
 		{ order = 1, group = L["Auto Queue"], text = L["Auto queue when outside of a group"], type = "check", var = {"auto", "solo"}},
 		{ order = 2, group = L["Auto Queue"], text = L["Auto queue when inside of a group and leader"], type = "check", var = {"auto", "group"}},
 
- 		{ group = L["Queue Overlay"], type = "groupOrder", order = 2 },
+ 		{ group = L["Queue Overlay"], type = "groupOrder", order = 3 },
 		{ order = 1, group = L["Queue Overlay"], text = L["Enable battlefield queue status"], type = "check", var = {"queue", "enabled"}},
 		{ order = 2, group = L["Queue Overlay"], text = L["Show inside an active battlefield"], type = "check", var = {"queue", "inBattle"}},
+
+ 		{ group = L["Frame Moving"], type = "groupOrder", order = 4 },
+		{ order = 1, group = L["Frame Moving"], text = L["Lock PvP objectives"], help = L["Shows an anchor above the frame that lets you move it, the frame you're trying to move may have to be visible to actually move it."], type = "check", var = {"Move", "pvp"}},
+		{ order = 2, group = L["Frame Moving"], text = L["Lock scoreboard"], help = L["Shows an anchor above the frame that lets you move it, the frame you're trying to move may have to be visible to actually move it."], type = "check", var = {"Move", "score"}},
+		--{ order = 3, group = L["Frame Moving"], text = L["Lock capture bar"], help = L["Shows an anchor above the frame that lets you move it, the frame you're trying to move may have to be visible to actually move it."], type = "check", var = {"Move", "capture"}},
 	}
 	
 	return HousingAuthority:CreateConfiguration(config, {onSet = "Reload", set = "Set", get = "Get", handler = Config})
@@ -247,7 +252,8 @@ function Config:Overlay()
 		{ order = 4, group = L["Frame"], format = L["Scale: %d%%"], min = 0.0, max = 2.0, type = "slider", var = {"Overlay", "scale"}},
 
 		{ group = L["Display"], type = "groupOrder", order = 2 },
-		{ order = 1, group = L["Display"], text = L["Grow up"], tooltip = L["The overlay will grow up instead of down when new rows are added, a reloadui maybe required for this to take affect."], type = "check", var = {"Overlay", "growUp"}},
+		{ order = 1, group = L["Display"], text = L["Grow up"], help = L["The overlay will grow up instead of down when new rows are added, a reloadui maybe required for this to take affect."], type = "check", var = {"Overlay", "growUp"}},
+		{ order = 2, group = L["Display"], text = L["Disable overlay clicking"], help = L["Removes the ability to click on the overlay, allowing you to interact with the 3D world instead. While the overlay is unlocked, this option is ignored."], type = "check", var = {"Overlay", "noClick"}},
 		
 		{ group = L["Color"], type = "groupOrder", order = 3 },
 		{ order = 1, group = L["Color"], text = L["Background color"], type = "color", var = {"Overlay", "background"}},
