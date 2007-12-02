@@ -39,7 +39,7 @@ function Flag:EnableModule(abbrev)
 		self.isActive = nil
 		return
 	end
-
+		
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "ParseMessage")
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "ParseMessage")
 	self:RegisterEvent("UPDATE_BATTLEFIELD_SCORE")
@@ -117,8 +117,9 @@ end
 -- Scan raid targets
 function Flag:ScanParty()
 	for i=1, GetNumRaidMembers() do
-		self:UpdateHealth("raid" .. i)
-		self:UpdateHealth("raid" .. i .. "target")
+		local unit = "raid" .. i
+		self:UpdateHealth(unit)
+		self:UpdateHealth(unit .. "target")
 	end
 end
 
@@ -148,7 +149,7 @@ end
 -- Check if we can still get health updates from them
 function Flag:IsTargeted(name)
 	-- Check if it's our target or mouseover
-	if( UnitName("target") == name or UnitName("mouseover") == name ) then
+	if( UnitName("target") == name or UnitName("mouseover") == name or UnitName("focus") == name ) then
 		return true
 	end
 	
@@ -420,6 +421,7 @@ function Flag:Hide(faction)
 		self[faction]:SetAlpha(0.75)
 		SSPVP:RegisterOOCUpdate(self, "UpdateStatus")
 	else
+		self[faction].carrier = nil
 		self[faction]:Hide()
 	end
 end

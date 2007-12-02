@@ -72,63 +72,6 @@ local function hideTooltip(self)
 	tooltip:Hide()
 end
 
-function Move:TogglePVP()
-	if( self.db.profile.pvp ) then
-		if( self.pvpFrame ) then
-			self.pvpFrame:Hide()
-		end
-		
-		return
-	end
-	
-	self.pvpFrame = CreateFrame("Frame", nil, WorldStateAlwaysUpFrame)
-	self.pvpFrame:SetHeight(20)
-	self.pvpFrame:SetWidth(125)
-	self.pvpFrame:RegisterForDrag("LeftButton", "RightButton")
-	self.pvpFrame:EnableMouse(true)
-	self.pvpFrame:SetMovable(true)
-	self.pvpFrame:SetClampedToScreen(true)
-	self.pvpFrame:SetPoint("CENTER", WorldStateAlwaysUpFrame, "TOP", 12, 0)
-	self.pvpFrame:SetScript("OnEnter", showTooltip)
-	self.pvpFrame:SetScript("OnLeave", hideTooltip)
-	self.pvpFrame:SetScript("OnDragStart", function(self, button)
-		if( button == "RightButton" ) then
-			Move:ResetPosition("pvp", WorldStateAlwaysUpFrame)
-			return
-		end
-		
-		self.isMoving = true
-
-		WorldStateAlwaysUpFrame:SetMovable(true)
-		WorldStateAlwaysUpFrame:StartMoving()
-	end)
-	
-	self.pvpFrame:SetScript("OnDragStop", function(self)
-		if( self.isMoving ) then
-			self.isMoving = nil
-			
-			Move:SavePosition("pvp", WorldStateAlwaysUpFrame)
-
-			WorldStateAlwaysUpFrame:StopMovingOrSizing()
-			WorldStateAlwaysUpFrame:SetUserPlaced(nil)
-			WorldStateAlwaysUpFrame:SetMovable(false)
-		end
-	end)
-	
-	self.pvpFrame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-				edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-				tile = true,
-				tileSize = 9,
-				edgeSize = 9,
-				insets = { left = 2, right = 2, top = 2, bottom = 2 }})	
-	self.pvpFrame:SetBackdropColor(0, 0, 0, 1.0)
-	self.pvpFrame:SetBackdropBorderColor(0.75, 0.75, 0.75, 1.0)
-
-	self.pvpFrame.text = self.pvpFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	self.pvpFrame.text:SetText(L["PvP Objectives Anchor"])
-	self.pvpFrame.text:SetPoint("CENTER", self.pvpFrame, "CENTER")
-end
-
 function Move:ToggleCapture()
 	if( self.db.profile.capture ) then
 		if( self.captureFrame ) then
@@ -140,6 +83,19 @@ function Move:ToggleCapture()
 
 end
 
+function Move:TogglePVP()
+	if( self.db.profile.pvp ) then
+		if( self.pvpFrame ) then
+			self.pvpFrame:Hide()
+		end
+		
+		return
+	end
+	
+	self.pvpFrame = self:CreateAnchor("pvp", L["PvP Objectives Anchor"], WorldStateAlwaysUpFrame)
+end
+
+
 function Move:ToggleScore()
 	if( self.db.profile.score ) then
 		if( self.scoreFrame ) then
@@ -148,51 +104,66 @@ function Move:ToggleScore()
 		
 		return
 	end
-
-	self.scoreFrame = CreateFrame("Frame", nil, WorldStateScoreFrame)
-	self.scoreFrame:SetHeight(20)
-	self.scoreFrame:SetWidth(150)
-	self.scoreFrame:RegisterForDrag("LeftButton", "RightButton")
-	self.scoreFrame:EnableMouse(true)
-	self.scoreFrame:SetMovable(true)
-	self.scoreFrame:SetClampedToScreen(true)
-	self.scoreFrame:SetPoint("CENTER", WorldStateScoreFrame, "TOP", 0, 0)
-	self.scoreFrame:SetScript("OnEnter", showTooltip)
-	self.scoreFrame:SetScript("OnLeave", hideTooltip)
-	self.scoreFrame:SetScript("OnDragStart", function(self, button)
-		if( button == "RightButton" ) then
-			Move:ResetPosition("score", WorldStateScoreFrame)
-			return
-		end
-		
-		self.isMoving = true
-
-		WorldStateScoreFrame:SetMovable(true)
-		WorldStateScoreFrame:StartMoving()
-	end)
 	
-	self.scoreFrame:SetScript("OnDragStop", function(self)
-		if( self.isMoving ) then
-			self.isMoving = nil
-			
-			Move:SavePosition("score", WorldStateScoreFrame)
+	self.scoreFrame = self:CreateAnchor("score", L["Score Objectives Anchor"], WorldStateScoreFrame)
+end
 
-			WorldStateScoreFrame:StopMovingOrSizing()
-			WorldStateScoreFrame:SetUserPlaced(nil)
-			WorldStateScoreFrame:SetMovable(false)
-		end
-	end)
+local backdrop = {bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		tile = true,
+		tileSize = 9,
+		edgeSize = 9,
+		insets = { left = 2, right = 2, top = 2, bottom = 2 }}
+
+local function onDragStart(self)
+	if( button == "RightButton" ) then
+		Move:ResetPosition(self.type, self.anchor)
+		return
+	end
+
+	self.isMoving = true
+	self.anchor:SetMovable(true)
+	self.anchor:StartMoving()
+end
+
+local function onDragStop(self)
+	if( self.isMoving ) then
+		Move:SavePosition(self.type, self.anchor)
+
+		-- Whenever you call StopMovingOrSizing() SetUserPlaced is changed
+		-- back to true
+		self.isMoving = nil
+		self.anchor:StopMovingOrSizing()
+		self.anchor:SetUserPlaced(nil)
+		self.anchor:SetMovable(false)
+	end
+end
+
+function Move:CreateAnchor(type, text, anchor)
+	local frame = CreateFrame("Frame", nil, anchor)
+	frame:SetHeight(20)
+	frame:SetWidth(150)
+	frame:RegisterForDrag("LeftButton", "RightButton")
+	frame:EnableMouse(true)
+	frame:SetMovable(true)
+	frame:SetClampedToScreen(true)
+	frame:SetPoint("CENTER", anchor, "TOP", 0, 0)
+	frame:SetScript("OnEnter", showTooltip)
+	frame:SetScript("OnLeave", hideTooltip)
 	
-	self.scoreFrame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-				edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-				tile = true,
-				tileSize = 9,
-				edgeSize = 9,
-				insets = { left = 2, right = 2, top = 2, bottom = 2 }})	
-	self.scoreFrame:SetBackdropColor(0, 0, 0, 1.0)
-	self.scoreFrame:SetBackdropBorderColor(0.75, 0.75, 0.75, 1.0)
+	frame.type = type
+	frame.anchor = anchor
+	
+	frame:SetScript("OnDragStart", onDragStart)
+	frame:SetScript("OnDragStop", onDragStop)
+	
+	frame:SetBackdrop(backdrop)	
+	frame:SetBackdropColor(0, 0, 0, 1.0)
+	frame:SetBackdropBorderColor(0.75, 0.75, 0.75, 1.0)
 
-	self.scoreFrame.text = self.scoreFrame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	self.scoreFrame.text:SetText(L["Score Objectives Anchor"])
-	self.scoreFrame.text:SetPoint("CENTER", self.scoreFrame, "CENTER")
+	frame.text = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	frame.text:SetText(text)
+	frame.text:SetPoint("CENTER", frame, "CENTER")
+	
+	return frame
 end

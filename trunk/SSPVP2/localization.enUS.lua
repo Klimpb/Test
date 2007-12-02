@@ -23,6 +23,7 @@ SSPVPLocals = {
 	
 	["Higher priority battlefield ready, auto joining %s in %d seconds."] = "Higher priority battlefield ready, auto joining %s in %d seconds.",
 	["You're current activity is a higher priority then %s, not auto joining."] = "You're current activity is a higher priority then %s, not auto joining.",
+	["You have the battlefield entry window hidden for %s, will not auto join."] = "You have the battlefield entry window hidden for %s, will not auto join.",
 	
 	["%s %d points (%d rating)"] = "%s %d points (%d rating)",
 	

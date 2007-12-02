@@ -65,7 +65,7 @@ function EOTS:ParseCombat(event, msg)
 	end
 end
 
--- Clean up score
+-- Clean up the text to not be so hugeassly long
 hooksecurefunc("WorldStateAlwaysUpFrame_Update", function()
 	if( AlwaysUpFrame1 ) then
 		local alliance = getglobal("AlwaysUpFrame1Text")

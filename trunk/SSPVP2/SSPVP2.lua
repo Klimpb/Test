@@ -155,7 +155,7 @@ function SSPVP:BATTLEFIELDS_SHOW()
 	end
 	
 	-- Auto select an option in arena queue depending on teammates
-	if( IsBattlefieldArena() and GetNumPartyMembers() > 0 ) then
+	if( IsBattlefieldArena() and GetNumPartyMembers() > 0 and IsPartyLeader() ) then
 		for _, total in pairs(teamTotals) do
 			total = 0
 		end
@@ -193,7 +193,7 @@ function SSPVP:BATTLEFIELDS_SHOW()
 
 		
 	-- Auto queue
-	if( self.db.profile.auto.solo and GetNumPartyMembers() == 0 and GetNumRaidMembers() == 0 ) then
+	if( self.db.profile.auto.solo and ( GetNumPartyMembers() == 0 and GetNumRaidMembers() == 0 or IsAltKeyDown() ) ) then
 		JoinBattlefield(GetSelectedBattlefield())
 	elseif( self.db.profile.auto.group and CanJoinBattlefieldAsGroup() and IsPartyLeader() ) then
 		JoinBattlefield(GetSelectedBattlefield(), true)
@@ -413,11 +413,11 @@ function SSPVP:LeaveBattlefield()
 	end
 	
 
-	-- CHANGE ME BACK TO GetBattlefieldWinner() WHEN FIXED
 	-- Theres a delay before the call to arms quest completes, sometimes it's
-	-- within 0.5 seconds, sometimes it's within 2 seconds. If you have auto leave set to 0
+	-- within 0.5 seconds, sometimes it's within 1-3 seconds. If you have auto leave set to 0
 	-- then you'll likely leave before you get credit, so delay the actual leave (if need be)
 	-- until the quest is credited to us
+	-- CHANGE ME BACK TO GetBattlefieldWinner() WHEN FIXED
 	if( playerTeamWon and select(2, IsInInstance()) == "pvp" ) then
 		local callToArms = string.format(L["Call to Arms: %s"], activeBF)
 		for i=1, GetNumQuestLogEntries() do
@@ -456,16 +456,16 @@ end
 -- Screenshot taken
 function SSPVP:ScreenshotTaken()
 	screenTaken = nil
-	
-	local name = "WoWScrnShot_" .. date("%m%d%y_%H%M%S") .. "."
+
 	local format = GetCVar("screenshotFormat")
-	if( format == "tga" ) then
-		name = anme .. "tga"
-	elseif( format == "jpeg" ) then
-		name = name .. "jpg"
-	elseif( format == "png" ) then
-		name = name .. "png"
+	
+
+	-- jpeg format is used, jpg is the actual ext it's saved as
+	if( format == "jpeg" ) then
+		format = "jpg"
 	end
+	
+	local name = "WoWScrnShot_" .. date("%m%d%y_%H%M%S") .. "." .. format
 	
 	self:Print(string.format(L["Screenshot saved as %s."], name))
 
@@ -495,6 +495,8 @@ function SSPVP:JoinBattlefield()
 		joinID = nil
 		joinAt = nil
 		joinPriority = nil
+		
+		self:Print(string.format(L["You have the battlefield entry window hidden for %s, will not auto join."], (GetBattlefieldStatus(joinID))))
 		return
 	end
 	
