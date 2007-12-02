@@ -294,6 +294,11 @@ function ArenaIgnore:CHAT_MSG_SYSTEM(event, msg)
 	-- Found them!
 	elseif( string.match(msg, ignoreAdded) ) then
 		local name = string.match(msg, ignoreAdded)
+		-- If they are from our realm, the ignore message doesn't include server
+		if( not string.match(name, "-") ) then
+			name = name .. "-" .. GetRealmName()
+		end
+		
 		self:FoundEnemy(name)
 		
 		ignoreResults = ignoreResults + 1
