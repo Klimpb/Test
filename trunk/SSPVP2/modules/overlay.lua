@@ -26,9 +26,9 @@ function SSOverlay:OnEnable()
 		profile = {
 			locked = true,
 			noClick = false,
+			growUp = false,
 			x = 300,
 			y = 600,
-			growUp = false,
 			opacity = 1.0,
 			background = { r = 0, g = 0, b = 0 },
 			border = { r = 0.75, g = 0.75, b = 0.75 },

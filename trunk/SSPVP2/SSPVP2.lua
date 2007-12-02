@@ -274,7 +274,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 
 				-- No sense in requesting scores if you're in arena
 				if( abbrev ~= "arena" ) then
-					self:ScheduleRepeatingTimer(RequestBattlefieldScoreData, 15)	
+					self:ScheduleRepeatingTimer("RequestBattlefieldScoreData", 15)	
 				end
 				
 				activeBF = map
@@ -285,7 +285,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				activeBF = nil
 				playerTeamWon = nil
 			
-				self:CancelTimer(RequestBattlefieldScoreData)
+				self:CancelTimer("RequestBattlefieldScoreData")
 
 				for name, module in pairs(self.modules) do
 					if( module.isActive ) then
