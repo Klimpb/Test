@@ -1,4 +1,4 @@
---[[ $Id: AceDB-3.0.lua 53728 2007-11-02 13:12:19Z nevcairiel $ ]]
+--[[ $Id: AceDB-3.0.lua 56363 2007-12-01 09:04:51Z nevcairiel $ ]]
 local ACEDB_MAJOR, ACEDB_MINOR = "AceDB-3.0", 1
 local AceDB, oldminor = LibStub:NewLibrary(ACEDB_MAJOR, ACEDB_MINOR)
 
@@ -174,6 +174,16 @@ local dbmt = {
 		end
 }
 
+local function validateDefaults(defaults, keyTbl, offset)
+	if not defaults then return end
+	offset = offset or 0
+	for k in pairs(defaults) do
+		if not keyTbl[k] or k == "profiles" then
+			error(("Usage: AceDBObject:RegisterDefaults(defaults): '%s' is not a valid datatype."):format(k), 3 + offset)
+		end
+	end
+end
+
 local preserve_keys = {
 	["callbacks"] = true,
 	["RegisterCallback"] = true,
@@ -181,15 +191,15 @@ local preserve_keys = {
 	["UnregisterAllCallbacks"] = true
 }
 
+local realmKey = GetRealmName()
+local charKey = UnitName("player") .. " - " .. realmKey
+local _, classKey = UnitClass("player")
+local _, raceKey = UnitRace("player")
+local factionKey = UnitFactionGroup("player")
+local factionrealmKey = factionKey .. " - " .. realmKey
 -- Actual database initialization function
 local function initdb(sv, defaults, defaultProfile, olddb)
 	-- Generate the database keys for each section
-	local realmKey = GetRealmName()
-	local charKey = UnitName("player") .. " - " .. realmKey
-	local _, classKey = UnitClass("player")
-	local _, raceKey = UnitRace("player")
-	local factionKey = UnitFactionGroup("player")
-	local factionrealmKey = factionKey .. " - " .. realmKey
 	
 	-- Make a container for profile keys
 	if not sv.profileKeys then sv.profileKeys = {} end
@@ -212,6 +222,8 @@ local function initdb(sv, defaults, defaultProfile, olddb)
 		["global"] = true,
 		["profiles"] = true,
 	}
+	
+	validateDefaults(defaults, keyTbl, 1)
 	
 	-- This allows us to use this function to reset an entire database
 	-- Clear out the old database
@@ -279,10 +291,14 @@ function DBObjectLib:RegisterDefaults(defaults)
 		error("Usage: AceDBObject:RegisterDefaults(defaults): 'defaults' - table or nil expected.", 2)
 	end
 	
+	validateDefaults(defaults, self.keys)
+	
 	-- Remove any currently set defaults
-	for section,key in pairs(self.keys) do
-		if self.defaults[section] and rawget(self, section) then
-			removeDefaults(self[section], self.defaults[section])
+	if self.defaults then
+		for section,key in pairs(self.keys) do
+			if self.defaults[section] and rawget(self, section) then
+				removeDefaults(self[section], self.defaults[section])
+			end
 		end
 	end
 	
@@ -385,7 +401,7 @@ function DBObjectLib:DeleteProfile(name)
 	self.callbacks:Fire("OnProfileDeleted", self, name)
 end
 
--- DBObject:CopyProfile(name, force)
+-- DBObject:CopyProfile(name)
 -- name (string) - The name of the profile to be copied into the current profile
 --
 -- Copies a named profile into the current profile, overwriting any conflicting

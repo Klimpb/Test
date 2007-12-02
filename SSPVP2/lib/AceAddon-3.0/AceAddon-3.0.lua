@@ -1,4 +1,4 @@
---[[ $Id: AceAddon-3.0.lua 53587 2007-10-31 15:26:34Z ammo $ ]]
+--[[ $Id: AceAddon-3.0.lua 56327 2007-11-30 15:39:13Z ammo $ ]]
 local MAJOR, MINOR = "AceAddon-3.0", 0
 local AceAddon, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
 
@@ -6,7 +6,7 @@ if not AceAddon then return end -- No Upgrade needed.
 
 AceAddon.frame = AceAddon.frame or CreateFrame("Frame", "AceAddon30Frame") -- Our very own frame
 AceAddon.addons = AceAddon.addons or {} -- addons in general
-AceAddon.statuses = AceAddon.statues or {} -- statuses of addon.
+AceAddon.statuses = AceAddon.statuses or {} -- statuses of addon.
 AceAddon.initializequeue = AceAddon.initializequeue or {} -- addons that are new and not initialized
 AceAddon.enablequeue = AceAddon.enablequeue or {} -- addons that are initialized and waiting to be enabled
 AceAddon.embeds = AceAddon.embeds or setmetatable({}, {__index = function(tbl, key) tbl[key] = {} return tbl[key] end }) -- contains a list of libraries embedded in an addon
@@ -25,7 +25,7 @@ local function safecall(func, ...)
 end
 
 -- local functions that will be implemented further down
-local Embed, NewModule, GetModule, SetDefaultModuleState, SetDefaultModuleLibraries, SetEnabledState, SetDefaultPrototype
+local Enable, Disable, EnableModule, DisableModule, Embed, NewModule, GetModule, SetDefaultModuleState, SetDefaultModuleLibraries, SetEnabledState, SetDefaultModulePrototype
 
 -- used in the addon metatable
 local function addontostring( self ) return self.name end 
@@ -150,6 +150,38 @@ function NewModule(self, name, prototype, ...)
 	return module
 end
 
+--addon:Enable()
+-- Enables the Addon if possible, return true or false depending on success
+function Enable(self)
+	self:SetEnabledState(true)
+	return AceAddon:EnableAddon(self)
+end
+
+--addon:Disable()
+-- Disables the Addon if possible, return true or false depending on success
+function Disable(self)
+	self:SetEnabledState(false)
+	return AceAddon:DisableAddon(self)
+end
+
+-- addon:EnableModule( name )
+-- name (string) - unique module object name
+--
+-- Enables the Module if possible, return true or false depending on success
+function EnableModule(self, name)
+	local module = self:GetModule( name )
+	return module:Enable()
+end
+
+-- addon:DisableModule( name )
+-- name (string) - unique module object name
+--
+-- Disables the Module if possible, return true or false depending on success
+function DisableModule(self, name)
+	local module = self:GetModule( name )
+	return module:Disable()
+end
+
 -- addon:SetDefaultModuleLibraries( [lib, lib, lib, ...]  )
 -- [lib] (string) - libs to embed in every module
 function SetDefaultModuleLibraries(self, ...)
@@ -182,9 +214,15 @@ end
 
 local function IterateModules(self) return pairs(self.modules) end
 local function IterateEmbeds(self) return pairs(AceAddon.embeds[self]) end
+local function IsEnabled(self) return self.enabledState end
 local mixins = {
 	NewModule = NewModule,
 	GetModule = GetModule,
+	Enable = Enable,
+	Disable = Disable,
+	EnableModule = EnableModule,
+	DisableModule = DisableModule,
+	IsEnabled = IsEnabled,
 	SetDefaultModuleLibraries = SetDefaultModuleLibraries,
 	SetDefaultModuleState = SetDefaultModuleState,
 	SetDefaultModulePrototype = SetDefaultModulePrototype,
@@ -235,6 +273,7 @@ end
 -- calls OnEnable on the addon object if available
 -- calls OnEmbedEnable on embedded libs in the addon object if available
 function AceAddon:EnableAddon(addon)
+	if type(addon) == "string" then addon = AceAddon:GetAddon(addon) end
 	if self.statuses[addon.name] or not addon.enabledState then return false end
 	-- TODO: handle 'first'? Or let addons do it on their own?
 	safecall(addon.OnEnable, addon)
@@ -253,11 +292,12 @@ function AceAddon:EnableAddon(addon)
 end
 
 -- AceAddon:DisableAddon( addon )
--- addon (object) - addon to disable
+-- addon (object|string) - addon to disable
 --
 -- calls OnDisable on the addon object if available
 -- calls OnEmbedDisable on embedded libs in the addon object if available
 function AceAddon:DisableAddon(addon)
+	if type(addon) == "string" then addon = AceAddon:GetAddon(addon) end
 	if not self.statuses[addon.name] then return false end
 	safecall( addon.OnDisable, addon )
 	for k, libname in ipairs(self.embeds[addon]) do
@@ -287,16 +327,16 @@ local function onEvent(this, event, arg1)
 		for i = 1, #AceAddon.initializequeue do
 			local addon = AceAddon.initializequeue[i]
 			if event == "ADDON_LOADED" then addon.baseName = arg1 end
-			AceAddon:InitializeAddon(addon)
 			AceAddon.initializequeue[i] = nil
+			AceAddon:InitializeAddon(addon)
 			table.insert(AceAddon.enablequeue, addon)
 		end
 		
 		if IsLoggedIn() then
 			for i = 1, #AceAddon.enablequeue do
 				local addon = AceAddon.enablequeue[i]
-				AceAddon:EnableAddon(addon)
 				AceAddon.enablequeue[i] = nil
+				AceAddon:EnableAddon(addon)
 			end
 		end
 	end

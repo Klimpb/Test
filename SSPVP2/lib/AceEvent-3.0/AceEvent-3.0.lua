@@ -1,4 +1,4 @@
---[[ $Id: AceEvent-3.0.lua 51454 2007-10-09 03:18:36Z kaelten $ ]]
+--[[ $Id: AceEvent-3.0.lua 54400 2007-11-12 17:15:56Z mikk $ ]]
 local MAJOR, MINOR = "AceEvent-3.0", 2
 local AceEvent = LibStub:NewLibrary(MAJOR, MINOR)
 
@@ -12,15 +12,19 @@ AceEvent.embeds = AceEvent.embeds or {} -- what objects embed this lib
 
 
 -- APIs and registry for blizzard events, using CallbackHandler lib
-local OnEventUsed, OnEventUnused
-
 if not AceEvent.events then
 	AceEvent.events = CallbackHandler:New(AceEvent, 
-		"RegisterEvent", "UnregisterEvent", "UnregisterAllEvents",
-		--[[OnUsed]]   function(self,eventname) self.frame:RegisterEvent(eventname) end,
-		--[[OnUnused]] function(self,eventname) self.frame:UnregisterEvent(eventname) end
-	)
+		"RegisterEvent", "UnregisterEvent", "UnregisterAllEvents")
 end
+
+function AceEvent.events:OnUsed(target, eventname) 
+	AceEvent.frame:RegisterEvent(eventname)
+end
+
+function AceEvent.events:OnUnused(target, eventname) 
+	AceEvent.frame:UnregisterEvent(eventname)
+end
+
 
 -- APIs and registry for IPC messages, using CallbackHandler lib
 if not AceEvent.messages then

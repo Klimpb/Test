@@ -96,6 +96,11 @@ function AV:UPDATE_WORLD_STATES()
 	local _, _, allianceText = GetWorldStateUIInfo(1)
 	local _, _, hordeText = GetWorldStateUIInfo(2)
 	
+	-- No text found (shouldn't happen)
+	if( not allianceText or not hordeText ) then
+		return
+	end
+	
 	-- Figure out points changed for Alliance
 	local reinf = string.match(allianceText, L["Reinforcements: ([0-9]+)"])
 	reinf = tonumber(reinf) or 0
