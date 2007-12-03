@@ -111,7 +111,7 @@ function SendChatMessage(text, type, language, target, ...)
 			local name = GetBattlefieldScore(i)
 			
 			-- Make sure they're from another server
-			if( string.match(string.lower(name), "^" .. string.lower(target)) ) then
+			if(  name and string.match(string.lower(name), "^" .. string.lower(target)) ) then
 				player = name
 				results = results + 1
 			end

@@ -224,10 +224,10 @@ end
 -- so we have to add specific checks for it which is sadface
 function AV:CHAT_MSG_BG_SYSTEM_HORDE(event, msg)
 	if( string.match(msg, L["claims the Snowfall graveyard"]) ) then
-		timers[L["Snowfall Graveyard"]] = GetTime() + 245
+		timers[L["Snowfall Graveyard"]] = GetTime() + 304
 
 		if( self.db.profile.timer ) then
-			SSOverlay:RegisterTimer(L["Snowfall Graveyard"], "timer", L["Snowfall Graveyard"] .. ": %s", 245, SSPVP:GetFactionColor("Horde"))
+			SSOverlay:RegisterTimer(L["Snowfall Graveyard"], "timer", L["Snowfall Graveyard"] .. ": %s", 304, SSPVP:GetFactionColor("Horde"))
 			SSOverlay:RegisterOnClick(L["Snowfall Graveyard"], self, "PrintTimer", L["Snowfall Graveyard"], timers[name], L["Horde"])
 		end
 
@@ -239,10 +239,10 @@ end
 
 function AV:CHAT_MSG_BG_SYSTEM_ALLIANCE(event, msg)
 	if( string.match(msg, L["claims the Snowfall graveyard"]) ) then
-		timers[L["Snowfall Graveyard"]] = GetTime() + 245
+		timers[L["Snowfall Graveyard"]] = GetTime() + 304
 
 		if( self.db.profile.timer ) then
-			SSOverlay:RegisterTimer(L["Snowfall Graveyard"], "timer", L["Snowfall Graveyard"] .. ": %s", 245, SSPVP:GetFactionColor("Alliance"))
+			SSOverlay:RegisterTimer(L["Snowfall Graveyard"], "timer", L["Snowfall Graveyard"] .. ": %s", 304, SSPVP:GetFactionColor("Alliance"))
 			SSOverlay:RegisterOnClick(L["Snowfall Graveyard"], self, "PrintTimer", L["Snowfall Graveyard"], timers[name], L["Alliance"])
 		end
 		
