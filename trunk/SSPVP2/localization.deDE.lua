@@ -15,20 +15,20 @@ SSPVPLocals = setmetatable({
 	["Ruins of Lordaeron"] = "Ruinen von Lordaeron",
 	
 	["Rated"] = "Gewertet",
-	["Skirmish"] = "Skirmish",
+	["Skirmish"] = "Nicht gewertet",
 	["Arena"] = "Arena",
-	["All Arenas"] = "Alle Arenas",
+	["All Arenas"] = "Alle Arenen",
 	["%s (%dvs%d)"] = "%s (%dvs%d)",
 	["Rated Arena"] = "Gewertete Arena",
-	["Skirmish Arena"] = "Skirmish Arena",
+	["Skirmish Arena"] = "Nicht gewertete Arena",
 
-	["You are now in the queue for %s Arena (%dvs%d)."] = "You are now in the queue for %s Arena (%dvs%d).",
-	["You are now in the queue for %s."] = "You are now in the queue for %s.",
+	["You are now in the queue for %s Arena (%dvs%d)."] = "Du bist jetzt in der Warteschlange f\195\188r %s Arena (%dvs%d).",
+	["You are now in the queue for %s."] = "Du bist jetzt in der Warteschlange f\195\188r %s.",
 	
 	["Higher priority battlefield ready, auto joining %s in %d seconds."] = "Schlachtfeld mit h\195\182herer Priorit\195\164t gefunden, Auto-Beitreten zu %s in %d Sekunden.",
 	["You're current activity is a higher priority then %s, not auto joining."] = "Ihr macht gerade etwas mit h\195\182herer Priorit\195\164t als %s, Auto-Beitreten deaktiviert.",
 	
-	["%s %d points (%d rating)"] = "%s %d points (%d rating)",
+	["%s %d points (%d rating)"] = "%s %d Punkte (%d Wertung)",
 	
 	["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"] = "Ihr seid gerade dabei, die aktive oder angemeldete Arena %s (%d vs %d) zu verlassen, seid Ihr sicher?",
 	["You are about to leave the active or queued battleground %s, are you sure?"] = "Ihr seid gerade dabei, das aktive oder angemeldete Schlachtfeld %s zu verlassen, seid Ihr sicher?",
@@ -40,14 +40,14 @@ SSPVPLocals = setmetatable({
 	["(L) %s"] = "(L) %s",
 	["Rating"] = "Wertung",
 	
-	["Releasing..."] = "Releasing...",
+	["Releasing..."] = "Freilassen...",
 	["Using %s..."] = "Benutze %s...",
 	
 	["Starting: %s"] = "Beginnt in: %s",
 	
 	["the raid group.$"] = "Die Schlachtgruppe.$",
 	
-	["The"] = "The",
+	["The"] = "Die",
 	
 	["Alliance"] = "Allianz",
 	["Horde"] = "Horde",
@@ -65,7 +65,7 @@ SSPVPLocals = setmetatable({
 	-- Mover
 	["PvP Objectives Anchor"] = "PvP Ziele Anker",
 	["Score Objectives Anchor"] = "Ergebnis Objekte Anker",
-	["Left Click + Drag to move the frame, Right Click + Drag to reset it to it's original position."] = "Linksklick und ziehen um das Fenster zu verschieben, Rechtsklick und verschieben um es an die Ursprungsposition zur\195\188ck zu setzen.",
+	["Left Click + Drag to move the frame, Right Click + Drag to reset it to it's original position."] = "Linksklick und verschieben um das Fenster zu verschieben, Rechtsklick und verschieben um es an die Ursprungsposition zur\195\188ck zu setzen.",
 	
 	-- Win API is broken /wrist
 	["The Horde wins"] = "Die Horde gewinnt",
@@ -82,10 +82,10 @@ SSPVPLocals = setmetatable({
 	["was picked up by (.+)!"] = "(.+) hat die Flagge der (.+) aufgenommen!",
 	["captured the"] = "(.+) hat die Flagge der (.+) errungen",
 	["was dropped by (.+)!"] = "(.+) hat die Flagge der (.+) fallen lassen!",
-	["was returned to its base"] = "wurde zur\195\188ck zu Basis gebracht",
+	["was returned to its base"] = "Die Flagge der (.+) wurde von (.+) zu ihrem St\195\188tzpunkt zur\195\188ckgebracht!",
 	
-	["(.+) has taken the flag!"] = "(.+) hat die Flagge aufgenommen!",
-	["The flag has been dropped"] = "Die Flagge wurde fallen gelassen",
+	["(.+) has taken the flag!"] = "(.+) hat die Flagge aufgenommen.",
+	["The flag has been dropped"] = "Die Flagge wurde fallengelassen.",
 	
 	["Held Time: %s"] = "Gehalten: %s",
 	["Capture Time: %s"] = "Eroberungszeit: %s",
@@ -95,13 +95,13 @@ SSPVPLocals = setmetatable({
 	
 	-- Sync queuing for AV
 	["Alterac Valley queue stopped."] = "Alteractal Warteschlange gestoppt.",
-	["Queuing for Alterac Valley in %d seconds."] = "In der Warteschlange für das Alteractal seit %d Sekunden.",
-	["Queuing for Alterac Valley in %d second."] = "In der Warteschlange für das Alteractal seit %d Sekunde.",
+	["Queuing for Alterac Valley in %d seconds."] = "In der Warteschlange f\195\188r das Alteractal seit %d Sekunden.",
+	["Queuing for Alterac Valley in %d second."] = "In der Warteschlange f\195\188r das Alteractal seit %d Sekunde.",
 	["Queue for Alterac Valley!"] = "Warteschlange f\195\188r das Alteractal!",
 	
 	["You must be in a raid or party to do this."] = "Du musst in einer Schlachgruppe oder Gruppe sein um das zu tun.",
-	["You have been queued for Alterac Valley by %s."] = "You have been queued for Alterac Valley by %s.",
-	["Invalid number entered for sync queue."] = "Invalid number entered for sync queue.",
+	["You have been queued for Alterac Valley by %s."] = "Du bist in der Warteschlange f\195\188r das Alteractal seit %s.",
+	["Invalid number entered for sync queue."] = "Ung\195\188ltige Nummer eigegeben f\195\188r synchrone Warteschlange.",
 	
 	-- CT support
 	["-%d Reinforcements"] = "-%d Verst\195\164rkung",
@@ -122,7 +122,7 @@ SSPVPLocals = setmetatable({
 	["Final Score: %d"] = "Endstand: %d",
 	["Time Left: %s"] = "Verbleibende Zeit: %s",
 	["Bases to win: %d"] = "Basen zum Sieg: %d",
-	["Base Final: %d"] = "Base Final: %d",
+	["Base Final: %d"] = "Basen am Ende: %d",
 	
 	-- Alterac valley
 	["Herald"] = "Herold",
@@ -138,7 +138,7 @@ SSPVPLocals = setmetatable({
 	-- Eye of the Storm
 	["Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000"] = "Basen: ([0-9]+)  Siegpunkte: ([0-9]+)%/2000",
 	["Bases %d  Points %d/2000"] = "Basen %d  Punkte %d/2000",
-	["flag has been reset"] = "Die Flagge wurde zur\195\188ck gesetzt!",
+	["flag has been reset"] = "Die Flagge wurde zur\195\188ckgesetzt.",
 	
 	-- Gods
 	["Ivus the Forest Lord"] = "Ivus der Waldf\195\188rs",
@@ -147,18 +147,18 @@ SSPVPLocals = setmetatable({
 	["Ivus Moving: %s"] = "Ivus der Waldf\195\188rst in Bewegung: %s",
 	["Lokholar Moving: %s"] = "Lokholar der Eislord in Bewegung: %s",
 	
-	["Wicked, wicked, mortals"] = "Wicked, wicked, mortals",
-	["WHO DARES SUMMON LOKHOLA"] = "WHO DARES SUMMON LOKHOLA",
+	["Wicked, wicked, mortals"] = "Gemeine, Gemeine, Sterbliche",
+	["WHO DARES SUMMON LOKHOLA"] = "WER WAGT ES LOKHOLA HERBEIZURUFEN?",
 
 	-- Captain Galvangar
 	["Captain Galvangar"] = "Hauptmann Galvanga",
 	
 	["The Alliance has slain Captain Galvangar."] = "Die Allianz hat Hauptmann Galvangar get\195\182tet.",
 	["The Alliance has engaged Captain Galvangar."] = "Die Allianz hat Hauptmann Galvangar angegriffen.",
-	["The Alliance has reset Captain Galvangar."] = "ie Allianz hat Hauptmann Galvangar zur\195\188ckgesetzt.",
+	["The Alliance has reset Captain Galvangar."] = "Die Allianz hat Hauptmann Galvangar zur\195\188ckgesetzt.",
 	
 	["Your kind has no place in Alterac Valley"] = "F\195\188r Eure Art ist kein Platz im Alteractal!",
-	["I'll never fall for that, fool!"] = "Ich werde niemals",
+	["I'll never fall for that, fool!"] = "Ich werde niemals fallen, Dummkopf!",
 	
 	-- Captain Balinda
 	["Captain Balinda Stonehearth"] = "Hauptmann Balinda Steinbruch",
@@ -285,7 +285,7 @@ SSPVPLocals = setmetatable({
 	["Less than/equal"] = "Less than/equal",
 	["Battleground join delay"] = "Verz\195\182gerung beim Beitreten von Schlachtfeldern",
 	["AFK battleground join delay"] = "Verz\195\182gerung beim Beitreten von Schlachtfeldern wenn AFK",
-	["Arena join delay"] = "Verz\195\182gerung beim Beitreten von Arenas",
+	["Arena join delay"] = "Verz\195\182gerung beim Beitreten von Arenen",
 	["Don't auto join a battlefield if the queue window is hidden"] = "Don't auto join a battlefield if the queue window is hidden",
 	
 	-- AUTO LEAVE
