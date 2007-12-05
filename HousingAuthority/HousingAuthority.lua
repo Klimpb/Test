@@ -85,10 +85,15 @@ local function positionWidgets(columns, parent, widgets, positionGroup, isGroup)
 			local xPos = widget.xPos
 			if( widget.infoButton and widget.infoButton.type ) then
 				xPos = ( xPos or 0 ) + 15
+				local pad = 0
+				if( widget.data.type ~= "input" ) then
+					pad = -3
+				end
+
 				if( not positionGroup ) then
-					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, -heightUsed)
+					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, -heightUsed + pad)
 				else
-					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", 6, -heightUsed)
+					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", 6, -heightUsed + pad)
 				end
 				
 				widget.infoButton:Show()
@@ -141,10 +146,15 @@ local function positionWidgets(columns, parent, widgets, positionGroup, isGroup)
 			if( widget.infoButton and widget.infoButton.type ) then
 				xPos = ( xPos or 0 ) + 15
 				
+				local pad = 0
+				if( widgets.data.type ~= "input" ) then
+					pad = -3
+				end
+				
 				if( not positionGroup ) then
-					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing, -heightUsed)
+					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing, -heightUsed + pad)
 				else
-					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing + 6, -heightUsed)
+					widget.infoButton:SetPoint("TOPLEFT", parent, "TOPLEFT", spacing + 6, -heightUsed + pad)
 				end
 				
 				widget.infoButton:Show()
