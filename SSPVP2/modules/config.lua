@@ -276,7 +276,7 @@ function Config:AV()
 		{ group = L["Alerts"], type = "groupOrder", order = 2 },
 		{ order = 2, group = L["Alerts"], text = L["Enable interval capture messages"], type = "check", var = {"AV", "announce"}},
 		{ order = 3, group = L["Alerts"], text = L["Seconds between capture messages"], type = "input", numeric = true, width = 30, var = {"AV", "interval"}},
-		{ order = 4, group = L["Alerts"], text = L["Interval frequency increase"], type = "dropdown", list = {{0, L["None"]}, {0.75, L["25%"]}, {0.50, L["50%"]}, {0.25, L["75%"]}},  var = {"av", "speed"}},
+		{ order = 4, group = L["Alerts"], text = L["Interval frequency increase"], type = "dropdown", list = {{0, L["None"]}, {0.75, L["25%"]}, {0.50, L["50%"]}, {0.25, L["75%"]}},  var = {"AV", "speed"}},
  	}
 
 	return HousingAuthority:CreateConfiguration(config, {onSet = "Reload", set = "Set", get = "Get", handler = Config})
