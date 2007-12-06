@@ -426,7 +426,6 @@ function SSPVP:LeaveBattlefield()
 			-- Quest isn't complete yet, AND we have it.
 			-- Meaning, schedule for a log update and auto leave once it's complete
 			if( string.match(questName, callToArms) and not isComplete ) then
-
 				self:Print(string.format(L["You currently have the battleground daily quest for %s, auto leave has been set to occure once the quest completes."], activeBF))
 				self:RegisterEvent("QUEST_LOG_UPDATE")
 				return
@@ -441,7 +440,6 @@ end
 
 -- Check if it's time to auto leave yet
 function SSPVP:QUEST_LOG_UPDATE()
-	-- NOW make sure we don't have to complete the daily quest first
 	local callToArms = string.format(L["Call to Arms: %s"], activeBF)
 	for i=1, GetNumQuestLogEntries() do
 		local questName, _, _, _, _, _, isComplete = GetQuestLogTitle(i)
@@ -456,6 +454,7 @@ end
 -- Screenshot taken
 function SSPVP:ScreenshotTaken()
 	screenTaken = nil
+	
 
 	local format = GetCVar("screenshotFormat")
 	

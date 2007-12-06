@@ -11,6 +11,10 @@ function BF:OnEnable()
 			release = true,
 			whispers = true,
 			soulstone = false,
+			eots = false,
+			av = false,
+			wsg = false,
+			ab = false,
 		},
 	}
 	
@@ -19,6 +23,7 @@ end
 
 function BF:EnableModule(abbrev)
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL")
+	self.activeBF = abbrev
 	
 	-- May not want to auto release in arenas incase a team mates going to try
 	-- and ressurect you
@@ -35,7 +40,9 @@ function BF:EnableModule(abbrev)
 end
 function BF:DisableModule()
 	SSOverlay:RemoveRow("start")
+	
 	self:UnregisterAllEvents()
+	self.activeBF = nil
 
 	-- Hide minimap if it shouldn't be hidden in all zones
 	if( SHOW_BATTLEFIELD_MINIMAP ~= "2" and BattlefieldMinimap and BattlefieldMinimap:IsShown() ) then
@@ -58,7 +65,7 @@ end
 
 -- Auto release
 function BF:PLAYER_DEAD()
-	if( self.db.profile.release ) then
+	if( self.db.profile.release and not self.db.profile[self.activeBF] ) then
 		-- No soul stone, release
 		if( not HasSoulstone() ) then
 			StaticPopupDialogs["DEATH"].text = L["Releasing..."]
@@ -73,6 +80,9 @@ function BF:PLAYER_DEAD()
 		else
 			StaticPopupDialogs["DEATH"].text = HasSoulstone()	
 		end
+	
+	elseif( self.db.profile[self.activeBF] ) then
+		StaticPopupDialogs["DEATH"].text = TEXT(L["Auto release disabled, %d %s until release"])
 	else
 		StaticPopupDialogs["DEATH"].text = TEXT(DEATH_RELEASE_TIMER)
 	end

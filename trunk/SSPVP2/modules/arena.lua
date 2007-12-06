@@ -73,7 +73,7 @@ function Arena:UPDATE_BATTLEFIELD_STATUS()
 
 		local teamName, oldRating, newRating = GetBattlefieldTeamInfo(0)
 		win = win .. " / " .. string.format(L["%s %d points (%d rating)"], teamName, newRating - oldRating, newRating)
-		
+				
 		SSPVP:Print(win)
 	end
 end

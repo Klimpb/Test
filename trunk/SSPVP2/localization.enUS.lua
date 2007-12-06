@@ -58,6 +58,7 @@ SSPVPLocals = {
 	["(.+) Mark of Honor"] = "(.+) Mark of Honor",
 	["%s |cffffffff(%dvs%d)|r"] = "%s |cffffffff(%dvs%d)|r",
 	["Flag Respawn: %s"] = "Flag Respawn: %s",
+	["Auto release disabled, %d %s until release"] = "Auto release disabled, %d %s until release",
 	
 	-- Mover
 	["PvP Objectives Anchor"] = "PvP Objectives Anchor",
@@ -361,6 +362,9 @@ SSPVPLocals = {
 	
 	["score"] = "score",
 	["General scoreboard changes like coloring by class or hiding the class icons."] = "General scoreboard changes like coloring by class or hiding the class icons.",
+	
+	["Disable auto release"] = "Disable auto release",
+	["Disables auto release for this specific battleground."] = "Disables auto release for this specific battleground.",
 	
 	-- Priorities
 	["afk"] = "Away from Keyboard",
