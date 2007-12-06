@@ -24,13 +24,24 @@ function Arena:OnEnable()
 			Arena:CalculateRating(string.match(input, "points ([0-9]+)"))
 		elseif( string.match(input, "rating ([0-9]+)") ) then
 			Arena:CalculatePoints(string.match(input, "rating ([0-9]+)"))
+		elseif( string.match(input, "attend ([0-9]+) ([0-9]+)") ) then
+			local played, teamPlayed = string.match(input, "attend ([0-9]+) ([0-9]+)")
+			local percent = played / teamPlayed
+			
+			if( percent >= 0.30 ) then
+				SSPVP:Print(string.format(L["%d games out of %d total is already above 30%% (%.2f%%)."], played, teamPlayed, percent * 100))
+			else
+				local gamesNeeded = math.ceil(((0.3 - percent) / 0.70) * teamPlayed)
+				SSPVP:Print(string.format(L["%d more games have to be played (%d total) to reach 30%%."], gamesNeeded, teamPlayed + gamesNeeded))
+			end
 		else
 			DEFAULT_CHAT_FRAME:AddMessage(L["SSPVP Arena slash commands"])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - rating <rating> - Calculates points given from the passed rating."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - points <points> - Calculates rating required to reach the passed points."])
+			DEFAULT_CHAT_FRAME:AddMessage(L[" - attend <played> <team> - Calculates games required to reach 30% using the passed games <played> out of the <team> games played."])
 		end
 	end)
-	
+		
 	-- Load the inspection stuff, or wait for it to load
 	if( IsAddOnLoaded("Blizzard_InspectUI") ) then
 		hooksecurefunc("InspectPVPTeam_Update", self.InspectPVPTeam_Update)
@@ -79,6 +90,25 @@ function Arena:UPDATE_BATTLEFIELD_STATUS()
 end
 
 -- Conversions
+-- Points gained/lost from beating teams
+local function getChange(winRate, loseRate)
+--	local winChance = 1 / (1 + 10 (winRate - loseRate) / 400 )
+	
+--[[
+    Team A's Chance of Winning: 1 / (1+10(1580 - 1500)/400) = 0.38686 
+    Team B's Chance of Winning: 1 / (1+10(1500 - 1580)/400) = 0.61314 
+
+    Now Let's say Team A won the battle then 
+    Team A's New Score: 1500 + 32*(1 - 0.38686) = 1500 + 19.62 = 1519.62 
+    Team B's New Score: 1580 + 32*(0 - 0.61314) = 1580 + (-19.62) = 1560.38 
+
+    Now Let's say Team B won the battle then 
+    Team A's New Score: 1500 + 32*(0 - 0.38686) = 1500 + (-12.38) = 1487.62 
+    Team B's New Score: 1580 + 32*(1 - 0.61314) = 1580 + 12.38 = 1592.38 
+
+]]
+end
+
 -- RATING -> POINTS
 local function getPoints(rating, teamSize)
 	local penalty = pointPenalty[teamSize or 5]

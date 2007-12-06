@@ -200,6 +200,7 @@ SSPVPLocals = {
 	["SSPVP Arena slash commands"] = "SSPVP Arena slash commands",
 	[" - rating <rating> - Calculates points given from the passed rating."] = " - rating <rating> - Calculates points given from the passed rating.",
 	[" - points <points> - Calculates rating required to reach the passed points."] = " - points <points> - Calculates rating required to reach the passed points.",
+	[" - attend <played> <team> - Calculates games required to reach 30% using the passed games <played> out of the <team> games played."] = " - attend <played> <team> - Calculates games required to reach 30% using the passed games <played> out of the <team> games played.",
 	
 	["SSPVP Alterac Valley slash commands"] = "SSPVP Alterac Valley slash commands",
 	[" - sync <seconds> - Starts a count down for an Alterac Valley sync queue."] = " - sync <seconds> - Starts a count down for an Alterac Valley sync queue.",
@@ -216,6 +217,9 @@ SSPVPLocals = {
 	["[%d vs %d] %d rating = %d points"] = "[%d vs %d] %d rating = %d points",
 	["[%d vs %d] %d rating = %d points - %d%% = %d points"] = "[%d vs %d] %d rating = %d points - %d%% = %d points",
 	["[%d vs %d] %d points = %d rating"] = "[%d vs %d] %d points = %d rating",
+	
+	["%d games out of %d total is already above 30%% (%.2f%%)."] = "%d games out of %d total is already above 30%% (%.2f%%).",
+	["%d more games have to be played (%d total) to reach 30%%."] = "%d more games have to be played (%d total) to reach 30%%.",
 
 	-- Overlay categories
 	["Faction Balance"] = "Faction Balance",

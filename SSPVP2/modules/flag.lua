@@ -392,12 +392,11 @@ end
 
 -- Show flag
 function Flag:Show(faction)
-	if( not faction ) then
+	if( not faction or not self[faction] ) then
 		return
 
 	end
 	
-
 	-- Just because flag changes in combat, doesn't mean 
 	-- we can't change name and such information
 	self:UpdateCarrier(faction)
@@ -413,7 +412,7 @@ end
 
 -- Hide flag
 function Flag:Hide(faction)
-	if( not faction ) then
+	if( not faction or not self[faction] ) then
 		return
 	end
 

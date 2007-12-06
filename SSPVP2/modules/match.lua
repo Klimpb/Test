@@ -96,6 +96,7 @@ function Match:ParseMessage(event, msg)
 	if( string.match(msg, L["captured the"]) ) then
 		Alliance.bases = -1
 		Horde.bases = -1
+		self:UPDATE_WORLD_STATES()
 	end
 end
 
