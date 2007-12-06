@@ -277,6 +277,9 @@ function Config:AV()
 		{ order = 2, group = L["Alerts"], text = L["Enable interval capture messages"], type = "check", var = {"AV", "announce"}},
 		{ order = 3, group = L["Alerts"], text = L["Seconds between capture messages"], type = "input", numeric = true, width = 30, var = {"AV", "interval"}},
 		{ order = 4, group = L["Alerts"], text = L["Interval frequency increase"], type = "dropdown", list = {{0, L["None"]}, {0.75, L["25%"]}, {0.50, L["50%"]}, {0.25, L["75%"]}},  var = {"AV", "speed"}},
+
+		{ group = L["Death"], type = "groupOrder", order = 2 },
+		{ order = 1, group = L["Death"], text = L["Disable auto release"], help = L["Disables auto release for this specific battleground."], type = "check", var = {"Battlefield", "av"}},
  	}
 
 	return HousingAuthority:CreateConfiguration(config, {onSet = "Reload", set = "Set", get = "Get", handler = Config})
@@ -286,8 +289,6 @@ end
 function Config:EOTS()
 	local config = {
 		{ group = L["Flag Carrier"], type = "groupOrder", order = 1 },
-		{ group = L["Match Info"], type = "groupOrder", order = 2 },
-
 		{ order = 1, group = L["Flag Carrier"], text = L["Show flag carrier"], type = "check", var = {"Flag", "eots", "enabled"}},
 		{ order = 2, group = L["Flag Carrier"], text = L["Show carrier health when available"], type = "check", var = {"Flag", "eots", "health"}},
 		{ order = 3, group = L["Flag Carrier"], text = L["Color carrier name by class color"], type = "check", var = {"Flag", "eots", "color"}},
@@ -295,8 +296,12 @@ function Config:EOTS()
 		{ order = 5, group = L["Flag Carrier"], text = L["Show flag held time and time taken to capture"], type = "check", var = {"Flag", "eots", "capture"}},
 		{ order = 1, group = L["Macro Text"], text = L["Text to execute when clicking on the flag carrier button"], type = "editbox", default = "/targetexact *name", var = {"Flag", "eots", "macro"}},
 				
+		{ group = L["Match Info"], type = "groupOrder", order = 2 },
 		{ order = 1, group = L["Match Info"], text = L["Show basic match information"], type = "check", var = {"Match", "eots", "matchInfo"}},
 		{ order = 2, group = L["Match Info"], text = L["Show bases to win"], type = "check", var = {"Match", "eots", "bases"}},
+
+		{ group = L["Death"], type = "groupOrder", order = 2 },
+		{ order = 1, group = L["Death"], text = L["Disable auto release"], help = L["Disables auto release for this specific battleground."], type = "check", var = {"Battlefield", "eots"}},
  	}
 
 	return HousingAuthority:CreateConfiguration(config, {onSet = "Reload", set = "Set", get = "Get", handler = Config})
@@ -308,6 +313,9 @@ function Config:AB()
 		{ group = L["Match Info"], type = "groupOrder", order = 1 },
 		{ order = 1, group = L["Match Info"], text = L["Show basic match information"], type = "check", var = {"Match", "ab", "matchInfo"}},
 		{ order = 2, group = L["Match Info"], text = L["Show bases to win"], type = "check", var = {"Match", "ab", "bases"}},
+
+		{ group = L["Death"], type = "groupOrder", order = 2 },
+		{ order = 1, group = L["Death"], text = L["Disable auto release"], help = L["Disables auto release for this specific battleground."], type = "check", var = {"Battlefield", "ab"}},
  	}
 
 	return HousingAuthority:CreateConfiguration(config, {onSet = "Reload", set = "Set", get = "Get", handler = Config})
@@ -322,6 +330,9 @@ function Config:WSG()
 		{ order = 3, group = L["Flag Carrier"], text = L["Color carrier name by class color"], type = "check", var = {"Flag", "wsg", "color"}},
 		{ order = 4, group = L["Flag Carrier"], text = L["Time until flag respawns"], type = "check", var = {"Flag", "wsg", "respawn"}},
 		{ order = 5, group = L["Flag Carrier"], text = L["Show flag held time and time taken to capture"], type = "check", var = {"Flag", "wsg", "capture"}},
+
+		{ group = L["Death"], type = "groupOrder", order = 2 },
+		{ order = 1, group = L["Death"], text = L["Disable auto release"], help = L["Disables auto release for this specific battleground."], type = "check", var = {"Battlefield", "wsg"}},
  	}
 
 	return HousingAuthority:CreateConfiguration(config, {onSet = "Reload", set = "Set", get = "Get", handler = Config})

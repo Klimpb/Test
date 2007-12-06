@@ -131,7 +131,7 @@ function Flag:UpdateHealth(unit)
 		
 
 	local name = UnitName(unit)
-	local faction = select(2, UnitFactionGroup(unit))
+	local faction = UnitFactionGroup(unit)
 	if( not faction ) then
 		return
 	end
@@ -429,7 +429,7 @@ end
 -- Update bindings
 function Flag:UPDATE_BINDINGS()
 	local friendlyFaction, enemyFaction
-	if( select(2, UnitFactionGroup("player")) == "Alliance" ) then
+	if( UnitFactionGroup("player") == "Alliance" ) then
 		enemyFaction = "Horde"
 		friendlyFaction = "Alliance"
 	else
