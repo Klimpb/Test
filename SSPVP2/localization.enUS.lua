@@ -4,7 +4,6 @@ SSPVPLocals = {
 	["Arathi Basin"] = "Arathi Basin",
 	["Alterac Valley"] = "Alterac Valley",
 	["Eye of the Storm"] = "Eye of the Storm",
-	
 
 	["Blade's Edge Arena"] = "Blade's Edge Arena",
 	["Nagrand Arena"] = "Nagrand Arena",
@@ -59,6 +58,8 @@ SSPVPLocals = {
 	["%s |cffffffff(%dvs%d)|r"] = "%s |cffffffff(%dvs%d)|r",
 	["Flag Respawn: %s"] = "Flag Respawn: %s",
 	["Auto release disabled, %d %s until release"] = "Auto release disabled, %d %s until release",
+	
+	["%d personal rating in %s (%dvs%d)"] = "%d personal rating in %s (%dvs%d)",
 	
 	-- Mover
 	["PvP Objectives Anchor"] = "PvP Objectives Anchor",
@@ -250,6 +251,10 @@ SSPVPLocals = {
 	["Battleground"] = "Battleground",
 	["Party"] = "Party",
 	["Raid"] = "Raid",
+	
+	["Shows how much personal rating you gain/lost, will only show up if it's no the same amount of points as your actual team got."] = "Shows how much personal rating you gain/lost, will only show up if it's no the same amount of points as your actual team got.",
+
+	["Show personal rating change after arena ends"] = "Show personal rating change after arena ends",
 	
 	["Automatically append \"-server\" to peoples names when you whisper them, if multiple people are found to match the same name then it won't add the server."] = "Automatically append \"-server\" to peoples names when you whisper them, if multiple people are found to match the same name then it won't add the server.",
 	["Shows team names, points change and the new ratings after the arena ends."] = "Shows team names, points change and the new ratings after the arena ends.",
