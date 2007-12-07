@@ -5,6 +5,8 @@ local L = SSPVPLocals
 
 -- Blizzard likes to change this monthly, so lets just store it here to make it easier
 local pointPenalty = {[5] = 1.0, [3] = 0.88, [2] = 0.76}
+local teamInfo = {}
+local lastChange = 0
 
 function Arena:OnEnable()
 	if( self.defaults ) then return end
@@ -12,6 +14,7 @@ function Arena:OnEnable()
 	self.defaults = {
 		profile = {
 			score = true,
+			personal = true,
 		},
 	}
 	
@@ -48,6 +51,10 @@ function Arena:OnEnable()
 	else
 		self:RegisterEvent("ADDON_LOADED")
 	end
+	
+	if( self.db.profile.personal ) then
+		self:RegisterEvent("ARENA_TEAM_ROSTER_UPDATE")
+	end
 end
 
 function Arena:EnableModule()
@@ -64,6 +71,35 @@ function Arena:Reload()
 	if( self.isActive ) then
 		self:UnregisterAllEvents()
 		self:EnableModule()
+	end
+
+	if( self.db.profile.personal ) then
+		self:RegisterEvent("ARENA_TEAM_ROSTER_UPDATE")
+	else
+		self:UnregisterEvent("ARENA_TEAM_ROSTER_UPDATE")
+	end
+end
+
+-- It's a pain in the ass to do this, basically we assume any personal rating change
+-- beyond the initial update is due to arenas 
+-- Will improve this later to do the calculates with the UPDATE_BATTLEFIELD_STATUS things
+function Arena:ARENA_TEAM_ROSTER_UPDATE()
+	for i=1, 3 do
+		local teamName, teamSize, _, _, _, _, _, _, _, _, personalRating = GetArenaTeam(i)
+		if( teamName ) then
+			local id = teamName .. teamSize
+			
+			-- Only show personal rating changes when it differs from your team
+			if( teamInfo[id] ) then
+				local change = personalRating - teamInfo[id]
+				if( change ~= 0 and lastChange ~= change and lastChange > 0 ) then
+					SSPVP:Print(string.format(L["%d personal rating in %s (%dvs%d)"], change, teamName, teamSize, teamSize))
+					lastChange = 0
+				end
+			end
+
+			teamInfo[id] = personalRating
+		end
 	end
 end
 
@@ -86,14 +122,15 @@ function Arena:UPDATE_BATTLEFIELD_STATUS()
 		win = win .. " / " .. string.format(L["%s %d points (%d rating)"], teamName, newRating - oldRating, newRating)
 				
 		SSPVP:Print(win)
+		
+		-- Doesn't matter which team we check, they both gain/lose the same amount
+		lastChange = math.abs(oldRating - newRating)
 	end
 end
 
 -- Conversions
 -- Points gained/lost from beating teams
-local function getChange(winRate, loseRate)
---	local winChance = 1 / (1 + 10 (winRate - loseRate) / 400 )
-	
+local function getChange(winRate, loseRate)	
 --[[
     Team A's Chance of Winning: 1 / (1+10(1580 - 1500)/400) = 0.38686 
     Team B's Chance of Winning: 1 / (1+10(1500 - 1580)/400) = 0.61314 
