@@ -980,7 +980,7 @@ function SSPVP:UnregisterOOCUpdate(func)
 	end
 end
 
-function SSPVP:RegisterOOCUpdate(handler, func)
+function SSPVPRegisterOOCUpdate(handler, func)
 	if( type(handler) == "table" and type(func) == "string" ) then
 		table.insert(queuedUpdates, {func = func, handler = handler})
 	elseif( type(handler) == "function" or type(handler) == "string" ) then
