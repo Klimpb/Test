@@ -55,6 +55,18 @@ function Arena:OnEnable()
 	if( self.db.profile.personal ) then
 		self:RegisterEvent("ARENA_TEAM_ROSTER_UPDATE")
 	end
+	
+	-- Generally, I don't hook things to change the return results
+
+	-- but, in this case it's not suppose to return 2 when it's season 3
+	local Orig_GetCurrentArenaSeason = GetCurrentArenaSeason
+	GetCurrentArenaSeason = function()
+		if( Orig_GetCurrentArenaSeason() < 3 ) then
+			return 3
+		end
+		
+		return Orig_GetCurrentArenaSeason()
+	end
 end
 
 function Arena:EnableModule()
@@ -92,7 +104,7 @@ function Arena:ARENA_TEAM_ROSTER_UPDATE()
 			-- Only show personal rating changes when it differs from your team
 			if( teamInfo[id] ) then
 				local change = personalRating - teamInfo[id]
-				if( change ~= 0 and lastChange ~= change and lastChange > 0 ) then
+				if( change ~= 0 and lastChange ~= change and lastChange ~= 0 ) then
 					SSPVP:Print(string.format(L["%d personal rating in %s (%dvs%d)"], change, teamName, teamSize, teamSize))
 					lastChange = 0
 				end

@@ -60,6 +60,7 @@ SSPVPLocals = {
 	["Auto release disabled, %d %s until release"] = "Auto release disabled, %d %s until release",
 	
 	["%d personal rating in %s (%dvs%d)"] = "%d personal rating in %s (%dvs%d)",
+	["%s is ready to join, auto leave disabled."] = "%s is ready to join, auto leave disabled.",
 	
 	-- Mover
 	["PvP Objectives Anchor"] = "PvP Objectives Anchor",
