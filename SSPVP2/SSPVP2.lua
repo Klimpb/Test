@@ -412,6 +412,19 @@ function SSPVP:LeaveBattlefield()
 		return
 	end
 	
+	-- If we have another battlefield ready don't auto leave
+	for i=1, MAX_BATTLEFIELD_QUEUES do
+		local status, map, _, _, _, teamSize = GetBattlefieldStatus(i)
+		if( status == "confirm" ) then
+			if( teamSize > 0 ) then
+				map = string.format(L["%s (%dvs%d)"], map, teamSize, teamSize)
+			end
+		
+			self:Print(string.format(L["%s is ready to join, auto leave disabled."], map))
+			return
+		end
+	end
+	
 
 	-- Theres a delay before the call to arms quest completes, sometimes it's
 	-- within 0.5 seconds, sometimes it's within 1-3 seconds. If you have auto leave set to 0
