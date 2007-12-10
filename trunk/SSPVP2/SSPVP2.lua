@@ -467,20 +467,13 @@ end
 -- Screenshot taken
 function SSPVP:ScreenshotTaken()
 	screenTaken = nil
-	
-
 	local format = GetCVar("screenshotFormat")
-	
-
 	-- jpeg format is used, jpg is the actual ext it's saved as
 	if( format == "jpeg" ) then
 		format = "jpg"
 	end
-	
-	local name = "WoWScrnShot_" .. date("%m%d%y_%H%M%S") .. "." .. format
-	
-	self:Print(string.format(L["Screenshot saved as %s."], name))
 
+	self:Print(string.format(L["Screenshot saved as WoWScrnShot_%s.%s."], date("%m%d%y_%H%M%S"), format))
 	self:UnregisterEvent("SCREENSHOT_SUCCEDED")
 	self:UnregisterEvent("SCREENSHOT_FAILED")
 	self:ScheduleTimer("LeaveBattlefield", self.db.profile.leave.delay)
@@ -504,11 +497,11 @@ function SSPVP:JoinBattlefield()
 	
 	-- Disable auto join if the windows hidden
 	if( self.db.profile.join.window and not StaticPopup_FindVisible("CONFIRM_BATTLEFIELD_ENTRY", joinID) ) then
+		self:Print(string.format(L["You have the battlefield entry window hidden for %s, will not auto join."], (GetBattlefieldStatus(joinID))))
+
 		joinID = nil
 		joinAt = nil
 		joinPriority = nil
-		
-		self:Print(string.format(L["You have the battlefield entry window hidden for %s, will not auto join."], (GetBattlefieldStatus(joinID))))
 		return
 	end
 	
