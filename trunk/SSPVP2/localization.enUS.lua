@@ -25,13 +25,15 @@ SSPVPLocals = {
 	["You have the battlefield entry window hidden for %s, will not auto join."] = "You have the battlefield entry window hidden for %s, will not auto join.",
 	
 	["%s %d points (%d rating)"] = "%s %d points (%d rating)",
+	["%d personal (%d rating)"] = "%d personal (%d rating)",
+	
 	
 	["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"] = "You are about to leave the active or queued arena %s (%dvs%d), are you sure?",
 	["You are about to leave the active or queued battleground %s, are you sure?"] = "You are about to leave the active or queued battleground %s, are you sure?",
 	
 	["Horde"] = "Horde",
 	["Alliance"] = "Alliance",
-	["Screenshot saved as %s."] = "Screenshot saved as %s.",
+	["Screenshot saved as WoWScrnShot_%s.%s."] = "Screenshot saved as WoWScrnShot_%s.%s.",
 	
 	["(L) %s"] = "(L) %s",
 	["Rating"] = "Rating",
@@ -203,6 +205,8 @@ SSPVPLocals = {
 	[" - rating <rating> - Calculates points given from the passed rating."] = " - rating <rating> - Calculates points given from the passed rating.",
 	[" - points <points> - Calculates rating required to reach the passed points."] = " - points <points> - Calculates rating required to reach the passed points.",
 	[" - attend <played> <team> - Calculates games required to reach 30% using the passed games <played> out of the <team> games played."] = " - attend <played> <team> - Calculates games required to reach 30% using the passed games <played> out of the <team> games played.",
+	[" - change <winner rating> <loser rating> - Calculates points gained/lost assuming the <winner rating> beats <loser rating>."] = " - change <winner rating> <loser rating> - Calculates points gained/lost assuming the <winner rating> beats <loser rating>.",
+	
 	
 	["SSPVP Alterac Valley slash commands"] = "SSPVP Alterac Valley slash commands",
 	[" - sync <seconds> - Starts a count down for an Alterac Valley sync queue."] = " - sync <seconds> - Starts a count down for an Alterac Valley sync queue.",
@@ -222,6 +226,8 @@ SSPVPLocals = {
 	
 	["%d games out of %d total is already above 30%% (%.2f%%)."] = "%d games out of %d total is already above 30%% (%.2f%%).",
 	["%d more games have to be played (%d total) to reach 30%%."] = "%d more games have to be played (%d total) to reach 30%%.",
+	
+	["+%d points (%d rating) / %d points (%d rating)"] = "+%d points (%d rating) / %d points (%d rating)",
 
 	-- Overlay categories
 	["Faction Balance"] = "Faction Balance",
