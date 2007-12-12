@@ -19,9 +19,7 @@ local categories = {
 	["queue"] = { label = L["Battlefield Queue"], order = 60 },
 }
 
-function SSOverlay:OnEnable()
-	if( self.defaults ) then return end
-	
+function SSOverlay:OnInitialize()
 	self.defaults = {
 		profile = {
 			locked = true,

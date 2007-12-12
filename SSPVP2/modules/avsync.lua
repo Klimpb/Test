@@ -1,14 +1,8 @@
 local AVSync = SSPVP:NewModule("AVSync", "AceEvent-3.0", "AceTimer-3.0", "AceConsole-3.0")
 
 local L = SSPVPLocals
-local loaded
 
-function AVSync:OnEnable()
-	if( loaded ) then return end
-	loaded = true
-
-	self:RegisterEvent("CHAT_MSG_ADDON")
-
+function AVSync:OnInitialize()
 	-- Slash commands for conversions
 	self:RegisterChatCommand("av", function(input)
 		if( string.match(input, "sync ([0-9]+)") ) then
@@ -47,6 +41,10 @@ function AVSync:OnEnable()
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - cancel - Cancels a running sync."])
 		end
 	end)
+end
+
+function AVSync:OnEnable()
+	self:RegisterEvent("CHAT_MSG_ADDON")
 end
 
 function AVSync:OnDisable()

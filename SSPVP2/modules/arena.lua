@@ -6,9 +6,9 @@ local L = SSPVPLocals
 -- Blizzard likes to change this monthly, so lets just store it here to make it easier
 local pointPenalty = {[5] = 1.0, [3] = 0.88, [2] = 0.76}
 
-function Arena:OnEnable()
-	if( self.defaults ) then return end
+local arenaTeams = {}
 
+function Arena:OnInitialize()
 	self.defaults = {
 		profile = {
 			score = true,
@@ -18,25 +18,23 @@ function Arena:OnEnable()
 	
 	self.db = SSPVP.db:RegisterNamespace("arena", self.defaults)
 	self:RegisterSlashCommands()
+end
 
-	
+function Arena:OnEnable()
 	-- Load the inspection stuff, or wait for it to load
 	if( IsAddOnLoaded("Blizzard_InspectUI") ) then
 		hooksecurefunc("InspectPVPTeam_Update", self.InspectPVPTeam_Update)
 	else
 		self:RegisterEvent("ADDON_LOADED")
 	end
-	
-	-- So personal rating always shows up even inside battlefields
-	-- this will be removed once 2.4.0 goes live or maybe 2.3.2
-	-- depends on if Blizzard removes their S3 checks before showing it
-	self:RegisterEvent("PLAYER_ENTERING_WORLD", function(self)
-		if( GetCurrentArenaSeason() < 3 and PVPFrame.season < 3 ) then
-			PVPFrame.season = 3
-			PVPFrame_Update()
-			PVPHonor_Update()
-		end
-	end)
+		
+	-- Tracking our current arena things
+	self:RegisterEvent("ARENA_TEAM_UPDATE")
+	self:ARENA_TEAM_UPDATE()
+end
+
+function Arena:OnDisable()
+	self:UnregisterAllEvents()
 end
 
 function Arena:EnableModule()
@@ -84,15 +82,25 @@ end
 -- Team A's New Score: 1500 + 32*(0 - 0.38686) = 1487.62
 -- Team B's New Score: 1580 + 32*(1 - 0.61314) = 1592.38
 
-local function getChange(winRate, loseRate)	
+--1644 vs 1680, gained 17
+--1661 vs 1703, lost 14
+--1647 vs 1583, gained 13
+--1689 vs 1660, lost 14
+--1646 vs 1660, gained 16
+--1662 vs 1600, gained 13
+--1675 vs 1707, gained 17
+--1678 vs 1634, gained 13
+--1691 vs 1689, lost 16
+
+function getChange(winRate, loseRate)	
 	local winChance = 1 / ( 1 + 10 ^ ( ( winRate - loseRate ) / 400 ) )
 	local loseChance = 1 / ( 1 + 10 ^ ( ( loseRate - winRate ) / 400 ) )
 	
-	local winRating = winRate + 32 * (0 - winChance)
-	local loseRating = loseRate + 32 * (1 - loseChance)
+	local winRating = winRate + 32 * (1 - winChance)
+	local loseRating = loseRate + 32 * (0 - loseChance)
 	
-	winRating = math.floor(winRating)
-	loseRating = math.floor(loseRating)
+	--winRating = math.floor(winRating)
+	--loseRating = math.floor(loseRating)
 	
 	-- Points changed, new winners rating, new losers rating
 	return winRate - winRating, winRating, loseRating
@@ -136,78 +144,84 @@ local function getRating(points, teamSize)
 	return rating
 end
 
+-- Store latest arena team info
+function Arena:ARENA_TEAM_UPDATE()
+	for i=1, MAX_ARENA_TEAMS do
+		local teamName, teamSize, _, _, _, _, _, _, _, _, playerRating = GetArenaTeam(i)
+		if( teamName ) then
+			local id = teamName .. teamSize
+
+			if( not arenaTeams[id] ) then
+				arenaTeams[id] = {}
+			end
+
+			arenaTeams[id].size = teamSize
+			arenaTeams[id].index = i
+			arenaTeams[id].personal = playerRating
+		end
+
+	end
+end
+
 -- Rating/personal rating change
 -- How many points gained/lost
 function Arena:UPDATE_BATTLEFIELD_STATUS()
 	if( GetBattlefieldWinner() and select(2, IsActiveBattlefieldArena()) ) then
-		local win = ""
-		local teamName, oldRating, newRating = GetBattlefieldTeamInfo(1)
-		win = string.format(L["%s %d points (%d rating)"], teamName, newRating - oldRating, newRating)
-
-		local teamName, oldRating, newRating = GetBattlefieldTeamInfo(0)
-		win = win .. " / " .. string.format(L["%s %d points (%d rating)"], teamName, newRating - oldRating, newRating)
+		-- Figure out what bracket we're in
+		local bracket
+		for i=1, MAX_BATTLEFIELD_QUEUES do
+			local status, _, _, _, _, teamSize = GetBattlefieldStatus(i)
+			if( status == "active" ) then
+				bracket = teamSize
+				break
+			end
+		end
 		
+		-- Failed (bad)
+		if( not bracket ) then
+			return
+		end
+		
+		local firstInfo, secondInfo, playerWon, playerPersonal, enemyRating
+
+		-- Ensure that the players team is shown first
+		for i=0, 1 do
+			local teamName, oldRating, newRating = GetBattlefieldTeamInfo(i)
+			if( arenaTeams[teamName .. bracket] ) then
+				firstInfo = string.format(L["%s %d points (%d rating)"], teamName, newRating - oldRating, newRating)
+				
+				playerPersonal = arenaTeams[teamName .. bracket].personal
+				if( newRating > oldRating ) then
+					playerWon = true
+				end
+			else
+				secondInfo = string.format(L["%s %d points (%d rating)"], teamName, newRating - oldRating, newRating)
+				enemyRating = oldRating
+			end
+		end
+		
+		
+		local personal = ""
 		--[[
 		if( self.db.profile.personal ) then
-			ChatFrame1:AddMessage("Scanning personal rating")
-			
-			-- Figure out what bracket we're in
-			local bracket
-			for i=1, MAX_BATTLEFIELD_QUEUES do
-				local status, _, _, _, _, teamSize = GetBattlefieldStatus(i)
-				if( status == "active" ) then
-					bracket = teamSize
-					break
-				end
+			-- Figure out our personal rating change
+			local personalChange, newPersonal
+			if( playerWon ) then
+				personalChange, newPersonal = getChange(playerPersonal, enemyRating)
+			else
+				personalChange, newPersonal = getChange(enemyRating, playerPersonal)
 			end
-						
-			ChatFrame1:AddMessage("Found bracket " .. tostring(bracket))
-
-			if( bracket ) then
-				-- Figure out what the old rating of the other team is
-				local otherRating = 0
-				for i=1, GetNumBattlefieldScores() do
-					local name, _, _, _, _, faction = GetBattlefieldScore(i)
-					
-					if( name == UnitName("player") ) then
-						if( faction == 1 ) then
-							otherRating = select(2, GetBattlefieldTeamInfo(1))
-						else
-							otherRating = select(2, GetBattlefieldTeamInfo(0))						
-						end
-						
-						break
-					end
-				end
 			
-				ChatFrame1:AddMessage("Winner is [" .. tostring((GetBattlefieldTeamInfo(GetBattlefieldWinner()))) .. "], other teams rating is " .. tostring(otherRating))
-				
-				-- Find out what our personal rating is
-				for i=1, MAX_ARENA_TEAMS do
-					local teamName, teamSize, _, _, _, _, _, _, _, _, personalRating = GetArenaTeam(i)
-					if( teamName and teamSize == bracket ) then
-						ChatFrame1:AddMessage("Found team " .. tostring(teamName) .. " (" .. tostring(i) .. "), " .. tostring(teamSize) .. ", " .. tostring(personalRating))
-						
-						local personalChange, newPersonal = getChange(personalRating, otherRating)
-						
-						-- If we lost, make sure it's negative
-						if( (GetBattlefieldTeamInfo(GetBattlefieldWinner())) ~= teamName and personalChange > 0 ) then
-							personalChange = personalRating * -1
-						end
-						
-						-- Now append it for display
-						win = win .. " / " .. string.format(L["%d personal (%d rating)"], personalChange, newPersonal)
-						
-						-- Make sure we have the latest personal rating for next game
-						ArenaTeamRoster(i)
-						break
-					end
-				end
+			personal = string.format(L["/ %d personal (%d rating)"], personalChange, personalChange)
+			
+			-- Grab new data for next game
+			for i=1, MAX_ARENA_TEAMS do
+				ArenaTeamRoster(i)
 			end
 		end		
 		]]
 	
-		SSPVP:Print(win)
+		SSPVP:Print(string.format("%s / %s %s", firstInfo, secondInfo, personal))
 	end
 end
 
@@ -216,12 +230,15 @@ end
 function Arena:RegisterSlashCommands()
 	-- Slash commands for conversions
 	self:RegisterChatCommand("arena", function(input)
+		-- Points -> rating
 		if( string.match(input, "points ([0-9]+)") ) then
 			local points = tonumber(string.match(input, "points ([0-9]+)"))
 
 			SSPVP:Print(string.format(L["[%d vs %d] %d points = %d rating"], 5, 5, points, getRating(points)))
 			SSPVP:Print(string.format(L["[%d vs %d] %d points = %d rating"], 3, 3, points, getRating(points, 3)))
 			SSPVP:Print(string.format(L["[%d vs %d] %d points = %d rating"], 2, 2, points, getRating(points, 2)))
+		
+		-- Rating -> points
 		elseif( string.match(input, "rating ([0-9]+)") ) then
 			local rating = tonumber(string.match(input, "rating ([0-9]+)"))
 
@@ -229,12 +246,14 @@ function Arena:RegisterSlashCommands()
 			SSPVP:Print(string.format(L["[%d vs %d] %d rating = %d points - %d%% = %d points"], 3, 3, rating, getPoints(rating), pointPenalty[3] * 100, getPoints(rating, 3)))
 			SSPVP:Print(string.format(L["[%d vs %d] %d rating = %d points - %d%% = %d points"], 2, 2, rating, getPoints(rating), pointPenalty[2] * 100, getPoints(rating, 2)))
 
+		-- Rating changes if you win/lose against a certain rating
 		elseif( string.match(input, "change ([0-9]+) ([0-9]+)") ) then
 			local win, lost = string.match(input, "change ([0-9]+) ([0-9]+)")
 			local diff, winRating, lostRating = getChange(tonumber(win), tonumber(lost))
 			
 			SSPVP:Print(string.format(L["+%d points (%d rating) / %d points (%d rating)"], diff, winRating, diff * -1, lostRating))
 			
+		-- Games required for 30%
 		elseif( string.match(input, "attend ([0-9]+) ([0-9]+)") ) then
 			local played, teamPlayed = string.match(input, "attend ([0-9]+) ([0-9]+)")
 			local percent = played / teamPlayed
@@ -250,7 +269,7 @@ function Arena:RegisterSlashCommands()
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - rating <rating> - Calculates points given from the passed rating."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - points <points> - Calculates rating required to reach the passed points."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - attend <played> <team> - Calculates games required to reach 30% using the passed games <played> out of the <team> games played."])
-			DEFAULT_CHAT_FRAME:AddMessage(L[" - change <winner rating> <loser rating> - Calculates points gained/lost assuming the <winner rating> beats <loser rating>."])
+			--DEFAULT_CHAT_FRAME:AddMessage(L[" - change <winner rating> <loser rating> - Calculates points gained/lost assuming the <winner rating> beats <loser rating>."])
 		end
 	end)
 end

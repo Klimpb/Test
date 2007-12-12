@@ -16,9 +16,7 @@ local playerFaction
 -- Battleground specific data
 local MAX_NODES, ALLIANCE_ID, HORDE_ID, NODE_MATCH
 
-function Match:OnEnable()
-	if( self.defaults ) then return end
-
+function Match:OnInitialize()
 	self.defaults = {
 		profile = {
 			ab = {

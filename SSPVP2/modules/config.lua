@@ -4,9 +4,7 @@ local L = SSPVPLocals
 local OptionHouse
 local HousingAuthority
 
-function Config:OnEnable()
-	if( OptionHouse ) then return end
-
+function Config:OnInitialize()
 	-- For UI work
 	OptionHouse = SSPVP.OptionHouse
 	HousingAuthority = LibStub("HousingAuthority-1.2")
