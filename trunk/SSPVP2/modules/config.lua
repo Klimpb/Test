@@ -332,6 +332,9 @@ function Config:WSG()
 
 		{ group = L["Death"], type = "groupOrder", order = 2 },
 		{ order = 1, group = L["Death"], text = L["Disable auto release"], help = L["Disables auto release for this specific battleground."], type = "check", var = {"Battlefield", "wsg"}},
+
+		{ group = L["Macro Text"], type = "groupOrder", order = 3 },
+		{ order = 1, group = L["Macro Text"], text = L["Text to execute when clicking on the flag carrier button"], type = "editbox", default = "/targetexact *name", var = {"Flag", "eots", "macro"}},
  	}
 
 	return HousingAuthority:CreateConfiguration(config, {onSet = "Reload", set = "Set", get = "Get", handler = Config})
