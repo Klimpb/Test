@@ -3,9 +3,7 @@ local L = SSPVPLocals
 local originalPosition = {}
 local tooltip
 
-function Move:OnEnable()
-	if( self.defaults ) then return end
-
+function Move:OnInitialize()
 	self.defaults = {
 		profile = {
 			score = true,

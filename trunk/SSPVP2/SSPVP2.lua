@@ -372,7 +372,9 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			if( status == "active" ) then
 				SSOverlay:RegisterText("queue" .. i, "queue", map .. ": #" .. instanceID)
 			elseif( status == "confirm" ) then
-				if( suspendMod and joinID == i ) then
+				if( not self.db.profile.join.enabled ) then
+					SSOverlay:RegisterText("queue" .. i, "queue", map .. ": " .. L["Join Disabled"])
+				elseif( suspendMod and joinID == i ) then
 					SSOverlay:RegisterText("queue" .. i, "queue", map .. ": " .. L["Join Suspended"])
 				elseif( not suspendMod and joinID == i ) then
 					SSOverlay:RegisterTimer("queue" .. i, "queue", map .. ": " .. L["Joining"] .. " %s", joinAt - GetTime())

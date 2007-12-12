@@ -10,10 +10,7 @@ local allianceReinf = 0
 local hordeGain = 0
 local hordeReinf = 0
 
-
-function AV:OnEnable()
-	if( self.defaults ) then return end
-
+function AV:OnInitialize()
 	self.defaults = {
 		profile = {
 			timer = true,

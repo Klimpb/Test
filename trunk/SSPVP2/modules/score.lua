@@ -12,9 +12,7 @@ local classes = {}
 local scoresRepositioned
 local playerName
 
-function Score:OnEnable()
-	if( self.defaults ) then return end
-
+function Score:OnInitialize()
 	self.defaults = {
 		profile = {
 			level = false,
@@ -24,7 +22,6 @@ function Score:OnEnable()
 	}
 	
 	self.db = SSPVP.db:RegisterNamespace("score", self.defaults)	
-	
 	playerName = UnitName("player")
 end
 
@@ -35,19 +32,6 @@ function Score:EnableModule()
 		self:RegisterEvent("RAID_ROSTER_UPDATE")
 	end
 	
-	--[[
-	-- Take out the space left by the icons being hidden
-	if( not scoresRepositioned and self.db.profile.icon ) then
-		for i=1, MAX_WORLDSTATE_SCORE_BUTTONS do
-			local name = getglobal("WorldStateScoreButton" .. i .. "Name")
-			name:ClearAllPoints()
-			name:SetPoint("LEFT", "WorldStateScoreButton" .. i, "LEFT", 0, 1)
-		end
-		
-		scoresRepositioned = true
-	end
-	]]
-
 	self:CreateInfoButtons()
 end
 
@@ -60,19 +44,6 @@ function Score:Reload()
 		self:UnregisterAllEvents()
 		self:EnableModule()
 	end
-	
-	--[[
-	-- Shift name to original location
-	if( scoresRepositioned and not self.db.profile.icon ) then
-		for i=1, MAX_WORLDSTATE_SCORE_BUTTONS do
-			local name = getglobal("WorldStateScoreButton" .. i .. "Name")
-			name:ClearAllPoints()
-			name:SetPoint("LEFT", "WorldStateScoreButton" .. i, "LEFT", 20, 1)
-		end
-
-		scoresRepositioned = nil
-	end
-	]]
 end
 
 -- Maintain a list of friendly players

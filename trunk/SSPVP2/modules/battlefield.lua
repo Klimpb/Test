@@ -3,9 +3,7 @@ BF.activeIn = "bf"
 
 local L = SSPVPLocals
 
-function BF:OnEnable()
-	if( self.defaults ) then return end
-
+function BF:OnInitialize()
 	self.defaults = {
 		profile = {
 			release = true,

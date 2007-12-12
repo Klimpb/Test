@@ -3,10 +3,7 @@ EOTS.activeIn = "eots"
 
 local L = SSPVPLocals
 
-
-function EOTS:OnEnable()
-	if( self.defaults ) then return end
-
+function EOTS:OnInitialize()
 	self.defaults = {
 		profile = {
 			combat = true,

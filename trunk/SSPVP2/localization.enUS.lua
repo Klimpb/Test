@@ -25,7 +25,7 @@ SSPVPLocals = {
 	["You have the battlefield entry window hidden for %s, will not auto join."] = "You have the battlefield entry window hidden for %s, will not auto join.",
 	
 	["%s %d points (%d rating)"] = "%s %d points (%d rating)",
-	["%d personal (%d rating)"] = "%d personal (%d rating)",
+	["/ %d personal (%d rating)"] = "/ %d personal (%d rating)",
 	
 	
 	["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"] = "You are about to leave the active or queued arena %s (%dvs%d), are you sure?",
@@ -55,6 +55,7 @@ SSPVPLocals = {
 	["Unavailable"] = "Unavailable",
 	["<1 Min"] = "<1 Min",
 	["Join Suspended"] = "Join Suspended",
+	["Join Disabled"] = "Join Disabled",
 	["Joining"] = "Joining",
 	["(.+) Mark of Honor"] = "(.+) Mark of Honor",
 	["%s |cffffffff(%dvs%d)|r"] = "%s |cffffffff(%dvs%d)|r",
