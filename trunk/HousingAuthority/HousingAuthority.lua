@@ -507,14 +507,19 @@ local function showDropdown(self)
 	for id, info in pairs(self.data.list) do
 		self.text:SetText(info[2])
 		if( self.text:GetStringWidth() > self.width ) then
-			self.width = self.text:GetStringWidth() + 75
+			self.width = self.text:GetStringWidth()
 		end
 
 		if( ( not self.data.multi and info[1] == selectedValues ) or ( self.data.multi and selectedValues[info[1]] ) ) then
 			selectedText = info[2]
 		end
 	end
-		
+	
+	-- Add our final padding
+	if( self.width > 0 ) then
+		self.width = self.width + 50
+	end
+	
 	-- Bad, means we couldn't find the selected text so we default to the first row
 	if( not selectedText ) then
 		if( not self.data.multi ) then
@@ -1332,7 +1337,7 @@ function HouseAuthority.CreateDropdown(config, data)
 	frame.text = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	frame.text:SetJustifyH("RIGHT")
 	frame.text:SetHeight(10)
-	frame.text:SetPoint("RIGHT", frame.rightTexture, -43, 2)
+	frame.text:SetPoint("RIGHT", frame.rightTexture, -43, 1)
 	
 	frame.testText = frame:CreateFontString(nil, "ARTWORK")
 	
