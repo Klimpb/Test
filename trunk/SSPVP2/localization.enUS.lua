@@ -27,7 +27,6 @@ SSPVPLocals = {
 	["%s %d points (%d rating)"] = "%s %d points (%d rating)",
 	["/ %d personal (%d rating)"] = "/ %d personal (%d rating)",
 	
-	
 	["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"] = "You are about to leave the active or queued arena %s (%dvs%d), are you sure?",
 	["You are about to leave the active or queued battleground %s, are you sure?"] = "You are about to leave the active or queued battleground %s, are you sure?",
 	
@@ -64,6 +63,7 @@ SSPVPLocals = {
 	
 	["%d personal rating in %s (%dvs%d)"] = "%d personal rating in %s (%dvs%d)",
 	["%s is ready to join, auto leave disabled."] = "%s is ready to join, auto leave disabled.",
+	["Waiting for %d nodes to burn, auto leaving in %d seconds."] = "Waiting for %d nodes to burn, auto leaving in %d seconds.",
 	
 	-- Mover
 	["PvP Objectives Anchor"] = "PvP Objectives Anchor",
@@ -309,9 +309,18 @@ SSPVPLocals = {
 	["Confirm when leaving a battlefield queue through minimap list"] = "Confirm when leaving a battlefield queue through minimap list",
 	["Confirm when leaving a finished battlefield through score"] = "Confirm when leaving a finished battlefield through score",
 	
+	["Honor squeeze"] = "Honor squeeze",
+	["Attempts to get the most honor before auto leaving a battlefield, will wait for nodes to capture if they award honor when burning."] = "Attempts to get the most honor before auto leaving a battlefield, will wait for nodes to capture if they award honor when burning.",
+	["Disable"] = "Disable",
+	["Within 30 seconds"] = "Within 30 seconds",
+	["Within 60 seconds"] = "Within 60 seconds",
+	["Within 90 seconds"] = "Within 90 seconds",
+	["Within 110 seconds"] = "Within 110 seconds",
+	
 	["Battlefield leave delay"] = "Battlefield leave delay",
 	["Enable auto leave"] = "Enable auto leave",
 	["Screenshot score board when game ends"] = "Screenshot score board when game ends",
+	
 	
 	-- OVERLAY
 	["Frame"] = "Frame",

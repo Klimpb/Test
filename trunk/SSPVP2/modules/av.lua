@@ -88,6 +88,25 @@ function AV:StartAnnounce(name, faction)
 	end
 end
 
+function AV:BurnWithin(seconds)
+	local nodes = 0
+	local delay = 0
+	local currentTime = GetTime()
+	
+	-- Check if we have any timers that will capture within our listed time
+	for name, captureTime in pairs(timers) do
+		local timeLeft = captureTime - currentTime
+		if( timeLeft <= seconds ) then
+			-- We add 5 seconds to account for the fact that things burn within 5 seconds after
+			-- they're suppose to
+			nodes = nodes + 1
+			delay = max(delay, timeLeft + 5)
+		end
+	end
+	
+	return nodes, delay
+end
+
 -- Captain death, or reinforcements gained through mines
 function AV:UPDATE_WORLD_STATES()
 	local _, _, allianceText = GetWorldStateUIInfo(1)

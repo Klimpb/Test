@@ -27,7 +27,7 @@ function Config:General()
 	local config = {
 		{ group = L["General"], type = "groupOrder", order = 1 },
 		{ order = 1, group = L["General"], text = L["Show team summary after rated arena ends"], help = L["Shows team names, points change and the new ratings after the arena ends."], type = "check", var = {"Arena", "score"}},
-		--{ order = 2, group = L["General"], text = L["Show personal rating change after arena ends"], help = L["Shows how much personal rating you gain/lost, will only show up if it's no the same amount of points as your actual team got."], type = "check", var = {"Arena", "personal"}},
+		{ order = 2, group = L["General"], text = L["Show personal rating change after arena ends"], help = L["Shows how much personal rating you gain/lost, will only show up if it's no the same amount of points as your actual team got."], type = "check", var = {"Arena", "personal"}},
 		{ order = 3, group = L["General"], text = L["Timer channel"], help = L["Channel to output to when you send timers out from the overlay."], type = "dropdown", list = {{"BATTLEGROUND", L["Battleground"]}, {"RAID", L["Raid"]}, {"PARTY", L["Party"]}},  var = {"general", "channel"}},
 		{ order = 4, group = L["General"], text = L["Sound file"], help = L["Sound file to play when a queue is ready, file must be inside Interface/AddOns/SSPVP before you started the game."], type = "input", width = 150, var = {"general", "sound"}}, 
 		{ order = 5, group = L["General"], text = L["Play"], type = "button",  onSet = "PlaySound"},
@@ -233,6 +233,7 @@ function Config:AutoLeave()
 		
 		{ group = L["Delay"], type = "groupOrder", order = 2 },
  		{ order = 1, group = L["Delay"], text = L["Battlefield leave delay"], type = "input", numeric = true, width = 30, var = {"leave", "delay"}},
+		{ order = 2, group = L["Delay"], text = L["Honor squeeze"], help = L["Attempts to get the most honor before auto leaving a battlefield, will wait for nodes to capture if they award honor when burning."], type = "dropdown", var = {"leave", "squeeze"}, list = {{0, L["Disable"]}, {30, L["Within 30 seconds"]}, {60, L["Within 60 seconds"]}, {90, L["Within 90 seconds"]}, {110, L["Within 110 seconds"]}}},
 
 		{ group = L["Confirmation"], type = "groupOrder", order = 3 },
 		{ order = 1, group = L["Confirmation"], text = L["Confirm when leaving a battlefield queue through minimap list"], type = "check", var = {"leave", "portConfirm"}},

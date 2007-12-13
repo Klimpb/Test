@@ -57,6 +57,7 @@ function SSPVP:OnInitialize()
 				portConfirm = true,
 				leaveConfirm = false,
 				delay = 10,
+				squeeze = 0,
 			},
 			queue = {
 				enabled = true,
@@ -427,6 +428,23 @@ function SSPVP:LeaveBattlefield()
 		end
 	end
 	
+	-- Check if we should squeeze honor out
+	if( self.db.profile.leave.squeeze > 0 ) then
+		-- Make sure we only try and get honor out of objects that will burn before the game ends
+		local squeezeTime = min((GetBattlefieldInstanceExpiration() / 1000), self.db.profile.leave.squeeze)
+		for name, module in pairs(self.modules) do
+			if( module.isActive and module.BurnWithin ) then
+				local burnWait, waitTime = module.BurnWithin(module, self.db.profile.leave.squeeze)
+				if( burnWait > 0 ) then
+					self:Print(string.format(L["Waiting for %d nodes to burn, auto leaving in %d seconds."], burnWait, waitTime))
+					self:ScheduleTimer("LeaveBattlefield", waitTime)
+					return
+				end
+
+				break
+			end
+		end
+	end
 
 	-- Theres a delay before the call to arms quest completes, sometimes it's
 	-- within 0.5 seconds, sometimes it's within 1-3 seconds. If you have auto leave set to 0
