@@ -70,41 +70,26 @@ end
 
 -- Conversions
 -- Points gained/lost from beating teams
+-- 1644 vs 1680, gained 17 / 1661 vs 1703, lost 14
+local function getChange(aRate, bRate, aWon)	
+	-- Lets see how long it takes someone to notice it
+	local aChance = 1 / ( 1 + 10 ^ ( ( bRate - aRate ) / 400 ) )
+	local bChance = 1 / ( 1 + 10 ^ ( ( aRate - bRate ) / 400 ) )
 
--- Team A's Chance of Winning: 0.38686 
--- Team B's Chance of Winning: 0.61314
+	local aNew, bNew
+	if( aWon ) then
+		aNew = math.floor(aRate + 32 * (1 - aChance))
+		bNew = math.ceil(bRate + 32 * (0 - bChance))
+	else
+		aNew = math.ceil(aRate + 32 * (0 - aChance))
+		bNew = math.floor(bRate + 32 * (1 - bChance))
+	end
 
--- Now Let's say Team A won the battle then
--- Team A's New Score: 1500 + 32*(1 - 0.38686) = 1519.62
--- Team B's New Score: 1580 + 32*(0 - 0.61314) = 1560.38
+	-- aNew, aDiff, bNew, bDiff
 
--- Now Let's say Team B won the battle then
--- Team A's New Score: 1500 + 32*(0 - 0.38686) = 1487.62
--- Team B's New Score: 1580 + 32*(1 - 0.61314) = 1592.38
-
---1644 vs 1680, gained 17
---1661 vs 1703, lost 14
---1647 vs 1583, gained 13
---1689 vs 1660, lost 14
---1646 vs 1660, gained 16
---1662 vs 1600, gained 13
---1675 vs 1707, gained 17
---1678 vs 1634, gained 13
---1691 vs 1689, lost 16
-
-function getChange(winRate, loseRate)	
-	local winChance = 1 / ( 1 + 10 ^ ( ( winRate - loseRate ) / 400 ) )
-	local loseChance = 1 / ( 1 + 10 ^ ( ( loseRate - winRate ) / 400 ) )
-	
-	local winRating = winRate + 32 * (1 - winChance)
-	local loseRating = loseRate + 32 * (0 - loseChance)
-	
-	--winRating = math.floor(winRating)
-	--loseRating = math.floor(loseRating)
-	
-	-- Points changed, new winners rating, new losers rating
-	return winRate - winRating, winRating, loseRating
+	return aNew, aNew - aRate, bNew, bNew - bRate
 end
+
 
 -- RATING -> POINTS
 local function getPoints(rating, teamSize)
@@ -202,25 +187,17 @@ function Arena:UPDATE_BATTLEFIELD_STATUS()
 		
 		
 		local personal = ""
-		--[[
 		if( self.db.profile.personal ) then
 			-- Figure out our personal rating change
-			local personalChange, newPersonal
-			if( playerWon ) then
-				personalChange, newPersonal = getChange(playerPersonal, enemyRating)
-			else
-				personalChange, newPersonal = getChange(enemyRating, playerPersonal)
-			end
-			
-			personal = string.format(L["/ %d personal (%d rating)"], personalChange, personalChange)
+			local newPersonal, personalDiff = getChange(playerPersonal, enemyRating, playerWon)
+			personal = string.format(L["/ %d personal (%d rating)"], personalDiff, newPersonal)
 			
 			-- Grab new data for next game
 			for i=1, MAX_ARENA_TEAMS do
 				ArenaTeamRoster(i)
 			end
 		end		
-		]]
-	
+		
 		SSPVP:Print(string.format("%s / %s %s", firstInfo, secondInfo, personal))
 	end
 end
@@ -248,10 +225,10 @@ function Arena:RegisterSlashCommands()
 
 		-- Rating changes if you win/lose against a certain rating
 		elseif( string.match(input, "change ([0-9]+) ([0-9]+)") ) then
-			local win, lost = string.match(input, "change ([0-9]+) ([0-9]+)")
-			local diff, winRating, lostRating = getChange(tonumber(win), tonumber(lost))
+			local aRating, bRating = string.match(input, "change ([0-9]+) ([0-9]+)")
+			local aNew, bNew = getChange(tonumber(aRating), tonumber(bRating), true)
 			
-			SSPVP:Print(string.format(L["+%d points (%d rating) / %d points (%d rating)"], diff, winRating, diff * -1, lostRating))
+			SSPVP:Print(string.format(L["+%d points (%d rating) / %d points (%d rating)"], aNew - aRating, aNew, bNew - bRating, bNew))
 			
 		-- Games required for 30%
 		elseif( string.match(input, "attend ([0-9]+) ([0-9]+)") ) then
@@ -269,7 +246,7 @@ function Arena:RegisterSlashCommands()
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - rating <rating> - Calculates points given from the passed rating."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - points <points> - Calculates rating required to reach the passed points."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - attend <played> <team> - Calculates games required to reach 30% using the passed games <played> out of the <team> games played."])
-			--DEFAULT_CHAT_FRAME:AddMessage(L[" - change <winner rating> <loser rating> - Calculates points gained/lost assuming the <winner rating> beats <loser rating>."])
+			DEFAULT_CHAT_FRAME:AddMessage(L[" - change <winner rating> <loser rating> - Calculates points gained/lost assuming the <winner rating> beats <loser rating>."])
 		end
 	end)
 end
