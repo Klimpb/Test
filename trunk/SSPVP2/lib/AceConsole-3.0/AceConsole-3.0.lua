@@ -1,4 +1,4 @@
---[[ $Id: AceConsole-3.0.lua 52778 2007-10-21 12:09:14Z mikk $ ]]
+--[[ $Id: AceConsole-3.0.lua 56939 2007-12-13 20:03:55Z nevcairiel $ ]]
 local MAJOR,MINOR = "AceConsole-3.0", 0
 
 local AceConsole, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
@@ -185,6 +185,7 @@ function AceConsole:Embed( target )
 		target[v] = self[v]
 	end
 	self.embeds[target] = true
+	return target
 end
 
 function AceConsole:OnEmbedEnable( target )
