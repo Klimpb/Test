@@ -72,7 +72,6 @@ end
 -- Points gained/lost from beating teams
 -- 1644 vs 1680, gained 17 / 1661 vs 1703, lost 14
 local function getChange(aRate, bRate, aWon)	
-	-- Lets see how long it takes someone to notice it
 	local aChance = 1 / ( 1 + 10 ^ ( ( bRate - aRate ) / 400 ) )
 	local bChance = 1 / ( 1 + 10 ^ ( ( aRate - bRate ) / 400 ) )
 
@@ -86,7 +85,6 @@ local function getChange(aRate, bRate, aWon)
 	end
 
 	-- aNew, aDiff, bNew, bDiff
-
 	return aNew, aNew - aRate, bNew, bNew - bRate
 end
 
@@ -175,7 +173,11 @@ function Arena:UPDATE_BATTLEFIELD_STATUS()
 			if( arenaTeams[teamName .. bracket] ) then
 				firstInfo = string.format(L["%s %d points (%d rating)"], teamName, newRating - oldRating, newRating)
 				
-				playerPersonal = arenaTeams[teamName .. bracket].personal
+				-- Only show our personal rating change if it's different from our teams rating
+				if( playerPersonal ~= oldRating ) then
+					playerPersonal = arenaTeams[teamName .. bracket].personal
+				end
+				
 				if( newRating > oldRating ) then
 					playerWon = true
 				end
@@ -187,7 +189,7 @@ function Arena:UPDATE_BATTLEFIELD_STATUS()
 		
 		
 		local personal = ""
-		if( self.db.profile.personal ) then
+		if( self.db.profile.personal and playerPersonal ) then
 			-- Figure out our personal rating change
 			local newPersonal, personalDiff = getChange(playerPersonal, enemyRating, playerWon)
 			personal = string.format(L["/ %d personal (%d rating)"], personalDiff, newPersonal)
@@ -226,9 +228,9 @@ function Arena:RegisterSlashCommands()
 		-- Rating changes if you win/lose against a certain rating
 		elseif( string.match(input, "change ([0-9]+) ([0-9]+)") ) then
 			local aRating, bRating = string.match(input, "change ([0-9]+) ([0-9]+)")
-			local aNew, bNew = getChange(tonumber(aRating), tonumber(bRating), true)
+			local aNew, aDiff, bNew, bDiff = getChange(tonumber(aRating), tonumber(bRating), true)
 			
-			SSPVP:Print(string.format(L["+%d points (%d rating) / %d points (%d rating)"], aNew - aRating, aNew, bNew - bRating, bNew))
+			SSPVP:Print(string.format(L["+%d points (%d rating) / %d points (%d rating)"], aDiff, aNew, bDiff, bNew))
 			
 		-- Games required for 30%
 		elseif( string.match(input, "attend ([0-9]+) ([0-9]+)") ) then

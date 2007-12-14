@@ -63,7 +63,6 @@ SSPVPLocals = {
 	
 	["%d personal rating in %s (%dvs%d)"] = "%d personal rating in %s (%dvs%d)",
 	["%s is ready to join, auto leave disabled."] = "%s is ready to join, auto leave disabled.",
-	["Waiting for %d nodes to burn, auto leaving in %d seconds."] = "Waiting for %d nodes to burn, auto leaving in %d seconds.",
 	
 	-- Mover
 	["PvP Objectives Anchor"] = "PvP Objectives Anchor",
@@ -97,14 +96,29 @@ SSPVPLocals = {
 	["%s is out of range"] = "%s is out of range",
 	
 	-- Sync queuing for AV
+	["Dropping Alterac Valley queues."] = "Dropping Alterac Valley queues.",
 	["Alterac Valley queue stopped."] = "Alterac Valley queue stopped.",
 	["Queuing for Alterac Valley in %d seconds."] = "Queuing for Alterac Valley in %d seconds.",
 	["Queuing for Alterac Valley in %d second."] = "Queuing for Alterac Valley in %d second.",
 	["Queue for Alterac Valley!"] = "Queue for Alterac Valley!",
+	["Alterac Valley sync queue has been stopped by %s."] = "Alterac Valley sync queue has been stopped by %s.",
+	["Alterac Valley queue has been dropped by %s."] = "Alterac Valley queue has been dropped by %s.",
 	
 	["You must be in a raid or party to do this."] = "You must be in a raid or party to do this.",
+	["You must be group leader, or assist to do this."] = "You must be group leader, or assist to do this.",
 	["You have been queued for Alterac Valley by %s."] = "You have been queued for Alterac Valley by %s.",
 	["Invalid number entered for sync queue."] = "Invalid number entered for sync queue.",
+	
+	["Following are queued/inside Alterac Valley: %s"] = "Following are queued/inside Alterac Valley: %s",
+
+	["Following are not ready: %s"] = "Following are not ready: %s",
+	["Everyone is ready to go!"] = "Everyone is ready to go!",
+	
+	["Total Players: %d"] = "Total Players: %d",
+	["Confirm #%d: %d"] = "Confirm #%d: %d",
+	["Confirm Misc: %d"] = "Confirm Misc: %d",
+	["Queued: %d"] = "Queued: %d",
+	["Active #%d: %d"] = "Active #%d: %d",
 	
 	-- CT support
 	["-%d Reinforcements"] = "-%d Reinforcements",
@@ -208,18 +222,26 @@ SSPVPLocals = {
 	[" - attend <played> <team> - Calculates games required to reach 30% using the passed games <played> out of the <team> games played."] = " - attend <played> <team> - Calculates games required to reach 30% using the passed games <played> out of the <team> games played.",
 	[" - change <winner rating> <loser rating> - Calculates points gained/lost assuming the <winner rating> beats <loser rating>."] = " - change <winner rating> <loser rating> - Calculates points gained/lost assuming the <winner rating> beats <loser rating>.",
 	
-	
 	["SSPVP Alterac Valley slash commands"] = "SSPVP Alterac Valley slash commands",
 	[" - sync <seconds> - Starts a count down for an Alterac Valley sync queue."] = " - sync <seconds> - Starts a count down for an Alterac Valley sync queue.",
 	[" - cancel - Cancels a running sync."] = " - cancel - Cancels a running sync.",
+	[" - drop - Drops all Alterac Valley queues."] = " - drop - Drops all Alterac Valley queues.",
+	[" - update - Forces a status update on everyones Alterac Valley queues."] = " - update - Forces a status update on everyones Alterac Valley queues.",
+
+	["You do not have Alterac Valley syncing enabled, and cannot use any of the slash commands yourself."] = "You do not have Alterac Valley syncing enabled, and cannot use any of the slash commands yourself.",
 	
 	["SSPVP slash commands"] = "SSPVP slash commands",
 	[" - suspend - Suspends auto join and leave for 5 minutes, or until you log off."] = " - suspend - Suspends auto join and leave for 5 minutes, or until you log off.",
 	[" - ui - Opens the OptionHouse configuration for SSPVP."] = " - ui - Opens the OptionHouse configuration for SSPVP.",
+	[" - Other slash commands"] = " - Other slash commands",
+	[" - /av - Alterac Valley sync queuing."] = " - /av - Alterac Valley sync queuing.",
+	[" - /arena - Easy Arena calculations and conversions"] = " - /arena - Easy Arena calculations and conversions",
+	
 	
 	["Auto join and leave has been suspended for the next 5 minutes, or until you log off."] = "Auto join and leave has been suspended for the next 5 minutes, or until you log off.",
 	["Suspension has been removed, you will now auto join and leave again."] = "Suspension has been removed, you will now auto join and leave again.",
 	["Suspension is still active, will not auto join or leave."] = "Suspension is still active, will not auto join or leave.",
+	["Battlemaster ready check started, you have 10 seconds to get the window open."] = "Battlemaster ready check started, you have 10 seconds to get the window open.",
 	
 	["[%d vs %d] %d rating = %d points"] = "[%d vs %d] %d rating = %d points",
 	["[%d vs %d] %d rating = %d points - %d%% = %d points"] = "[%d vs %d] %d rating = %d points - %d%% = %d points",
@@ -238,6 +260,7 @@ SSPVPLocals = {
 	["Mine Reinforcement"] = "Mine Reinforcement",
 	["Battlefield Queue"] = "Battlefield Queue",
 	["Frame Moving"] = "Frame Moving",
+	["Alterac Valley sync queuing"] = "Alterac Valley sync queuing",
 	
 	-- GOOEY
 	["General"] = "General",
@@ -308,15 +331,7 @@ SSPVPLocals = {
 	["Confirmation"] = "Confirmation",
 	["Confirm when leaving a battlefield queue through minimap list"] = "Confirm when leaving a battlefield queue through minimap list",
 	["Confirm when leaving a finished battlefield through score"] = "Confirm when leaving a finished battlefield through score",
-	
-	["Honor squeeze"] = "Honor squeeze",
-	["Attempts to get the most honor before auto leaving a battlefield, will wait for nodes to capture if they award honor when burning."] = "Attempts to get the most honor before auto leaving a battlefield, will wait for nodes to capture if they award honor when burning.",
-	["Disable"] = "Disable",
-	["Within 30 seconds"] = "Within 30 seconds",
-	["Within 60 seconds"] = "Within 60 seconds",
-	["Within 90 seconds"] = "Within 90 seconds",
-	["Within 110 seconds"] = "Within 110 seconds",
-	
+		
 	["Battlefield leave delay"] = "Battlefield leave delay",
 	["Enable auto leave"] = "Enable auto leave",
 	["Screenshot score board when game ends"] = "Screenshot score board when game ends",
@@ -350,6 +365,13 @@ SSPVPLocals = {
 	["25%"] = "25%",
 	["50%"] = "50%",
 	["75%"] = "75%",
+	
+	["Sync Queue"] = "Sync Queue",
+	["Enable sync queuing"] = "Enable sync queuing",
+	["Allows you to sync queue with other SSPVP2, StinkyQueue or LightQueue users at the same time increasing your chance of getting into the same match."] = "Allows you to sync queue with other SSPVP2, StinkyQueue or LightQueue users at the same time increasing your chance of getting into the same match.",
+	
+	["Show player queue status in overlay"] = "Show player queue status in overlay",
+	["Displays how many people are queued, number of people who have confirmation for specific instance id's and the instance id's that people are currently playing inside."] = "Displays how many people are queued, number of people who have confirmation for specific instance id's and the instance id's that people are currently playing inside.",
 	
 	-- EOTS/AB/WSG
 	["Flag Carrier"] = "Flag Carrier",

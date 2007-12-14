@@ -233,7 +233,6 @@ function Config:AutoLeave()
 		
 		{ group = L["Delay"], type = "groupOrder", order = 2 },
  		{ order = 1, group = L["Delay"], text = L["Battlefield leave delay"], type = "input", numeric = true, width = 30, var = {"leave", "delay"}},
-		{ order = 2, group = L["Delay"], text = L["Honor squeeze"], help = L["Attempts to get the most honor before auto leaving a battlefield, will wait for nodes to capture if they award honor when burning."], type = "dropdown", var = {"leave", "squeeze"}, list = {{0, L["Disable"]}, {30, L["Within 30 seconds"]}, {60, L["Within 60 seconds"]}, {90, L["Within 90 seconds"]}, {110, L["Within 110 seconds"]}}},
 
 		{ group = L["Confirmation"], type = "groupOrder", order = 3 },
 		{ order = 1, group = L["Confirmation"], text = L["Confirm when leaving a battlefield queue through minimap list"], type = "check", var = {"leave", "portConfirm"}},
@@ -278,7 +277,11 @@ function Config:AV()
 		{ order = 3, group = L["Alerts"], text = L["Seconds between capture messages"], type = "input", numeric = true, width = 30, var = {"AV", "interval"}},
 		{ order = 4, group = L["Alerts"], text = L["Interval frequency increase"], type = "dropdown", list = {{0, L["None"]}, {0.75, L["25%"]}, {0.50, L["50%"]}, {0.25, L["75%"]}},  var = {"AV", "speed"}},
 
-		{ group = L["Death"], type = "groupOrder", order = 2 },
+		{ group = L["Sync Queue"], type = "groupOrder", order = 3 },
+		{ order = 1, group = L["Sync Queue"], text = L["Enable sync queuing"], help = L["Allows you to sync queue with other SSPVP2, StinkyQueue or LightQueue users at the same time increasing your chance of getting into the same match."], type = "check", var = {"AVSync", "enabled"}},
+		{ order = 2, group = L["Sync Queue"], text = L["Show player queue status in overlay"], help = L["Displays how many people are queued, number of people who have confirmation for specific instance id's and the instance id's that people are currently playing inside."], type = "check", var = {"AVSync", "monitor"}},
+
+		{ group = L["Death"], type = "groupOrder", order = 4 },
 		{ order = 1, group = L["Death"], text = L["Disable auto release"], help = L["Disables auto release for this specific battleground."], type = "check", var = {"Battlefield", "av"}},
  	}
 
