@@ -255,34 +255,139 @@ end
 
 
 -- Inspection and players arena info uses the same base names
-function Arena:SetRating(parent, teamSize, teamRating)
+function Arena:UpdateDisplay(parent, isInspect, ...)
+	local teamName, teamSize, teamRating, weekPlayed, weekWins, seasonPlayed, seasonWins, playerPlayed, seasonPlayerPlayed, teamRank, playerRating = select(1, ...)
 	if( teamRating == 0 ) then
 		return
 	end
 
-	local ratingText = getglobal(parent .. "DataRating")
-	local label = getglobal(parent.. "DataRatingLabel")
+	-- Add points gained next to the rating
+	local name = parent .. "Data"
+	
+	-- Shift the actual rating text down to the left to make room for our changes
+	local label = getglobal(name .. "RatingLabel")
+	label:SetText(L["Rating"])
+	label:SetPoint("LEFT", name .. "Name", "RIGHT", -32, 0)
 
-	-- Shift the rating to match the rating label
+	-- Shift the rating to match the rating label + Set it
+	local ratingText = getglobal(name .. "Rating")
+	ratingText:SetText(string.format("%d |cffffffff(%d)|r", teamRating, getPoints(teamRating, teamSize)))
+	ratingText:SetWidth(70)
 	ratingText:ClearAllPoints()
 	ratingText:SetPoint("LEFT", label, "RIGHT", 2, 0)
 
-	-- Shift the actual rating text down to the left to make room for our changes
-	label:SetText(L["Rating"])
-	label:SetPoint("LEFT", parent .. "DataName", "RIGHT", -32, 0)
-
-	-- Add points gained next to the rating
-	ratingText:SetText(string.format("%d |cffffffff(%d)|r", teamRating, getPoints(teamRating, teamSize)))
-	ratingText:SetWidth(70)
-
 	-- Resize team name so it doesn't overflow into our rating
-	getglobal(parent .. "DataName"):SetWidth(150)
+	getglobal(name .. "Name"):SetWidth(150)
+
+	-- Can't get week info
+	if( isInspect ) then
+		return
+	end
+
+	-- Reposition the week/season stats
+	local parentFrame = getglobal(parent)
+	if( not parentFrame.SSUpdated ) then
+		parentFrame.SSUpdated = true
+		
+		-- Shift played percentage/games up
+		local label = getglobal(name .. "TypeLabel")
+		label:ClearAllPoints()
+		label:SetPoint("BOTTOMLEFT", name .. "Name", "BOTTOMLEFT", 0, -24)
+		
+		-- Hide games/played/-/wins/loses label, and shift them down a bit
+		local label = getglobal(name .. "GamesLabel")
+		--label:ClearAllPoints()
+		--label:SetPoint("BOTTOMLEFT", name .. "TypeLabel", "BOTTOMRIGHT", -22, 16)
+		label:Hide()
+		
+		local label = getglobal(name .. "WinLossLabel")
+		--label:ClearAllPoints()
+		--label:SetPoint("LEFT", name .. "GamesLabel", "RIGHT", -5, 0)
+		label:Hide()
+		
+		local label = getglobal(name .. "PlayedLabel")
+		--label:ClearAllPoints()
+		--label:SetPoint("LEFT", name .. "WinLossLabel", "RIGHT", 19, 0)
+		label:Hide()
+		
+		-- Create our custom widgets
+		local season = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+		season:SetPoint("BOTTOMLEFT", name .. "Name", "BOTTOMLEFT", 0, -41)
+		season:SetJustifyH("LEFT")
+		season:SetJustifyV("BOTTOM")
+		season:SetText(L["Season"])
+		
+		local game = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+		game:SetPoint("TOP", name .. "Games", "BOTTOM", 0, -7)
+
+		local dash = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+		dash:SetPoint("TOP", name .. "-", "BOTTOM", 0, -7)
+		dash:SetText(" - ")
+		
+		local win = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+		win:SetPoint("RIGHT", dash, "LEFT", 0, 0)
+
+		local loss = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+		loss:SetPoint("LEFT", dash, "RIGHT", 0, 0)
+		
+		--local winPercent = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+		--winPercent:SetPoint("LEFT", dash, "RIGHT", 25, 0)
+		--winPercent:SetText("34.4%")
+
+		local played = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+		played:SetPoint("TOP", name .. "Played", "BOTTOM", 0, -7)
+		
+		parentFrame.seasonWin = win
+		parentFrame.seasonLoss = loss
+		parentFrame.seasonGames = game
+		parentFrame.seasonPlayed = played
+	end
+	
+	-- DISPLAY!
+	-- WEEK
+
+	getglobal(name .. "TypeLabel"):SetText(L["Week"])
+	 
+	getglobal(name .. "Games"):SetText(weekPlayed)
+	getglobal(name .. "Wins"):SetText(weekWins)
+	getglobal(name .. "Loss"):SetText(weekPlayed - weekWins)		
+	
+	local played = getglobal(name .. "Played")
+	local percent = weekPlayed / playerPlayed
+	if( weekPlayed == 0 or playerPlayed == 0 ) then
+		percent = 0
+	end
+	
+	local color = "|cff20ff20"
+	if( percent < 0.30 ) then
+		color = "|cffff2020"
+	end
+	
+	played:SetText(string.format("%d %s(%.f%%)|r", playerPlayed, color, percent * 100))
+	played:SetVertexColor(1.0, 1.0, 1.0)
+	
+	-- SEASON
+
+	parentFrame.seasonWin:SetText(seasonWins)
+
+	parentFrame.seasonLoss:SetText(seasonPlayed - seasonWins)
+	parentFrame.seasonGames:SetText(seasonPlayed)
+	
+
+	-- Do we want to show percent, or personal?
+	local percent = seasonPlayerPlayed / seasonPlayed
+	local color = "|cff20ff20"
+	if( percent < 0.30 ) then
+		color = "|cffff2020"
+
+	end
+
+	parentFrame.seasonPlayed:SetText(string.format("%d %s(%.f%%)|r", playerRating, color, percent * 100))
 end
 
 -- Modifies the team details page to show percentage of games played
 hooksecurefunc("PVPTeamDetails_Update", function()
 	local _, _, _, teamPlayed, _,  seasonTeamPlayed = GetArenaTeam(PVPTeamDetails.team)
-
 	for i=1, GetNumArenaTeamMembers(PVPTeamDetails.team, 1) do
 		local playedText = getglobal("PVPTeamDetailsButton" .. i .. "Played")
 		local name, rank, _, _, online, played, _, seasonPlayed = GetArenaTeamRosterInfo(PVPTeamDetails.team, i)
@@ -324,9 +429,12 @@ hooksecurefunc("PVPTeam_Update", function()
 	for _, value in pairs(teams) do
 		if( value.index ) then
 			buttonIndex = buttonIndex + 1 
-			Arena:SetRating("PVPTeam" .. buttonIndex, value.size, select(3, GetArenaTeam(value.index)))
+			Arena:UpdateDisplay("PVPTeam" .. buttonIndex, nil, GetArenaTeam(value.index))
 		end
 	end
+	
+	-- Hide the season toggle
+	PVPFrameToggleButton:Hide()
 end)
 
 -- Inspection frame
@@ -352,7 +460,7 @@ function Arena:InspectPVPTeam_Update()
 			local teamName, teamSize, teamRating = GetInspectArenaTeamData(value.index)
 			if( teamName ) then
 				getglobal("InspectPVPTeam" .. buttonIndex .. "DataName"):SetText(string.format(L["%s |cffffffff(%dvs%d)|r"], teamName, teamSize, teamSize))
-				Arena:SetRating("InspectPVPTeam" .. buttonIndex, teamSize, teamRating)
+				Arena:UpdateDisplay("InspectPVPTeam" .. buttonIndex, true, GetInspectArenaTeamData(value.index))
 			end
 		end
 	end
