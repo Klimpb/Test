@@ -63,8 +63,8 @@ function Match:EnableModule(abbrev)
 	
 	if( self.db.profile[abbrev].matchInfo or self.db.profile[abbrev].bases ) then
 		self:RegisterEvent("UPDATE_WORLD_STATES")
-		self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "ParseMessage")
-		self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "ParseMessage")
+		--self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "ParseMessage")
+		--self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "ParseMessage")
 	end
 end
 
@@ -110,9 +110,9 @@ function Match:UPDATE_WORLD_STATES()
 	end
 
 	-- No change
-	if( ( aBases == Alliance.bases and hBases == Horde.bases ) or ( hBases == 0 and aBases == 0 ) ) then
-		return
-	end
+	--if( ( aBases == Alliance.bases and hBases == Horde.bases ) or ( hBases == 0 and aBases == 0 ) ) then
+	--	return
+	--end
 
 	Alliance.bases = aBases
 	Alliance.points = aPoints
