@@ -31,9 +31,7 @@ end
 function Move:SavePosition(type, frame)
 	if( not self.db.profile.position[type] ) then
 		self.db.profile.position[type] = {}
-
 	end
-	
 
 	self.db.profile.position[type].x = frame:GetLeft()
 	self.db.profile.position[type].y = frame:GetTop()
@@ -75,7 +73,6 @@ function Move:ToggleCapture()
 		if( self.captureFrame ) then
 			self.captureFrame:Hide()
 		end
-		
 		return
 	end
 
@@ -86,7 +83,6 @@ function Move:TogglePVP()
 		if( self.pvpFrame ) then
 			self.pvpFrame:Hide()
 		end
-		
 		return
 	end
 	
@@ -99,7 +95,6 @@ function Move:ToggleScore()
 		if( self.scoreFrame ) then
 			self.scoreFrame:Hide()
 		end
-		
 		return
 	end
 	
@@ -113,7 +108,7 @@ local backdrop = {bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
 		edgeSize = 9,
 		insets = { left = 2, right = 2, top = 2, bottom = 2 }}
 
-local function onDragStart(self)
+local function onDragStart(self, button)
 	if( button == "RightButton" ) then
 		Move:ResetPosition(self.type, self.anchor)
 		return
