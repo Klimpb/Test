@@ -77,6 +77,10 @@ SSPVPLocals = {
 	["Call to Arms: %s"] = "Call to Arms: %s",
 	["You currently have the battleground daily quest for %s, auto leave has been set to occure once the quest completes."] = "You currently have the battleground daily quest for %s, auto leave has been set to occure once the quest completes.",
 	
+	-- Modified arena info
+	["Season"] = "Season",
+	["Week"] = "Week",
+	
 	-- Flags
 	["Alliance flag carrier %s, held for %s."] = "Alliance flag carrier %s, held for %s.",
 	["Horde flag carrier %s, held for %s."] = "Horde flag carrier %s, held for %s.",
