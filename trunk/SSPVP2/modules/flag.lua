@@ -153,9 +153,21 @@ function Flag:IsTargeted(name)
 		return true
 	end
 	
-	-- Check if it's a raid member, or raid member target
+	-- Scan raid member targets, and raid member targets of target
 	for i=1, GetNumRaidMembers() do
 		local unit = "raid" .. i
+		local target = unit .. "target"
+		
+		if( UnitExists(unit) and UnitName(unit) == name ) then
+			return true
+		elseif( UnitExists(target) and UnitName(target) == name ) then
+			return true
+		end
+	end
+	
+	-- Scan party member targets, and party member targets of target
+	for i=1, GetNumPartyMembers() do
+		local unit = "party" .. i
 		local target = unit .. "target"
 		
 		if( UnitExists(unit) and UnitName(unit) == name ) then

@@ -105,14 +105,9 @@ function Match:UPDATE_WORLD_STATES()
 	local hBases, hPoints = self:GetCrtPoints("Horde")
 
 	-- Parse error
-	if( not aBases or not hBases ) then
+	if( not aBases or not hBases or ( aPoints == 0 and hPoints == 0 ) ) then
 		return
 	end
-
-	-- No change
-	--if( ( aBases == Alliance.bases and hBases == Horde.bases ) or ( hBases == 0 and aBases == 0 ) ) then
-	--	return
-	--end
 
 	Alliance.bases = aBases
 	Alliance.points = aPoints

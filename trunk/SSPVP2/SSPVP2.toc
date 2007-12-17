@@ -19,6 +19,7 @@ lib\HousingAuthority.lua
 localization.enUS.lua
 localization.deDE.lua
 localization.frFR.lua
+localization.zhCN.lua
 
 SSPVP2.lua
 
