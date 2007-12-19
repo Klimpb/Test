@@ -45,14 +45,13 @@ function Match:EnableModule(abbrev)
 	
 	self.activeBF = abbrev
 	
-	-- AB specific configuration
+	-- AB specific configurations
 	if( abbrev == "ab" ) then
 		MAX_NODES = 5
 		ALLIANCE_ID = 1
 		HORDE_ID = 2
 		NODE_MATCH = L["Bases: ([0-9]+)  Resources: ([0-9]+)/2000"]
 	
-
 	-- EoTS specific configurations
 	elseif( abbrev == "eots" ) then
 		MAX_NODES = 4

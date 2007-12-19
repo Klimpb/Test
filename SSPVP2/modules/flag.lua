@@ -71,6 +71,9 @@ function Flag:DisableModule()
 	
 	self:Hide("horde")
 	self:Hide("alliance")
+	SSPVP:UnregisterOOCUpdate("UpdateCarrierAttributes")
+	SSPVP:UnregisterOOCUpdate("UpdateStatus")
+
 end
 
 function Flag:Reload()

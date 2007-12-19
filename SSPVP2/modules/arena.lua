@@ -238,6 +238,11 @@ function Arena:RegisterSlashCommands()
 			local percent = played / teamPlayed
 			
 			if( percent >= 0.30 ) then
+				-- Make sure we don't show it as being above 100%
+				if( percent > 1.0 ) then
+					percent = 1.0
+				end
+
 				SSPVP:Print(string.format(L["%d games out of %d total is already above 30%% (%.2f%%)."], played, teamPlayed, percent * 100))
 			else
 				local gamesNeeded = math.ceil(((0.3 - percent) / 0.70) * teamPlayed)
