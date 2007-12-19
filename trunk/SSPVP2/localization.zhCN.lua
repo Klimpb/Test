@@ -82,6 +82,10 @@ SSPVPLocals = setmetatable({
 	["Call to Arms: %s"] = "加入战斗: %s",
 	["You currently have the battleground daily quest for %s, auto leave has been set to occure once the quest completes."] = "%s有你的每日战场任务，如果任务完成则自动离开。",
 	
+	-- Modified arena info
+	["Season"] = "本赛季",
+	["Week"] = "本周",
+	
 	-- Flags
 	["Alliance flag carrier %s, held for %s."] = "联盟旗帜被%s夺取,%s拿旗。",
 	["Horde flag carrier %s, held for %s."] = "部落旗帜被%s夺取,%s拿旗。",
@@ -398,7 +402,7 @@ SSPVPLocals = setmetatable({
 	
 	-- Disable modules
 	["Modules"] = "模块",
-	["Disable %s"] = "禁用 %s",
+	["Disable %s"] = "禁用%s",
 	["match information"] = "比赛信息",
 	["Time left in match, final scores and bases to win for Eye of the Storm and Arathi Basin."] = "风暴之眼和阿拉希盆地显示计时信息，最终得分和占领的基地",
 	
@@ -411,7 +415,7 @@ SSPVPLocals = setmetatable({
 	["Cleaning up the text in the PvP objectives along with points gained from captures in Eye of the Storm."] = "风暴之眼中随着占领点数的更新而随时清除PVP目标",
 	
 	["battleground"] = "战场",
-	["General battleground specific changes like auto release."] = "战场中设置自动释放。",
+	["General battleground specific changes like auto release."] = "战场中更改自动释放。",
 	
 	["score"] = "得分",
 	["General scoreboard changes like coloring by class or hiding the class icons."] = "记分板下更改职业颜色或者隐藏职业图标",
@@ -430,4 +434,10 @@ SSPVPLocals = setmetatable({
 	["group"] = "已组队",
 	["instance"] = "战斗状态",
 	["none"] = "其它情况",
-}, {__index = SSPVPLocals});
+	
+    }, {__index = SSPVPLocals});
+	
+	BINDING_HEADER_SSPVP = "SSPVP";
+    BINDING_NAME_ETARFLAG = "选中敌方持旗者";
+    BINDING_NAME_FTARFLAG = "选中我方持旗者";
+

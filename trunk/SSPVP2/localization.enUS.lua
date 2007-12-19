@@ -231,6 +231,7 @@ SSPVPLocals = {
 	[" - cancel - Cancels a running sync."] = " - cancel - Cancels a running sync.",
 	[" - drop - Drops all Alterac Valley queues."] = " - drop - Drops all Alterac Valley queues.",
 	[" - update - Forces a status update on everyones Alterac Valley queues."] = " - update - Forces a status update on everyones Alterac Valley queues.",
+	[" - ready - Does a check to see who has the battlemaster window open and is ready to queue."] = " - ready - Does a check to see who has the battlemaster window open and is ready to queue.",
 
 	["You do not have Alterac Valley syncing enabled, and cannot use any of the slash commands yourself."] = "You do not have Alterac Valley syncing enabled, and cannot use any of the slash commands yourself.",
 	
