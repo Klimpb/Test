@@ -82,7 +82,7 @@ function AVSync:OnInitialize()
 			end
 		
 		-- Ready check
-		elseif( input == "window" ) then
+		elseif( input == "ready" ) then
 			for k in pairs(windowStatus) do
 				windowStatus[k] = nil
 			end
