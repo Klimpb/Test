@@ -5,8 +5,6 @@ local L = SSPVPLocals
 local avStatus
 local playerTotals = {}
 local windowStatus = {}
-local totalAlready = {}
-local totalNotReady = {}
 local skipStinky
 
 function AVSync:OnInitialize()
@@ -14,6 +12,7 @@ function AVSync:OnInitialize()
 		profile = {
 			enabled = true,
 			monitor = true,
+			forceJoin = true,
 			forceQueue = false,
 		},
 	}
@@ -81,6 +80,19 @@ function AVSync:OnInitialize()
 				self:SendAddonMessage("UPDATE")
 			end
 		
+		elseif( string.match(input, "join ([0-9]+)") ) then
+			local instanceID = string.match(input, "join ([0-9]+)")
+			instanceID = tonumber(instanceID)
+			
+			-- Make sure it's valid
+			if( not instanceID ) then
+				SSPVP:Print(L["You provided an invalid instance ID to join."])
+				return
+			end
+			
+			self:SendMessage(string.format(L["Forcing join on instance #%d."], instanceID))
+			self:SendAddonMessage("JOIN:" .. instanceID)
+		
 		-- Ready check
 		elseif( input == "ready" ) then
 			for k in pairs(windowStatus) do
@@ -102,6 +114,7 @@ function AVSync:OnInitialize()
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - drop - Drops all Alterac Valley queues."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - ready - Does a check to see who has the battlemaster window open and is ready to queue."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - update - Forces a status update on everyones Alterac Valley queues."])
+			DEFAULT_CHAT_FRAME:AddMessage(L[" - join <instanceID> - Forces everyone with the specified instance id to join Alterac Valley."])
 		end
 	end)
 end
@@ -128,13 +141,8 @@ end
 
 -- Window ready check
 function AVSync:CheckResults()
-	for i=#(totalAlready), 1, -1 do
-		table.remove(totalAlready, i)
-	end
-	
-	for i=#(totalNotReady), 1, -1 do
-		table.remove(totalNotReady, i)
-	end
+	local totalAlready = {}
+	local totalNotReady = {}
 	
 	-- 0 = Not ready, 1 = Ready, 2 = Already AV queued
 	for author, status in pairs(windowStatus) do
@@ -231,7 +239,6 @@ function AVSync:DropQueue(author)
 	self.db.profile.forceQueue = nil
 	avStatus = nil
 
-	
 	for i=1, MAX_BATTLEFIELD_QUEUES do
 		local status, map = GetBattlefieldStatus(i)
 		if( map == L["Alterac Valley"] and (status == "queued" or status == "confirm") ) then
@@ -331,10 +338,8 @@ end
 function AVSync:UPDATE_BATTLEFIELD_STATUS()
 	if( not self.db.profile.forceQueue ) then
 		return
-
 	end
 	
-
 	for i=1, MAX_BATTLEFIELD_QUEUES do
 		local status, map, instanceID = GetBattlefieldStatus(i)
 		if( map == L["Alterac Valley"] and status ~= avStatus ) then
@@ -375,7 +380,11 @@ function AVSync:CHAT_MSG_ADDON(event, prefix, msg, type, author)
 		elseif( dataType == "DROP" and self:CheckUserPermissions(author) ) then
 			skipStinky = true
 			self:DropQueue(author)
-					
+				
+		-- Version request (for when we add a GUI version)
+		elseif( dataType == "PING" and self:CheckUserPermissions(author) ) then
+			self:SendAddonMessage("PONG:" .. SSPVP.revision)
+		
 		-- Are we ready to queue (Can auto queue)
 		elseif( dataType == "WINDOW" ) then
 			-- Make sure we aren't queued already
@@ -393,7 +402,28 @@ function AVSync:CHAT_MSG_ADDON(event, prefix, msg, type, author)
 			else
 				self:SendAddonMessage("NOTREADY")
 			end
-					
+		
+		-- Force join
+		elseif( dataType == "JOIN" ) then
+			-- Make sure we don't have any monkey business going on
+			local instanceID = tonumber(data)
+			if( not instanceID ) then
+				return
+			end
+			
+			for i=1, MAX_BATTLEFIELD_QUEUES do
+				local status, map, instance = GetBattlefieldStatus(i)
+				if( map == L["Alterac Valley"] and status == "confirm" and instance == instanceID ) then
+					if( self.db.profile.forceJoin ) then
+						SSPVP:Print(string.format(L["Joining Alterac Valley #%d at the request of %s"], instanceID, author))
+						AcceptBattlefieldPort(i, true)
+					else
+						SSPVP:Print(string.format(L["%s has requested you join Alterac Valley #%d."], author, instanceID))
+					end
+					break
+				end
+			end
+			
 		-- Already queued for AV
 		elseif( dataType == "ALRDQUEUED" ) then
 			windowStatus[author] = 2

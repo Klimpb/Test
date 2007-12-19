@@ -9,7 +9,7 @@ function Config:OnInitialize()
 	OptionHouse = SSPVP.OptionHouse
 	HousingAuthority = LibStub("HousingAuthority-1.2")
 	
-	local OHObj = OptionHouse:RegisterAddOn("SSPVP2", nil, "Mayen", "$Revision$")
+	local OHObj = OptionHouse:RegisterAddOn("SSPVP2", nil, "Mayen", SSPVP.revision)
 	OHObj:RegisterCategory(L["General"], self, "General", nil, 1)
 	OHObj:RegisterCategory(L["Modules"], self, "Modules", nil, 2)
 	OHObj:RegisterCategory(L["Battlefield"], self, "Battlefield", nil, 3)
@@ -280,6 +280,7 @@ function Config:AV()
 		{ group = L["Sync Queue"], type = "groupOrder", order = 3 },
 		{ order = 1, group = L["Sync Queue"], text = L["Enable sync queuing"], help = L["Allows you to sync queue with other SSPVP2, StinkyQueue or LightQueue users at the same time increasing your chance of getting into the same match."], type = "check", var = {"AVSync", "enabled"}},
 		{ order = 2, group = L["Sync Queue"], text = L["Show player queue status in overlay"], help = L["Displays how many people are queued, number of people who have confirmation for specific instance id's and the instance id's that people are currently playing inside."], type = "check", var = {"AVSync", "monitor"}},
+		{ order = 3, group = L["Sync Queue"], text = L["Allow group leader or assist to force join you into a specific Alterac Valley"], help = L["When the leader is ready for the group to join an Alterac Valley, he can force everyone into it with the required instance id. You will still be shown the instance id to join even if you disable this."], type = "check", var = {"AVSync", "forceJoin"}},
 
 		{ group = L["Death"], type = "groupOrder", order = 4 },
 		{ order = 1, group = L["Death"], text = L["Disable auto release"], help = L["Disables auto release for this specific battleground."], type = "check", var = {"Battlefield", "av"}},

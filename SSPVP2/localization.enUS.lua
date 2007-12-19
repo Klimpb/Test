@@ -100,18 +100,27 @@ SSPVPLocals = {
 	["%s is out of range"] = "%s is out of range",
 	
 	-- Sync queuing for AV
-	["Dropping Alterac Valley queues."] = "Dropping Alterac Valley queues.",
-	["Alterac Valley queue stopped."] = "Alterac Valley queue stopped.",
-	["Queuing for Alterac Valley in %d seconds."] = "Queuing for Alterac Valley in %d seconds.",
-	["Queuing for Alterac Valley in %d second."] = "Queuing for Alterac Valley in %d second.",
-	["Queue for Alterac Valley!"] = "Queue for Alterac Valley!",
-	["Alterac Valley sync queue has been stopped by %s."] = "Alterac Valley sync queue has been stopped by %s.",
-	["Alterac Valley queue has been dropped by %s."] = "Alterac Valley queue has been dropped by %s.",
-	
 	["You must be in a raid or party to do this."] = "You must be in a raid or party to do this.",
 	["You must be group leader, or assist to do this."] = "You must be group leader, or assist to do this.",
 	["You have been queued for Alterac Valley by %s."] = "You have been queued for Alterac Valley by %s.",
+	["You provided an invalid instance ID to join."] = "You provided an invalid instance ID to join.",
+	
+
+	["Queuing for Alterac Valley in %d seconds."] = "Queuing for Alterac Valley in %d seconds.",
+	["Queuing for Alterac Valley in %d second."] = "Queuing for Alterac Valley in %d second.",
+	["Queue for Alterac Valley!"] = "Queue for Alterac Valley!",
+
+	
+	["Dropping Alterac Valley queues."] = "Dropping Alterac Valley queues.",
+
+	["Alterac Valley sync queue has been stopped by %s."] = "Alterac Valley sync queue has been stopped by %s.",
+	["Alterac Valley queue stopped."] = "Alterac Valley queue stopped.",
+	["Alterac Valley queue has been dropped by %s."] = "Alterac Valley queue has been dropped by %s.",
+	
+	["Forcing join on instance #%d."] = "Forcing join on instance #%d.",
 	["Invalid number entered for sync queue."] = "Invalid number entered for sync queue.",
+	["Joining Alterac Valley #%d at the request of %s"] = "Joining Alterac Valley #%d at the request of %s",
+	["%s has requested you join Alterac Valley #%d, but you have force join disabled."] = "%s has requested you join Alterac Valley #%d, but you have force join disabled.",
 	
 	["Following are queued/inside Alterac Valley: %s"] = "Following are queued/inside Alterac Valley: %s",
 
@@ -232,6 +241,7 @@ SSPVPLocals = {
 	[" - drop - Drops all Alterac Valley queues."] = " - drop - Drops all Alterac Valley queues.",
 	[" - update - Forces a status update on everyones Alterac Valley queues."] = " - update - Forces a status update on everyones Alterac Valley queues.",
 	[" - ready - Does a check to see who has the battlemaster window open and is ready to queue."] = " - ready - Does a check to see who has the battlemaster window open and is ready to queue.",
+	[" - join <instanceID> - Forces everyone with the specified instance id to join Alterac Valley."] = " - join <instanceID> - Forces everyone with the specified instance id to join Alterac Valley.",
 
 	["You do not have Alterac Valley syncing enabled, and cannot use any of the slash commands yourself."] = "You do not have Alterac Valley syncing enabled, and cannot use any of the slash commands yourself.",
 	
@@ -374,9 +384,11 @@ SSPVPLocals = {
 	["Sync Queue"] = "Sync Queue",
 	["Enable sync queuing"] = "Enable sync queuing",
 	["Allows you to sync queue with other SSPVP2, StinkyQueue or LightQueue users at the same time increasing your chance of getting into the same match."] = "Allows you to sync queue with other SSPVP2, StinkyQueue or LightQueue users at the same time increasing your chance of getting into the same match.",
-	
+	["Allow group leader or assist to force join you into a specific Alterac Valley"] = "Allow group leader or assist to force join you into a specific Alterac Valley",
+		
 	["Show player queue status in overlay"] = "Show player queue status in overlay",
 	["Displays how many people are queued, number of people who have confirmation for specific instance id's and the instance id's that people are currently playing inside."] = "Displays how many people are queued, number of people who have confirmation for specific instance id's and the instance id's that people are currently playing inside.",
+	["When the leader is ready for the group to join an Alterac Valley, he can force everyone into it with the required instance id. You will still be shown the instance id to join even if you disable this."] = "When the leader is ready for the group to join an Alterac Valley, he can force everyone into it with the required instance id. You will still be shown the instance id to join even if you disable this.",
 	
 	-- EOTS/AB/WSG
 	["Flag Carrier"] = "Flag Carrier",
