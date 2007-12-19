@@ -1,4 +1,4 @@
---[[ $Id: AceTimer-3.0.lua 56939 2007-12-13 20:03:55Z nevcairiel $ ]]
+--[[ $Id: AceTimer-3.0.lua 56975 2007-12-14 12:49:09Z nevcairiel $ ]]
 --[[
 	Basic assumptions:
 	* In a typical system, we do more re-scheduling per second than there are timer pulses per second
@@ -52,14 +52,49 @@ for i=1,BUCKETS do
 	hash[i] = hash[i] or false	-- make it an integer-indexed array; it's faster than hashes
 end
 
-local function safecall(func, ...)
-	local success, err = pcall(func, ...)
-	if success then return err end
-	
-	if not err:find("%.lua:%d+:") then err = (debugstack():match("\n(.-: )in.-\n") or "") .. err end
-	geterrorhandler()(err)
+--[[
+	 xpcall safecall implementation
+]]
+local xpcall = xpcall
+
+local function errorhandler(err)
+	return geterrorhandler()(err)
 end
 
+local function CreateDispatcher(argCount)
+	local code = [[
+		local xpcall, eh = ...
+		local method, ARGS
+		local function call() return method(ARGS) end
+	
+		local function dispatch(func, ...)
+			 method = func
+			 if not method then return end
+			 ARGS = ...
+			 return xpcall(call, eh)
+		end
+	
+		return dispatch
+	]]
+	
+	local ARGS = {}
+	for i = 1, argCount do ARGS[i] = "arg"..i end
+	code = code:gsub("ARGS", table.concat(ARGS, ", "))
+	return assert(loadstring(code, "safecall Dispatcher["..argCount.."]"))(xpcall, errorhandler)
+end
+
+local Dispatchers = setmetatable({}, {__index=function(self, argCount)
+	local dispatcher = CreateDispatcher(argCount)
+	rawset(self, argCount, dispatcher)
+	return dispatcher
+end})
+Dispatchers[0] = function(func)
+	return xpcall(func, errorhandler)
+end
+ 
+local function safecall(func, ...)
+	return Dispatchers[select('#', ...)](func, ...)
+end
 
 local lastint = floor(GetTime() * HZ)
 
