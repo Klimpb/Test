@@ -4,7 +4,7 @@
 	1.x   Release: January 26th 2006
 	2.x   Release: December 27th 2006
 	3.x   Release: April 9th 2007
-	SSPVP Release: November 18th 2007
+	2     Release: November 18th 2007
 ]]
 
 SSPVP = LibStub("AceAddon-3.0"):NewAddon("SSPVP", "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
@@ -69,6 +69,7 @@ function SSPVP:OnInitialize()
 	self.db = LibStub:GetLibrary("AceDB-3.0"):New("SSPVPDB", self.defaults)
 		
 	self.OptionHouse = LibStub("OptionHouse-1.1")
+	self.revision = tonumber(string.match("$Revision$", "(%d+)")) or 0
 	
 	-- SSPVP slash commands
 	self:RegisterChatCommand("sspvp", function(input)
