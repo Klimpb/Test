@@ -268,9 +268,9 @@ end
 function Config:AV()
 	local config = {
 		{ group = L["Timers"], type = "groupOrder", order = 1 },
-		{ order = 1, group = L["Timers"], text = L["Enable capture timers"], type = "check", var = {"AV", "timers"}},
+		{ order = 1, group = L["Timers"], text = L["Enable capture timers"], type = "check", var = {"AV", "timer"}},
 		{ order = 2, group = L["Timers"], text = L["Show resources gained through mines"], type = "check", var = {"AV", "mine"}},
-		{ order = 3, group = L["Timers"], text = L["Show resources lost from captains in towers in MSBT/SCT/FCT"], type = "check", var = {"AV", "combat"}},
+		{ order = 3, group = L["Timers"], text = L["Show resources lost from captains and towers in MSBT/SCT/FCT"], type = "check", var = {"AV", "combat"}},
 
 		{ group = L["Alerts"], type = "groupOrder", order = 2 },
 		{ order = 2, group = L["Alerts"], text = L["Enable interval capture messages"], type = "check", var = {"AV", "announce"}},

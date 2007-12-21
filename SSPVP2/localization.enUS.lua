@@ -105,7 +105,6 @@ SSPVPLocals = {
 	["You have been queued for Alterac Valley by %s."] = "You have been queued for Alterac Valley by %s.",
 	["You provided an invalid instance ID to join."] = "You provided an invalid instance ID to join.",
 	
-
 	["Queuing for Alterac Valley in %d seconds."] = "Queuing for Alterac Valley in %d seconds.",
 	["Queuing for Alterac Valley in %d second."] = "Queuing for Alterac Valley in %d second.",
 	["Queue for Alterac Valley!"] = "Queue for Alterac Valley!",
@@ -127,11 +126,31 @@ SSPVPLocals = {
 	["Following are not ready: %s"] = "Following are not ready: %s",
 	["Everyone is ready to go!"] = "Everyone is ready to go!",
 	
-	["Total Players: %d"] = "Total Players: %d",
-	["Confirm #%d: %d"] = "Confirm #%d: %d",
-	["Confirm Misc: %d"] = "Confirm Misc: %d",
-	["Queued: %d"] = "Queued: %d",
-	["Active #%d: %d"] = "Active #%d: %d",
+	-- Queue status GUI for AV
+	["Queue Status"] = "Queue Status",
+	["Name"] = "Name",
+	["Status"] = "Status",
+	["Queue"] = "Queue",
+	["Version"] = "Version",
+	
+	["Unknown"] = "Unknown",
+	["Not queued"] = "Not queued",
+	["Inside #%d"] = "Inside #%d",
+	["Confirm #%d"] = "Confirm #%d",
+	["Queued Any"] = "Queued Any",
+	["Queued #%d"] = "Queued #%d",
+	["Offline"] = "Offline",
+	["Online"] = "Online",
+	["Ready"] = "Ready",
+	["Not ready"] = "Not ready",
+	
+	["Total Players"] = "Total Players",
+	["Ready"] = "Ready",
+	["Not Ready"] = "Not Ready",
+	
+	["Ready Check"] = "Ready Check",
+	["Sync Queue"] = "Sync Queue",
+	["Drop Queue"] = "Drop Queue",
 	
 	-- CT support
 	["-%d Reinforcements"] = "-%d Reinforcements",
@@ -242,6 +261,7 @@ SSPVPLocals = {
 	[" - update - Forces a status update on everyones Alterac Valley queues."] = " - update - Forces a status update on everyones Alterac Valley queues.",
 	[" - ready - Does a check to see who has the battlemaster window open and is ready to queue."] = " - ready - Does a check to see who has the battlemaster window open and is ready to queue.",
 	[" - join <instanceID> - Forces everyone with the specified instance id to join Alterac Valley."] = " - join <instanceID> - Forces everyone with the specified instance id to join Alterac Valley.",
+	[" - status - Shows the status list of everyone regarding queue or window."] = " - status - Shows the status list of everyone regarding queue or window.",
 
 	["You do not have Alterac Valley syncing enabled, and cannot use any of the slash commands yourself."] = "You do not have Alterac Valley syncing enabled, and cannot use any of the slash commands yourself.",
 	
@@ -375,7 +395,7 @@ SSPVPLocals = {
 	["Enable interval capture messages"] = "Enable interval capture messages",
 	["Seconds between capture messages"] = "Seconds between capture messages",
 	["Show resources gained through mines"] = "Show resources gained through mines",
-	["Show resources lost from captains in towers in MSBT/SCT/FCT"] = "Show resources lost from captains in towers in MSBT/SCT/FCT",
+	["Show resources lost from captains and towers in MSBT/SCT/FCT"] = "Show resources lost from captains and towers in MSBT/SCT/FCT",
 	["None"] = "None",
 	["25%"] = "25%",
 	["50%"] = "50%",
