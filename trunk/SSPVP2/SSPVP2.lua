@@ -616,7 +616,6 @@ end
 function SSPVP:Echo(msg, color)
 	if( color ) then
 		DEFAULT_CHAT_FRAME:AddMessage(msg, color.r, color.g, color.b)	
-
 	else
 		DEFAULT_CHAT_FRAME:AddMessage(msg)
 	end
@@ -625,6 +624,28 @@ end
 function SSPVP:Print(msg)
 	DEFAULT_CHAT_FRAME:AddMessage("|cFF33FF99SSPVP|r: " .. msg)
 end
+
+-- Sends it to the correct chat frames
+function SSPVP:ChatMessage(msg, faction)
+	local event, color
+	if( faction == "Alliance" ) then
+		event = "CHAT_MSG_BG_SYSTEM_ALLIANCE"
+		color = ChatTypeInfo["BG_SYSTEM_ALLIANCE"]
+	elseif( faction == "Horde" ) then
+		event = "CHAT_MSG_BG_SYSTEM_HORDE"
+		color = ChatTypeInfo["BG_SYSTEM_HORDE"]
+	else
+		return
+	end
+	
+	for i=1, 7 do
+		local frame = getglobal("ChatFrame" .. i)
+		if( frame and frame:IsEventRegistered(event) ) then
+			frame:AddMessage(msg, color.r, color.g, color.b)
+		end
+	end
+end
+
 
 function SSPVP:ChannelMessage(msg)
 	if( GetNumRaidMembers() == 0 and GetNumPartyMembers() == 0 ) then

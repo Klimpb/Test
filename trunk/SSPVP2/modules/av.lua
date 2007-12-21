@@ -54,7 +54,7 @@ end
 function AV:Reload()
 	if( self.isActive ) then
 		self:UnregisterAllEvents()
-		self:RegisterEvent()
+		self:EnableModule()
 	end
 end
 
@@ -66,10 +66,16 @@ function AV:Message(alert)
 	end
 	
 
-	SSPVP:Echo(string.format(L["%s will be captured by the %s in %s"], alert.name, L[alert.faction], SecondsToTime(alert.seconds)), SSPVP:GetFactionColor(alert.faction))
+	SSPVP:ChatMessage(string.format(L["%s will be captured by the %s in %s"], alert.name, L[alert.faction], SecondsToTime(alert.seconds)), alert.faction)
 end
 
 function AV:PrintTimer(node, captureTime, faction)
+	if( not node or not captureTime or not faction ) then
+		return
+
+	end
+	
+
 	SSPVP:ChannelMessage(string.format(L["[%s] %s: %s"], faction, node, SecondsToTime(captureTime - GetTime())))
 end
 
@@ -105,7 +111,7 @@ function AV:UPDATE_WORLD_STATES()
 	if( allianceReinf > 0 ) then
 		local diff = allianceReinf - reinf
 		if( diff == 100 ) then
-			SSPVP:Echo(L["The Horde has slain Captain Balinda Stonehearth."], SSPVP:GetFactionColor("Horde"))
+			SSPVP:ChatMessage(L["The Horde has slain Captain Balinda Stonehearth."], SSPVP:GetFactionColor("Horde"))
 			
 			if( self.db.profile.combat ) then
 				SSPVP:CombatText(string.format(L["-%d Reinforcements"], 100), SSPVP:GetFactionColor("Alliance"))
@@ -129,7 +135,7 @@ function AV:UPDATE_WORLD_STATES()
 	if( hordeReinf > 0 ) then
 		local diff = hordeReinf - reinf
 		if( diff == 100 ) then
-			SSPVP:Echo(L["The Alliance has slain Captain Galvangar."], SSPVP:GetFactionColor("Alliance"))
+			SSPVP:ChatMessage(L["The Alliance has slain Captain Galvangar."], SSPVP:GetFactionColor("Alliance"))
 
 			if( self.db.profile.combat ) then
 				SSPVP:CombatText(string.format(L["-%d Reinforcements"], 100), SSPVP:GetFactionColor("Horde"))
@@ -255,21 +261,21 @@ function ChatFrame_OnEvent(event, ...)
 	if( event == "CHAT_MSG_MONSTER_YELL" ) then
 		if( arg2 == L["Herald"] ) then
 			if( string.match(arg1, L["Alliance"]) ) then
-				SSPVP:Echo(arg1, SSPVP:GetFactionColor("Alliance"))
+				SSPVP:ChatMessage(arg1, "Alliance")
 				return
 				
 			elseif( string.match(arg1, L["Horde"]) ) then
-				SSPVP:Echo(arg1, SSPVP:GetFactionColor("Horde"))
+				SSPVP:ChatMessage(arg1, "Horde")
 				return
 			end
 			
 		elseif( arg2 == L["Vanndar Stormpike"] ) then
 			if( string.match(arg1, L["Soldiers of Stormpike, your General is under attack"]) ) then
-				SSPVP:Echo(L["The Horde has engaged Vanndar Stormpike."], SSPVP:GetFactionColor("Horde") )
+				SSPVP:ChatMessage(L["The Horde has engaged Vanndar Stormpike."], "Horde")
 				return
 			
 			elseif( string.match(arg1, L["Why don't ya try again"]) ) then
-				SSPVP:Echo(L["The Horde has reset Vanndar Stormpike."], SSPVP:GetFactionColor("Horde") )
+				SSPVP:ChatMessage(L["The Horde has reset Vanndar Stormpike."], "Horde")
 				return
 
 			elseif( string.match(arg1, L["You'll never get me out of me"]) ) then
@@ -278,11 +284,11 @@ function ChatFrame_OnEvent(event, ...)
 		
 		elseif( arg2 == L["Drek'Thar"] ) then
 			if( string.match(arg1, L["Stormpike filth!"]) ) then
-				SSPVP:Echo(L["The Alliance has engaged Drek'Thar."], SSPVP:GetFactionColor("Alliance"))
+				SSPVP:ChatMessage(L["The Alliance has engaged Drek'Thar."], "Alliance")
 				return
 				
 			elseif( string.match(arg1, L["You seek to draw the General of the Frostwolf"]) ) then
-				SSPVP:Echo(L["The Alliance has reset Drek'Thar."], SSPVP:GetFactionColor("Alliance"))
+				SSPVP:ChatMessage(L["The Alliance has reset Drek'Thar."], "Alliance")
 				return
 
 			elseif( string.match(arg1, L["Stormpike weaklings"]) ) then
@@ -291,21 +297,21 @@ function ChatFrame_OnEvent(event, ...)
 			
 		elseif( arg2 == L["Captain Balinda Stonehearth"] ) then
 			if( string.match(arg1, L["Begone, uncouth scum!"]) ) then
-				SSPVP:Echo(L["The Horde has engaged Captain Balinda Stonehearth."], SSPVP:GetFactionColor("Horde"))
+				SSPVP:ChatMessage(L["The Horde has engaged Captain Balinda Stonehearth."], "Horde")
 				return
 			
 			elseif( string.match(arg1, L["Filthy Frostwolf cowards"]) ) then
-				SSPVP:Echo(L["The Horde has reset Captain Balinda Stonehearth."], SSPVP:GetFactionColor("Horde"))
+				SSPVP:ChatMessage(L["The Horde has reset Captain Balinda Stonehearth."], "Horde")
 				return
 			end
 		
 		elseif( arg2 == L["Captain Galvangar"] ) then
 			if( string.match(arg1, L["Your kind has no place in Alterac Valley"]) ) then
-				SSPVP:Echo(L["The Alliance has engaged Captain Galvangar."], SSPVP:GetFactionColor("Alliance"))
+				SSPVP:ChatMessage(L["The Alliance has engaged Captain Galvangar."], "Alliance")
 				return
 				
 			elseif( string.match(arg1, L["I'll never fall for that, fool!"]) ) then
-				SSPVP:Echo(L["The Alliance has reset Captain Galvangar."], SSPVP:GetFactionColor("Alliance"))
+				SSPVP:ChatMessage(L["The Alliance has reset Captain Galvangar."], "Alliance")
 				return
 			end
 		end

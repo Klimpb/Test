@@ -3,8 +3,8 @@ local AVSync = SSPVP:NewModule("AVSync", "AceEvent-3.0", "AceTimer-3.0", "AceCon
 local L = SSPVPLocals
 
 local avStatus
-local playerTotals = {}
-local windowStatus = {}
+local playerStatus = {}
+local totalRecords = 0
 local skipStinky
 
 function AVSync:OnInitialize()
@@ -27,31 +27,37 @@ function AVSync:OnInitialize()
 		end
 		
 		-- Starts sync count down
-		if( string.match(input, "sync ([0-9]+)") ) then
+		if( input == "sync" or string.match(input, "sync ([0-9]+)") ) then
 			if( not self:CheckPermissions() ) then
 				return
 			end
 			
-			local seconds = string.match(input, "sync ([0-9]+)")
-			seconds = tonumber(seconds)
-			if( not seconds or seconds >= 60 ) then
-				SSPVP:Print(L["Invalid number entered for sync queue."])
-				return
+			local seconds = 0
+			if( input ~= "sync" ) then
+				seconds = string.match(input, "sync ([0-9]+)")
+				seconds = tonumber(seconds)
+				if( not seconds or seconds >= 60 ) then
+					SSPVP:Print(L["Invalid number entered for sync queue."])
+					return
+				end
 			end
 			
 			-- Make sure we aren't queuing instantly
 			if( seconds > 0 ) then
-				self:Message(seconds)
+				-- Show queue count down every 5 seconds, or every second if count down is <= 5 seconds
 				for i=seconds - 1, 1, -1 do
-					self:ScheduleTimer("Message", seconds - i, i)
+					if( ( i > 5 and mod(i, 5) == 0 ) or i <= 5 ) then
+						self:ScheduleTimer("Message", seconds - i, i)
+					end
 				end
 			end
 			
 			self:ScheduleTimer("SendQueue", seconds)
 
-			SSOverlay:RemoveCategory("avsync")
-			playerTotals = {}
-
+			playerStatus = {}
+			if( self.frame and self.frame:IsVisible() ) then
+				self:UpdateGUI()
+			end
 			
 		-- Cancels a count down
 		elseif( input == "cancel" ) then
@@ -61,9 +67,6 @@ function AVSync:OnInitialize()
 		-- Drops all confirmed and queued AVs
 		elseif( input == "drop" ) then
 			if( self:CheckPermissions() ) then
-				SSOverlay:RemoveCategory("avsync")
-				playerTotals = {}
-
 				self:SendMessage(L["Dropping Alterac Valley queues."])
 				self:SendAddonMessage("DROP")
 				
@@ -74,8 +77,6 @@ function AVSync:OnInitialize()
 		-- Forces a status update
 		elseif( input == "update" ) then
 			if( self:CheckPermissions() and avStatus ~= "active" ) then
-				playerTotals = {}
-				
 				self:UpdateOverlay()
 				self:SendAddonMessage("UPDATE")
 			end
@@ -95,8 +96,8 @@ function AVSync:OnInitialize()
 		
 		-- Ready check
 		elseif( input == "ready" ) then
-			for k in pairs(windowStatus) do
-				windowStatus[k] = nil
+			for _, v in pairs(playerStatus) do
+				v.windowStatus = nil
 			end
 			
 			self:SendMessage(L["Battlemaster ready check started, you have 10 seconds to get the window open."])
@@ -106,7 +107,11 @@ function AVSync:OnInitialize()
 			self:CancelTimer("CheckResults")
 			self:ScheduleTimer("SendAddonMessage", 10, "WINDOW")
 			self:ScheduleTimer("CheckResults", 15, "WINDOW")
-			
+		
+		-- Show status UI of everyone
+		elseif( input == "status" ) then
+			self:CreateGUI()
+			self.frame:Show()
 		else
 			DEFAULT_CHAT_FRAME:AddMessage(L["SSPVP Alterac Valley slash commands"])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - sync <seconds> - Starts a count down for an Alterac Valley sync queue."])
@@ -114,6 +119,7 @@ function AVSync:OnInitialize()
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - drop - Drops all Alterac Valley queues."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - ready - Does a check to see who has the battlemaster window open and is ready to queue."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - update - Forces a status update on everyones Alterac Valley queues."])
+			DEFAULT_CHAT_FRAME:AddMessage(L[" - status - Shows the status list of everyone regarding queue or window."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - join <instanceID> - Forces everyone with the specified instance id to join Alterac Valley."])
 		end
 	end)
@@ -123,13 +129,17 @@ function AVSync:OnEnable()
 	if( self.db.profile.enabled ) then
 		self:RegisterEvent("CHAT_MSG_ADDON")
 		self:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
-	else
-		self.db.profile.forceQueue = nil
+		self:RegisterEvent("RAID_ROSTER_UPDATE")
 	end
 end
 
 function AVSync:OnDisable()
-	self:RemoveCategory("avsync")
+	if( self.frame ) then
+		self.frame:Hide()
+
+	end
+	
+
 	self:UnregisterAllEvents()
 	self:CancelAllTimers()
 end
@@ -145,10 +155,10 @@ function AVSync:CheckResults()
 	local totalNotReady = {}
 	
 	-- 0 = Not ready, 1 = Ready, 2 = Already AV queued
-	for author, status in pairs(windowStatus) do
-		if( status == 0 ) then
+	for name, data in pairs(playerStatus) do
+		if( data.windowStatus == 0 ) then
 			table.insert(totalNotReady, author)
-		elseif( status == 2 ) then
+		elseif( data.windowStatus == 2 ) then
 			table.insert(totalAlready, author)
 		end
 	end
@@ -173,8 +183,6 @@ function AVSync:CheckPermissions()
 	if( GetNumRaidMembers() == 0 and GetNumPartyMembers() == 0 ) then
 		SSPVP:Print(L["You must be in a raid or party to do this."])
 		return nil
-	
-
 	elseif( not IsPartyLeader() and not IsRaidLeader() and not IsRaidOfficer() ) then
 		SSPVP:Print(L["You must be group leader, or assist to do this."])
 		return nil
@@ -187,9 +195,8 @@ end
 function AVSync:CheckUserPermissions(verifyName)
 	if( UnitName("player") == verifyName ) then
 		return true
-
 	end
-	
+
 	-- Scan party
 	for i=1, GetNumPartyMembers() do
 		local unit = "party" .. i
@@ -229,14 +236,11 @@ end
 
 -- Managing queue
 function AVSync:Queue(author)
-	self.db.profile.forceQueue = true
-	
 	SSPVP:Print(string.format(L["You have been queued for Alterac Valley by %s."], author))
 	JoinBattlefield(0)
 end
 
 function AVSync:DropQueue(author)
-	self.db.profile.forceQueue = nil
 	avStatus = nil
 
 	for i=1, MAX_BATTLEFIELD_QUEUES do
@@ -253,109 +257,79 @@ end
 
 -- Update overlay
 -- This will need more optimization later, but painkillers don't contribute to constructive thinking
-local statusTotals, instanceTotals = {}, {}
 function AVSync:UpdateStatus(type, instanceID, author)
 	-- Not force queued, so don't try and monitor it
-	if( not self.db.profile.forceQueue or avStatus == "active" ) then
-		SSOverlay:RemoveCategory("avsync")
-
+	if( avStatus == "active" ) then
 		return
 	end
 	
-
 	-- Store our instance # and status
-	if( not playerTotals[author] ) then
-		playerTotals[author] = {}
-
+	if( not playerStatus[author] ) then
+		playerStatus[author] = {}
+		totalRecords = totalRecords + 1
 	end
-	
 
-	playerTotals[author].id = tonumber(instanceID) or 0
-	playerTotals[author].status = type
+	playerStatus[author].id = tonumber(instanceID) or 0
+	playerStatus[author].status = type
 	
-	self:UpdateOverlay()
+	if( self.frame and self.frame:IsVisible() ) then
+		self:UpdateGUI()
+	end
 end
 
-function AVSync:UpdateOverlay()
-	-- Now figure out what to display
-	for k in pairs(statusTotals) do
-		statusTotals[k] = nil
+-- Maintain a list of everyone
+function AVSync:UpdateMemberStatus(unit)
+	local name, server = UnitName(unit)
+	-- Don't care about people when we're in a battlefield
+	if( server ~= "" or server ) then
+		return
 	end
 	
-	for id, v in pairs(instanceTotals) do
-		SSOverlay:RemoveRow(id)
-		v.total = 0
-		v.type = nil
+	if( not playerStatus[name] ) then
+		playerStatus[name] = {}
+		totalRecords = totalRecords + 1
 	end
 	
-	local totalPlayers = 0
-	for _, row in pairs(playerTotals) do
-		totalPlayers = totalPlayers + 1
-		statusTotals[row.status] = (statusTotals[row.status] or 0) + 1
-		
-		if( row.id > 0 ) then
-			local id = row.id .. row.status
-			if( not instanceTotals[id] ) then
-				instanceTotals[id] = {}
-			end
-			
-			instanceTotals[id].total = (instanceTotals[id].total or 0) + 1
-			instanceTotals[id].instance = row.id
-			instanceTotals[id].type = row.status
-		end
+	playerStatus[name].class = select(2, UnitClass(unit))
+end
+
+function AVSync:RAID_ROSTER_UPDATE()
+	self:UpdateMemberStatus("player")
+	
+
+	for i=1, GetNumPartyMembers() do
+		self:UpdateMemberStatus("party" .. i)
 	end
 	
-	-- Show the exact confirm/active if we have more then 1 with it, or we have less then 5 people
-	local totalMisc = 0
-	for id, row in pairs(instanceTotals) do
-		if( row.total > 1 or totalPlayers <= 5 ) then
-			if( row.type == "confirm" ) then
-				SSOverlay:RegisterText("confirm" .. id, "avsync", string.format(L["Confirm #%d: %d"], row.instance, row.total))
-			elseif( row.type == "active" ) then
-				SSOverlay:RegisterText("active" .. id, "avsync", string.format(L["Active #%d: %d"], row.instance, row.total))
-			end
-			
-		elseif( row.type == "confirm" ) then
-			totalMisc = totalMisc + 1
-		end
+	for i=1, GetNumRaidMembers() do
+		self:UpdateMemberStatus("raid" .. i)
 	end
 	
-	if( totalMisc > 0 ) then
-		SSOverlay:RegisterText("totalmisc", "avsync", string.format(L["Confirm Misc: %d"], totalMisc))
-	else
-		SSOverlay:RemoveRow("totalmisc")
+	-- We left group
+	if( GetNumPartyMembers() == 0 and GetNumRaidMembers() == 0 ) then
+		playerStatus = {}
+		totalRecords = 0
 	end
 	
-	-- Now show stats
-	if( statusTotals.queued ) then
-		SSOverlay:RegisterText("totalqueued", "avsync", string.format(L["Queued: %d"], statusTotals.queued))
-	else
-		SSOverlay:RemoveRow("totalqueued")
+	if( self.frame and self.frame:IsVisible() ) then
+		self:UpdateGUI()
 	end
 end
 
 -- for updating our current status in AV queue
 function AVSync:UPDATE_BATTLEFIELD_STATUS()
-	if( not self.db.profile.forceQueue ) then
+	if( GetNumPartyMembers() == 0 and GetNumRaidMembers() == 0 ) then
 		return
+
 	end
 	
+
 	for i=1, MAX_BATTLEFIELD_QUEUES do
 		local status, map, instanceID = GetBattlefieldStatus(i)
 		if( map == L["Alterac Valley"] and status ~= avStatus ) then
 			self:SendAddonMessage("STATUPDATE:" .. status .. "," .. instanceID)
 			avStatus = status
-			
-			-- No longer force queued if it's none
-			if( status == "none" ) then
-				self.db.profile.forceQueue = nil
-			end
 		end
-	end
-	
-	-- We couldn't find an AV queue, but we're still listed as force queue
-	if( self.db.profile.forceQueue and not avStatus ) then
-		self.db.profile.forceQueue = nil
 	end
 end
 
@@ -385,6 +359,19 @@ function AVSync:CHAT_MSG_ADDON(event, prefix, msg, type, author)
 		elseif( dataType == "PING" and self:CheckUserPermissions(author) ) then
 			self:SendAddonMessage("PONG:" .. SSPVP.revision)
 		
+		-- Store version
+		elseif( dataType == "PONG" ) then
+			if( not playerStatus[author] ) then
+				playerStatus[author] = {}
+				totalRecords = totalRecords + 1
+			end
+			
+			playerStatus[author].version = data
+			
+			if( self.frame and self.frame:IsVisible() ) then
+				self:UpdateGUI()
+			end
+		
 		-- Are we ready to queue (Can auto queue)
 		elseif( dataType == "WINDOW" ) then
 			-- Make sure we aren't queued already
@@ -396,7 +383,7 @@ function AVSync:CHAT_MSG_ADDON(event, prefix, msg, type, author)
 				end
 			end
 			
-			-- Check if window is open!
+			-- Check if window is open
 			if( BattlefieldFrame:IsVisible() and (GetBattlefieldInfo()) == L["Alterac Valley"] ) then
 				self:SendAddonMessage("READY")
 			else
@@ -426,15 +413,42 @@ function AVSync:CHAT_MSG_ADDON(event, prefix, msg, type, author)
 			
 		-- Already queued for AV
 		elseif( dataType == "ALRDQUEUED" ) then
-			windowStatus[author] = 2
+			if( not playerStatus[author] ) then
+				playerStatus[author] = {}
+				totalRecords = totalRecords + 1
+			end
 
+			playerStatus[author].windowStatus = 2
+
+			if( self.frame and self.frame:IsVisible() ) then
+				self:UpdateGUI()
+			end
+			
 		-- Window open
 		elseif( dataType == "READY" ) then
-			windowStatus[author] = 1
+			if( not playerStatus[author] ) then
+				playerStatus[author] = {}
+				totalRecords = totalRecords + 1
+			end
+
+			playerStatus[author].windowStatus = 1
+
+			if( self.frame and self.frame:IsVisible() ) then
+				self:UpdateGUI()
+			end
 		
 		-- Window not open
 		elseif( dataType == "NOTREADY" ) then
-			windowStatus[author] = 0
+			if( not playerStatus[author] ) then
+				playerStatus[author] = {}
+				totalRecords = totalRecords + 1
+			end
+
+			playerStatus[author].windowStatus = 0
+
+			if( self.frame and self.frame:IsVisible() ) then
+				self:UpdateGUI()
+			end
 
 		-- Queue updates
 		elseif( dataType == "STATUPDATE" and self.db.profile.monitor ) then
@@ -459,11 +473,383 @@ function AVSync:CHAT_MSG_ADDON(event, prefix, msg, type, author)
 	end
 end
 
+-- GUI
+local function sortColumns(self)
+	if( self.type ) then
+		if( self.type ~= AVSync.frame.sortType ) then
+			AVSync.frame.sortOrder = false
+			AVSync.frame.sortType = self.type
+		else
+			AVSync.frame.sortOrder = not AVSync.frame.sortOrder
+		end
+
+		AVSync:UpdateGUI()
+	end
+end
+
+function AVSync:CreateGUI()
+	if( self.frame ) then
+		return
+	end
+	
+	-- Container frame
+	self.frame = CreateFrame("Frame", "SSAVSyncFrame", UIParent)
+	self.frame:SetWidth(600)
+	self.frame:SetHeight(325)
+	self.frame:SetMovable(true)
+	self.frame:EnableMouse(true)
+	self.frame:SetClampedToScreen(true)
+	self.frame:Hide()
+	
+	self.frame:SetBackdrop({
+		bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+		edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+		tile = true,
+		tileSize = 32,
+		edgeSize = 32,
+		insets = {left = 10, right = 10, top = 10, bottom = 10},
+	})
+	
+	self.timeLeft = 0
+	self.frame:SetScript("OnShow", function(self)
+		-- Immeditially do a window status check
+		self.windowLeft = 0
+		self.pingLeft = 0
+	
+
+		AVSync:RAID_ROSTER_UPDATE()
+		AVSync:UpdateGUI()
+
+	end)
+	
+	-- New window status every 10 seconds, new ping every 60 seconds
+	self.frame:SetScript("OnUpdate", function(self, timeElapsed)
+		self.windowLeft = self.windowLeft - timeElapsed
+		self.pingLeft = self.pingLeft - timeElapsed
+		
+		if( self.windowLeft <= 0 ) then
+			self.windowLeft = 10
+			AVSync:SendAddonMessage("WINDOW")
+		end
+		
+		if( self.pingLeft <= 0 ) then
+			self.pingLeft = 60
+			AVSync:SendAddonMessage("PING")
+		end
+	end)
+	
+	-- Location
+	AVSync.frame:SetPoint("CENTER")
+	SSPVP.modules.Move:RestorePosition("avsync", self.frame)
+	
+	-- Create the title/movy thing
+	local texture = self.frame:CreateTexture(nil, "ARTWORK")
+	texture:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
+	texture:SetPoint("TOP", 0, 12)
+	texture:SetWidth(200)
+	texture:SetHeight(60)
+	
+	local title = CreateFrame("Button", nil, self.frame)
+	title:SetPoint("TOP", 0, 4)
+	title:SetText(L["Queue Status"])
+	title:SetPushedTextOffset(0, 0)
+
+	title:SetTextFontObject(GameFontNormal)
+	title:SetHeight(20)
+	title:SetWidth(200)
+	title:RegisterForDrag("LeftButton")
+	title:SetScript("OnDragStart", function(self)
+		self.isMoving = true
+		AVSync.frame:StartMoving()
+	end)
+	
+	title:SetScript("OnDragStop", function(self)
+		if( self.isMoving ) then
+			AVSync.frame:StopMovingOrSizing()
+			SSPVP.modules.Move:SavePosition("avsync", AVSync.frame)
+		end
+	end)
+	
+	-- Close button
+	local button = CreateFrame("Button", nil, self.frame, "UIPanelCloseButton")
+	button:SetPoint("TOPRIGHT", -4, -4)
+	button:SetScript("OnClick", function()
+		HideUIPanel(AVSync.frame)
+	end)
+	
+	-- Create our headers
+	local nameHeader = CreateFrame("Button", nil, self.frame)
+	nameHeader:SetPoint("TOPLEFT", 15, -20)
+	nameHeader:SetScript("OnClick", sortColumns)
+	nameHeader:SetTextFontObject(GameFontNormal)
+	nameHeader:SetText(L["Name"])
+	nameHeader:SetHeight(20)
+	nameHeader:SetWidth(nameHeader:GetFontString():GetStringWidth() + 2)
+	nameHeader.type = "name"
+
+	local queueHeader = CreateFrame("Button", nil, self.frame)
+	queueHeader:SetPoint("TOPLEFT", 150, -20)
+	queueHeader:SetScript("OnClick", sortColumns)
+	queueHeader:SetTextFontObject(GameFontNormal)
+	queueHeader:SetText(L["Queue"])
+	queueHeader:SetHeight(20)
+	queueHeader:SetWidth(queueHeader:GetFontString():GetStringWidth() + 2)
+	queueHeader.type = "queue"
+
+	local statusHeader = CreateFrame("Button", nil, self.frame)
+	statusHeader:SetPoint("TOPLEFT", 275, -20)
+	statusHeader:SetScript("OnClick", sortColumns)
+	statusHeader:SetTextFontObject(GameFontNormal)
+	statusHeader:SetText(L["Status"])
+	statusHeader:SetHeight(22)
+	statusHeader:SetWidth(statusHeader:GetFontString():GetStringWidth() + 2)
+	statusHeader.type = "status"
+
+	local versionHeader = CreateFrame("Button", nil, self.frame)
+	versionHeader:SetPoint("TOPLEFT", 375, -20)
+	versionHeader:SetScript("OnClick", sortColumns)
+	versionHeader:SetTextFontObject(GameFontNormal)
+	versionHeader:SetText(L["Version"])
+	versionHeader:SetHeight(22)
+	versionHeader:SetWidth(versionHeader:GetFontString():GetStringWidth() + 2)
+	versionHeader.type = "version"
+	
+	-- Our GUI rows
+	self.rows = {}
+	
+	for i=1, 15 do
+		local name = self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+		local queue = self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+		local status = self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+		local version = self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+		
+		if( i > 1 ) then
+			name:SetPoint("TOPLEFT", self.rows[i - 1], "TOPLEFT", 0, -18)
+			queue:SetPoint("TOPLEFT", self.rows[i - 1].queue, "TOPLEFT", 0, -18)
+			status:SetPoint("TOPLEFT", self.rows[i - 1].status, "TOPLEFT", 0, -18)
+			version:SetPoint("TOPLEFT", self.rows[i - 1].version, "TOPLEFT", 0, -18)
+		else
+			name:SetPoint("TOPLEFT", nameHeader, "TOPLEFT", 1, -25)
+			queue:SetPoint("TOPLEFT", queueHeader, "TOPLEFT", 2, -25)
+			status:SetPoint("TOPLEFT", statusHeader, "TOPLEFT", 2, -25)
+			version:SetPoint("TOPLEFT", versionHeader, "TOPLEFT", 2, -25)
+		end
+		
+		name:Hide()
+		queue:Hide()
+		status:Hide()
+		version:Hide()
+
+		self.rows[i] = name
+		self.rows[i].queue = queue
+		self.rows[i].status = status
+		self.rows[i].version = version
+	end
+
+	-- Scroll frame
+	self.frame.scroll = CreateFrame("ScrollFrame", "SSAVSyncScrollFrame", self.frame, "FauxScrollFrameTemplate")
+	self.frame.scroll:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 25, -30)
+	self.frame.scroll:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -35, 10)
+	self.frame.scroll:SetScript("OnVerticalScroll", function() FauxScrollFrame_OnVerticalScroll(22, self.UpdateGUI) end)
+		
+	-- Make it act like a real frame
+	self.frame:SetAttribute("UIPanelLayout-defined", true)
+	self.frame:SetAttribute("UIPanelLayout-enabled", true)
+ 	self.frame:SetAttribute("UIPanelLayout-area", "doublewide")
+	self.frame:SetAttribute("UIPanelLayout-whileDead", true)
+	table.insert(UISpecialFrames, "SSAVSyncFrame")
+	
+	-- Now make the two container backdrops for style
+	self.rowFrame = CreateFrame("Frame", nil, self.frame)
+	self.rowFrame:SetFrameStrata("LOW")
+	self.rowFrame:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 10, -20)
+	self.rowFrame:SetHeight(295)
+	self.rowFrame:SetWidth(420)
+	
+	self.rowFrame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+				edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+				tile = true,
+				tileSize = 9,
+				edgeSize = 9,
+				insets = { left = 2, right = 2, top = 2, bottom = 2 }})	
+	self.rowFrame:SetBackdropColor(0, 0, 0, 1)
+	self.rowFrame:SetBackdropBorderColor(1, 1, 1, 1)
+
+	-- Stat frame
+	self.statFrame = CreateFrame("Frame", nil, self.frame)
+	self.statFrame:SetFrameStrata("LOW")
+	self.statFrame:SetPoint("TOPRIGHT", self.frame, "TOPRIGHT", -35, -20)
+	self.statFrame:SetHeight(295)
+	self.statFrame:SetWidth(130)
+	
+	self.statFrame:SetBackdrop({bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+				edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+				tile = true,
+				tileSize = 9,
+				edgeSize = 9,
+				insets = { left = 2, right = 2, top = 2, bottom = 2 }})	
+	self.statFrame:SetBackdropColor(0, 0, 0, 1.0)
+	self.statFrame:SetBackdropBorderColor(1, 1, 1, 1)
+
+	-- Add our stat infos
+	-- TOTAL PLAYERS
+	self.totalPlayersText = self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	self.totalPlayersText:SetPoint("TOPLEFT", self.statFrame, "TOPLEFT", 8, -5)
+	self.totalPlayersText:SetText(L["Total Players"])
+
+	self.totalPlayers = self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	self.totalPlayers:SetPoint("TOPRIGHT", self.statFrame, "TOPRIGHT", -8, -5)
+
+	-- TOTAL READY
+	self.totalReadyText = self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	self.totalReadyText:SetPoint("TOPLEFT", self.statFrame, "TOPLEFT", 8, -25)
+	self.totalReadyText:SetText(L["Ready"])
+
+	self.totalReady = self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	self.totalReady:SetPoint("TOPRIGHT", self.statFrame, "TOPRIGHT", -8, -25)
+
+	-- TOTAL NOT READY
+	self.totalNotreadyText = self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	self.totalNotreadyText:SetPoint("TOPLEFT", self.statFrame, "TOPLEFT", 8, -45)
+	self.totalNotreadyText:SetText(L["Not Ready"])
+	
+	self.totalNotready = self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	self.totalNotready:SetPoint("TOPRIGHT", self.statFrame, "TOPRIGHT", -8, -45)
+
+	-- TOTAL UNKNOWN
+	self.totalUnknownText = self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	self.totalUnknownText:SetPoint("TOPLEFT", self.statFrame, "TOPLEFT", 8, -65)
+	self.totalUnknownText:SetText(L["Unknown"])
+
+	self.totalUnknown = self.frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+	self.totalUnknown:SetPoint("TOPRIGHT", self.statFrame, "TOPRIGHT", -8, -65)
+end
+
+function AVSync:UpdateGUI()
+	local self = AVSync
+	self:CreateGUI()	
+	
+	FauxScrollFrame_Update(self.frame.scroll, totalRecords, 15, 22)
+		
+	local i = 0
+	local usedRows = 0
+	local totalReady = 0
+	local totalNotready = 0
+	local totalUnknown = 0
+	
+	for name, data in pairs(playerStatus) do
+		i = i + 1
+		-- Start displaying once we've passed the offset
+		if( i >= FauxScrollFrame_GetOffset(self.frame.scroll) and usedRows < 15 ) then
+			usedRows = usedRows + 1
+			local row = self.rows[usedRows]
+			
+			-- Set name/color by class
+			row:SetText(name)
+			if( data.class and RAID_CLASS_COLORS[data.class] ) then
+				row:SetVertexColor(RAID_CLASS_COLORS[data.class].r, RAID_CLASS_COLORS[data.class].g, RAID_CLASS_COLORS[data.class].b)
+			else
+				row:SetVertexColor(0.50, 0.50, 0.50)
+			end
+			
+			-- Show queue status
+			if( data.id and data.status ) then
+				-- Queued for AV
+				if( data.status == "queued" ) then
+					if( data.id == 0 ) then
+						row.queue:SetText(L["Queued Any"])
+					else
+						row.queue:SetFormattedText(L["Queued #%d"], data.id)
+					end
+					
+					row.queue:SetVertexColor(0, 1, 0)
+				
+				-- Ready to join
+				elseif( data.status == "confirm" ) then
+					row.queue:SetFormattedText(L["Confirm #%d"], data.id)
+					row.queue:SetVertexColor(0, 1, 0)
+				
+				-- Inside
+				elseif( data.status == "active" ) then
+					row.queue:SetFormattedText(L["Inside #%d"], data.id)
+					row.queue:SetVertexColor(1, 1, 1)
+				
+				-- Not queued, something is broken
+				else
+					row.queue:SetText(L["Not queued"])
+					row.queue:SetVertexColor(1, 1, 1)
+				end
+			
+			-- No data found, or bad data sent
+			else
+				row.queue:SetText(L["Unknown"])
+				row.queue:SetVertexColor(1, 0, 0)
+			end
+			
+			-- Actual status
+			if( not UnitIsConnected(name) ) then
+				row.status:SetText(L["Offline"])
+				row.status:SetVertexColor(0.50, 0.50, 0.50)
+			elseif( UnitIsAFK(name) ) then
+				row.status:SetText(L["AFK"])
+				row.status:SetVertexColor(1, 0, 0)
+			elseif( data.windowStatus == 0 ) then
+				row.status:SetText(L["Not ready"])
+				row.status:SetVertexColor(1, 0, 0)
+			elseif( data.windowStatus == 1 ) then
+				row.status:SetText(L["Ready"])
+				row.status:SetVertexColor(0, 1, 0)
+			else
+				row.status:SetText(L["Online"])
+				row.status:SetVertexColor(0, 1, 0)
+			end
+			
+			-- Version
+			if( data.version ) then
+				row.version:SetText(data.version)
+				row.version:SetVertexColor(0, 1, 0)
+			else
+				row.version:SetText("----")
+				row.version:SetVertexColor(0.50, 0.50, 0.50)
+			end
+			
+			
+			row:Show()
+			row.queue:Show()
+			row.status:Show()
+			row.version:Show()
+		end
+		
+		-- Update stats
+		if( data.windowStatus == 1 ) then
+			totalReady = totalReady + 1
+		elseif( data.windowStatus == 0 ) then
+			totalNotready = totalNotready + 1
+		else
+			totalUnknown = totalUnknown + 1
+		end
+	end
+
+	-- Set stats
+	self.totalPlayers:SetText(totalRecords)
+	self.totalReady:SetText(totalReady)
+	self.totalNotready:SetText(totalNotready)
+	self.totalUnknown:SetText(totalUnknown)
+	
+	-- Hide unused rows
+	for i=usedRows + 1, 15 do
+		self.rows[i]:Hide()
+		self.rows[i].queue:Hide()
+		self.rows[i].status:Hide()
+		self.rows[i].version:Hide()
+	end
+end
+
 -- Make our lifes easier
 function AVSync:SendMessage(msg)
 	local type = "PARTY"
 	if( GetNumRaidMembers() > 0 ) then
-	--	type = "RAID"
+		type = "RAID"
 	end
 	
 	SendChatMessage(msg, type)

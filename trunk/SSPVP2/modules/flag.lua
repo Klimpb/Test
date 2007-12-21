@@ -51,7 +51,7 @@ function Flag:EnableModule(abbrev)
 		self:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
 	end
 	
-	self:ScheduleRepeatingTimer("ScanParty", 1)
+	self:ScheduleRepeatingTimer("ScanParty", 0.50)
 	self.activeBF = abbrev
 end
 
@@ -61,12 +61,13 @@ function Flag:DisableModule()
 	
 	SSOverlay:RemoveCategory("timer")
 	
-	for k, v in pairs(carriers["alliance"]) do
-		v = nil
+	for k in pairs(carriers["alliance"]) do
+		carriers["alliance"][k] = nil
+
 	end
 	
 	for k, v in pairs(carriers["horde"]) do
-		v = nil
+		carriers["horde"][k] = nil
 	end
 	
 	self:Hide("horde")
@@ -199,7 +200,7 @@ function Flag:ResetHealth(type)
 		return
 	end
 
-	if( carriers[type].health) then
+	if( carriers[type] and carriers[type].health) then
 		carriers[type].health = nil
 		self:UpdateCarrier(type)
 	end
@@ -208,6 +209,12 @@ end
 -- We split these into two different functions, so we can do color/text/health updates
 -- while in combat, but update targeting when out of it
 function Flag:UpdateCarrierAttributes(faction)
+	if( not carriers[faction] ) then
+		return
+
+	end
+	
+
 	-- Carrier changed but we can't update it yet
 	local carrier = carriers[faction].name
 	if( self[faction].carrier ~= carrier ) then
@@ -259,6 +266,10 @@ end
 function Flag:UpdateCarrier(faction, skipAttrib)
 	if( not skipAttrib ) then
 		self:UpdateCarrierAttributes(faction)
+	end
+	
+	if( not carriers[faction] ) then
+		return
 	end
 	
 	-- No carrier, hide it, this is bad
