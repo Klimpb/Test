@@ -70,6 +70,7 @@ function SSPVP:OnInitialize()
 		
 	self.OptionHouse = LibStub("OptionHouse-1.1")
 	self.revision = tonumber(string.match("$Revision$", "(%d+)")) or 0
+	self.revision = max(self.revision, SSPVPRevision)
 	
 	-- SSPVP slash commands
 	self:RegisterChatCommand("sspvp", function(input)
