@@ -358,7 +358,7 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 	getglobal(name .. "Loss"):SetText(weekPlayed - weekWins)		
 	
 	local played = getglobal(name .. "Played")
-	local percent = weekPlayed / playerPlayed
+	local percent = playerPlayed / weekPlayed
 	if( weekPlayed == 0 or playerPlayed == 0 ) then
 		percent = 0
 	end
@@ -372,7 +372,6 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 	played:SetVertexColor(1.0, 1.0, 1.0)
 	
 	-- SEASON
-
 	parentFrame.seasonWin:SetText(seasonWins)
 
 	parentFrame.seasonLoss:SetText(seasonPlayed - seasonWins)
