@@ -156,28 +156,21 @@ end
 
 -- Window ready check
 function AVSync:CheckResults()
-	local totalAlready = {}
 	local totalNotReady = {}
 	
 	for _, data in pairs(playerStatus) do
 		if( data.windowStatus == "notready" or data.windowStatus == "already" ) then
 			table.insert(totalNotReady, data.name)
-		elseif( data.windowStatus == "ready" ) then
-			table.insert(totalAlready, data.name)
 		end
 	end
 	
-	if( #(totalNotReady) == 0 and #(totalAlready) == 0 ) then
+	if( #(totalNotReady) == 0 ) then
 		self:SendMessage(L["Everyone is ready to go!"])
 		return
 	end
 	
 	if( #(totalNotReady) > 0 ) then
-		self:SendMessage(string.format(L["Ready: %s"], table.concat(totalNotReady, ", ")))
-	end
-	
-	if( #(totalAlready) > 0 ) then
-		self:SendMessage(string.format(L["Not Ready: %s"], table.concat(totalAlready, ", ")))
+		self:SendMessage(string.format(L["Not Ready: %s"], table.concat(totalNotReady, ", ")))
 	end
 end
 
@@ -200,6 +193,8 @@ function AVSync:StartCountdown(seconds)
 
 	-- Make sure we aren't queuing instantly
 	if( seconds > 0 ) then
+		seconds = seconds + 1
+		
 		-- Show queue count down every 5 seconds, or every second if count down is <= 5 seconds
 		for i=seconds - 1, 1, -1 do
 			if( ( i > 5 and mod(i, 5) == 0 ) or i <= 5 ) then
@@ -462,7 +457,7 @@ function AVSync:CHAT_MSG_ADDON(event, prefix, msg, type, author)
 			self:UpdateRecord(author, "windowStatus", "notready")
 
 		-- Queue updates
-		elseif( dataType == "STATUPDATE" and avStatus ~= "active") then
+		elseif( dataType == "STATUPDATE" ) then
 			local type, instanceID = string.split(",", data)
 			self:UpdateRecord(author, "id", tonumber(instanceID) or 0, "status", type, "queueSort", type .. instanceID)
 		end
@@ -962,12 +957,14 @@ function AVSync:UpdateGUI()
 	local totalNotready = 0
 	local totalUnknown = 0
 	for _, data in pairs(playerStatus) do
-		if( data.windowStatus == "ready" ) then
-			totalReady = totalReady + 1
-		elseif( data.windowStatus == "notready" or data.windowStatus == "already" ) then
-			totalNotready = totalNotready + 1
-		else
-			totalUnknown = totalUnknown + 1
+		if( not data.hide ) then
+			if( data.windowStatus == "ready" ) then
+				totalReady = totalReady + 1
+			elseif( data.windowStatus == "notready" or data.windowStatus == "already" ) then
+				totalNotready = totalNotready + 1
+			else
+				totalUnknown = totalUnknown + 1
+			end
 		end
 		
 		-- New version available

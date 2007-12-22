@@ -64,6 +64,10 @@ SSPVPLocals = {
 	["%d personal rating in %s (%dvs%d)"] = "%d personal rating in %s (%dvs%d)",
 	["%s is ready to join, auto leave disabled."] = "%s is ready to join, auto leave disabled.",
 	
+	-- Modified queue window
+	["You can now enter %s and have %s left."] = "You can now enter %s and have %s left.",
+	
+	
 	-- Mover
 	["PvP Objectives Anchor"] = "PvP Objectives Anchor",
 	["Score Objectives Anchor"] = "Score Objectives Anchor",

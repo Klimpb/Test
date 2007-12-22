@@ -45,6 +45,11 @@ end
 
 function Arena:DisableModule()
 	self:UnregisterEvent("UPDATE_BATTLEFIELD_STATUS")
+
+	-- Grab new data for next game
+	for i=MAX_ARENA_TEAMS, 1, -1 do
+		ArenaTeamRoster(i)
+	end
 end
 
 function Arena:Reload()
@@ -193,11 +198,6 @@ function Arena:UPDATE_BATTLEFIELD_STATUS()
 			-- Figure out our personal rating change
 			local newPersonal, personalDiff = getChange(playerPersonal, enemyRating, playerWon)
 			personal = string.format(L["/ %d personal (%d rating)"], personalDiff, newPersonal)
-			
-			-- Grab new data for next game
-			for i=1, MAX_ARENA_TEAMS do
-				ArenaTeamRoster(i)
-			end
 		end		
 		
 		SSPVP:Print(string.format("%s / %s %s", firstInfo, secondInfo, personal))
