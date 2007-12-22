@@ -105,13 +105,13 @@ SSPVPLocals = {
 	["You have been queued for Alterac Valley by %s."] = "You have been queued for Alterac Valley by %s.",
 	["You provided an invalid instance ID to join."] = "You provided an invalid instance ID to join.",
 	
-	["Queuing for Alterac Valley in %d seconds."] = "Queuing for Alterac Valley in %d seconds.",
-	["Queuing for Alterac Valley in %d second."] = "Queuing for Alterac Valley in %d second.",
+	["Queuing %d seconds."] = "Queuing %d seconds.",
+	["Queuing %d second."] = "Queuing %d second.",
 	["Queue for Alterac Valley!"] = "Queue for Alterac Valley!",
 
+	["Battlemaster window ready check started, you have 10 seconds to get the window open."] = "Battlemaster window ready check started, you have 10 seconds to get the window open.",
+	["Leaving Alterac Valley queues."] = "Leaving Alterac Valley queues.",
 	
-	["Dropping Alterac Valley queues."] = "Dropping Alterac Valley queues.",
-
 	["Alterac Valley sync queue has been stopped by %s."] = "Alterac Valley sync queue has been stopped by %s.",
 	["Alterac Valley queue stopped."] = "Alterac Valley queue stopped.",
 	["Alterac Valley queue has been dropped by %s."] = "Alterac Valley queue has been dropped by %s.",
@@ -121,9 +121,8 @@ SSPVPLocals = {
 	["Joining Alterac Valley #%d at the request of %s"] = "Joining Alterac Valley #%d at the request of %s",
 	["%s has requested you join Alterac Valley #%d, but you have force join disabled."] = "%s has requested you join Alterac Valley #%d, but you have force join disabled.",
 	
-	["Following are queued/inside Alterac Valley: %s"] = "Following are queued/inside Alterac Valley: %s",
-
-	["Following are not ready: %s"] = "Following are not ready: %s",
+	["Ready: %s"] = "Ready: %s",
+	["Not Ready: %s"] = "Not Ready: %s",
 	["Everyone is ready to go!"] = "Everyone is ready to go!",
 	
 	-- Queue status GUI for AV
@@ -151,6 +150,11 @@ SSPVPLocals = {
 	["Ready Check"] = "Ready Check",
 	["Sync Queue"] = "Sync Queue",
 	["Drop Queue"] = "Drop Queue",
+	
+	["New version available!"] = "New version available!",
+	["AFK"] = "AFK",
+	["Next Update"] = "Next Update",
+	["You are about to send a queue drop request, are you sure?"] = "You are about to send a queue drop request, are you sure?",
 	
 	-- CT support
 	["-%d Reinforcements"] = "-%d Reinforcements",
@@ -276,7 +280,6 @@ SSPVPLocals = {
 	["Auto join and leave has been suspended for the next 5 minutes, or until you log off."] = "Auto join and leave has been suspended for the next 5 minutes, or until you log off.",
 	["Suspension has been removed, you will now auto join and leave again."] = "Suspension has been removed, you will now auto join and leave again.",
 	["Suspension is still active, will not auto join or leave."] = "Suspension is still active, will not auto join or leave.",
-	["Battlemaster ready check started, you have 10 seconds to get the window open."] = "Battlemaster ready check started, you have 10 seconds to get the window open.",
 	
 	["[%d vs %d] %d rating = %d points"] = "[%d vs %d] %d rating = %d points",
 	["[%d vs %d] %d rating = %d points - %d%% = %d points"] = "[%d vs %d] %d rating = %d points - %d%% = %d points",
@@ -467,3 +470,5 @@ SSPVPLocals = {
 BINDING_HEADER_SSPVP = "SSPVP";
 BINDING_NAME_ETARFLAG = "Target enemy flag carrier";
 BINDING_NAME_FTARFLAG = "Target friendly flag carrier";
+
+SSPVPRevision = tonumber(string.match("$Revision$", "(%d+)")) or 0

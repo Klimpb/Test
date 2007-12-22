@@ -49,6 +49,7 @@ function AV:DisableModule()
 	end
 	
 	SSOverlay:RemoveCategory("timer")
+	SSOverlay:RemoveCategory("mine")
 end
 
 function AV:Reload()
