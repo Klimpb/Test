@@ -639,11 +639,18 @@ function SSPVP:ChatMessage(msg, faction)
 		return
 	end
 	
+	local foundFrame
 	for i=1, 7 do
 		local frame = getglobal("ChatFrame" .. i)
 		if( frame and frame:IsEventRegistered(event) ) then
 			frame:AddMessage(msg, color.r, color.g, color.b)
+			foundFrame = true
 		end
+	end
+	
+	-- No frames registering it, default to the main one
+	if( not foundFrame ) then
+		DEFAULT_CHAT_FRAME:AddMessage(msg, color.r, color.g, color.b)
 	end
 end
 
