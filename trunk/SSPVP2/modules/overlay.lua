@@ -26,6 +26,7 @@ function SSOverlay:OnInitialize()
 			locked = true,
 			noClick = false,
 			growUp = false,
+			shortTime = true,
 			x = 300,
 			y = 600,
 			opacity = 1.0,
@@ -87,6 +88,40 @@ local function onClick(self)
 	end
 end
 
+local function formatShortTime(totalTime)
+	local hour = ""
+	local minutes = 0
+	local seconds = 0
+	
+
+	-- Hours
+	if( totalTime >= 3600 ) then
+		hour = floor(totalTime / 3600) .. ":"
+		totalTime = mod(totalTime, 3600)
+	end
+	
+	-- Minutes
+	if( totalTime >= 60 ) then
+		minutes = floor(totalTime / 60)
+		totalTime = mod(totalTime, 60)
+	end
+	
+	-- Seconds
+	if( totalTime > 0 ) then
+		seconds = totalTime
+	end
+	
+	return string.format("%s%02d:%02d", hour, minutes, seconds)
+end
+
+local function formatTime(seconds)
+	if( SSOverlay.db.profile.shortTime ) then
+		return formatShortTime(seconds)
+	else
+		return SecondsToTime(seconds)
+	end
+end
+
 local function onUpdate(self)
 	local time = GetTime()
 	local row = rows[self.dataID]
@@ -103,7 +138,7 @@ local function onUpdate(self)
 	if( floor(row.seconds) <= 0 and row.type == "down" ) then
 		SSOverlay:RemoveRow(row.id)
 	else
-		self.text:SetFormattedText(row.text, SecondsToTime(row.seconds))
+		self.text:SetFormattedText(row.text, formatTime(row.seconds))
 		
 		-- Do a quick recheck incase the text got bigger in the update without
 		-- something being removed/added
@@ -129,6 +164,14 @@ local function sortOverlay(a, b)
 	return a.addOrder < b.addOrder
 end
 
+function SSOverlay:FormatTime(seconds, skipSeconds)
+	if( self.db.profile.shortTime ) then
+		return formatShortTime(seconds)
+	else
+		return SecondsToTime(seconds, skipSeconds)
+	end
+end
+
 function SSOverlay:UpdateCategoryText()
 	-- Figure out total unique categories we're showing
 	local activeCats = 0
@@ -147,7 +190,6 @@ function SSOverlay:UpdateCategoryText()
 		end
 	end
 end
-
 
 function SSOverlay:UpdateOverlay()
 	local totalRows = #(rows)
@@ -188,7 +230,7 @@ function SSOverlay:UpdateOverlay()
 			row.text:SetText(data.text)
 			row:SetScript("OnUpdate", nil)
 		elseif( data.type == "up" or data.type == "down" ) then
-			row.text:SetFormattedText(data.text, SecondsToTime(data.seconds))
+			row.text:SetFormattedText(data.text, formatTime(data.seconds))
 			row:SetScript("OnUpdate", onUpdate)
 		end
 		

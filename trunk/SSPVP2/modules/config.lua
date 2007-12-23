@@ -40,7 +40,11 @@ function Config:General()
 		{ order = 1, group = L["Queue Overlay"], text = L["Enable battlefield queue status"], type = "check", var = {"queue", "enabled"}},
 		{ order = 2, group = L["Queue Overlay"], text = L["Show inside an active battlefield"], type = "check", var = {"queue", "inBattle"}},
 
- 		{ group = L["Frame Moving"], type = "groupOrder", order = 4 },
+ 		{ group = L["Entry Window"], type = "groupOrder", order = 4 },
+		{ order = 1, group = L["Entry Window"], text = L["Enable modified battlefield join window"], help = L["Shows time left to join the battlefield, also required for disabling the battlefield window from reshowing again."], type = "check", var = {"Window", "enabled"}},
+		{ order = 2, group = L["Entry Window"], text = L["Show battlefield window after it's hidden"], help = L["Reshows the battlefield window even if it's been hidden, requires modified window to be enabled."], type = "check", var = {"Window", "remind"}},
+
+ 		{ group = L["Frame Moving"], type = "groupOrder", order = 5 },
 		{ order = 1, group = L["Frame Moving"], text = L["Lock PvP objectives"], help = L["Shows an anchor above the frame that lets you move it, the frame you're trying to move may have to be visible to actually move it."], type = "check", var = {"Move", "pvp"}},
 		{ order = 2, group = L["Frame Moving"], text = L["Lock scoreboard"], help = L["Shows an anchor above the frame that lets you move it, the frame you're trying to move may have to be visible to actually move it."], type = "check", var = {"Move", "score"}},
 		--{ order = 3, group = L["Frame Moving"], text = L["Lock capture bar"], help = L["Shows an anchor above the frame that lets you move it, the frame you're trying to move may have to be visible to actually move it."], type = "check", var = {"Move", "capture"}},
@@ -253,6 +257,7 @@ function Config:Overlay()
 		{ group = L["Display"], type = "groupOrder", order = 2 },
 		{ order = 1, group = L["Display"], text = L["Grow up"], help = L["The overlay will grow up instead of down when new rows are added, a reloadui maybe required for this to take affect."], type = "check", var = {"Overlay", "growUp"}},
 		{ order = 2, group = L["Display"], text = L["Disable overlay clicking"], help = L["Removes the ability to click on the overlay, allowing you to interact with the 3D world instead. While the overlay is unlocked, this option is ignored."], type = "check", var = {"Overlay", "noClick"}},
+		{ order = 3, group = L["Display"], text = L["Use short time format"], help = L["Shows timers as HH:MM:SS instead of X Minutes, X Seconds"], type = "check", var = {"Overlay", "shortTime"}},
 		
 		{ group = L["Color"], type = "groupOrder", order = 3 },
 		{ order = 1, group = L["Color"], text = L["Background color"], type = "color", var = {"Overlay", "background"}},

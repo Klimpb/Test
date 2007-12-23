@@ -389,7 +389,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			elseif( status == "queued" ) then
 				local etaTime = GetBattlefieldEstimatedWaitTime(i) / 1000
 				if( etaTime > 0 ) then
-					etaTime = SecondsToTime(etaTime, true)
+					etaTime = SSOverlay:FormatTime(etaTime, true)
 					if( etaTime == "" ) then
 						etaTime = L["<1 Min"]
 					end
