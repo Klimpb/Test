@@ -7,7 +7,7 @@ local lastStatus = {}
 function Window:OnInitialize()
 	self.defaults = {
 		profile = {
-			enabled = false,
+			enabled = true,
 			remind = false,
 		},
 	}
@@ -47,14 +47,39 @@ function Window:Reload()
 	end
 end
 
+function Window:PopupWindow(statusID, instanceID, map, teamSize)
+	local name
+	if( teamSize > 0 ) then
+		name = string.format(L["%s (%dvs%d)"], map, teamSize, teamSize)
+	else
+		name = string.format("%s #%d", map, instanceID)
+	end
+
+	local frame = StaticPopup_Show("CONFIRM_NEW_BFENTRY", name, SecondsToTime(GetBattlefieldPortExpiration(statusID) / 1000), statusID)
+	if( frame ) then
+		frame.data = statusID
+		frame.text_arg1 = name
+		frame.portExpiration = GetBattlefieldPortExpiration(statusID) / 1000 + GetTime()
+	end
+end
+
 function Window:UPDATE_BATTLEFIELD_STATUS()
 	for i=1, MAX_BATTLEFIELD_QUEUES do
 		local status, map, instanceID, _, _, teamSize, isRegistered = GetBattlefieldStatus(i)
 		
 		if( status ~= lastStatus[i] ) then
+			-- Fresh confirmation, show it up
 			if( status == "confirm" ) then
-				--StaticPopup_Show("
+				self:PopupWindow(i, instanceID, map, teamSize)
+			
+			-- Used to be a confirm, no longer is
+			elseif( lastStatus[i] == "confirm" ) then
+				StaticPopup_Hide("CONFIRM_NEW_BFENTRY", i)
 			end
+
+		-- Nag the user about the queue
+		elseif( status == "confirm" and self.db.profile.remind ) then
+			self:PopupWindow(i, instanceID, map, teamSize)
 		end
 		
 		lastStatus[i] = status	
@@ -62,14 +87,26 @@ function Window:UPDATE_BATTLEFIELD_STATUS()
 end
 
 StaticPopupDialogs["CONFIRM_NEW_BFENTRY"] = {
-	text = L["You can now enter %s and have %s left."],
+	text = L["You are now eligible to enter %s. %s left to join."],
 	button1 = ENTER_BATTLE,
 	button2 = HIDE,
 	OnAccept = function(data)
-		AcceptBattlefieldPort(data, 1)
+		AcceptBattlefieldPort(data, true)
+	end,
+	OnUpdate = function(elapsed, dialog)
+		if( not dialog.portExpiration ) then
+			return
+		end
+		
+		local seconds = floor(dialog.portExpiration - GetTime())
+		if( seconds <= 0 ) then
+			return
+		end
+		
+		getglobal(dialog:GetName() .. "Text"):SetFormattedText(L["You are now eligible to enter %s. %s left to join."], dialog.text_arg1, SecondsToTime(seconds))
 	end,
 	timeout = 0,
 	whileDead = 1,
 	hideOnEscape = 1,
 	multiple = 1
-};
+}

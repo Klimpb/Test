@@ -65,8 +65,7 @@ SSPVPLocals = {
 	["%s is ready to join, auto leave disabled."] = "%s is ready to join, auto leave disabled.",
 	
 	-- Modified queue window
-	["You can now enter %s and have %s left."] = "You can now enter %s and have %s left.",
-	
+	["You are now eligible to enter %s. %s left to join."] = "You are now eligible to enter %s. %s left to join.",
 	
 	-- Mover
 	["PvP Objectives Anchor"] = "PvP Objectives Anchor",
@@ -341,6 +340,12 @@ SSPVPLocals = {
 	["Enable battlefield queue status"] = "Enable battlefield queue status",
 	["Show inside an active battlefield"] = "Show inside an active battlefield",
 	
+	["Entry Window"] = "Entry Window",
+	["Enable modified battlefield join window"] = "Enable modified battlefield join window",
+	["Shows time left to join the battlefield, also required for disabling the battlefield window from reshowing again."] = "Shows time left to join the battlefield, also required for disabling the battlefield window from reshowing again.",
+	
+	["Show battlefield window after it's hidden"] = "Show battlefield window after it's hidden",
+	["Reshows the battlefield window even if it's been hidden, requires modified window to be enabled."] = "Reshows the battlefield window even if it's been hidden, requires modified window to be enabled.",
 	
 	["Lock PvP objectives"] = "Lock PvP objectives",
 	["Lock scoreboard"] = "Lock scoreboard",
@@ -378,7 +383,6 @@ SSPVPLocals = {
 	["Enable auto leave"] = "Enable auto leave",
 	["Screenshot score board when game ends"] = "Screenshot score board when game ends",
 	
-	
 	-- OVERLAY
 	["Frame"] = "Frame",
 	["Color"] = "Color",
@@ -394,6 +398,9 @@ SSPVPLocals = {
 
 	["Disable overlay clicking"] = "Disable overlay clicking",
 	["Removes the ability to click on the overlay, allowing you to interact with the 3D world instead. While the overlay is unlocked, this option is ignored."] = "Removes the ability to click on the overlay, allowing you to interact with the 3D world instead. While the overlay is unlocked, this option is ignored.",
+	
+	["Use short time format"] = "Use short time format",
+	["Shows timers as HH:MM:SS instead of X Minutes, X Seconds"] = "Shows timers as HH:MM:SS instead of X Minutes, X Seconds",
 	
 	-- AV
 	["Alerts"] = "Alerts",
