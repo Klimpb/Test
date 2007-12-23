@@ -112,7 +112,7 @@ function AV:UPDATE_WORLD_STATES()
 	if( allianceReinf > 0 ) then
 		local diff = allianceReinf - reinf
 		if( diff == 100 ) then
-			SSPVP:ChatMessage(L["The Horde has slain Captain Balinda Stonehearth."], SSPVP:GetFactionColor("Horde"))
+			SSPVP:ChatMessage(L["The Horde has slain Captain Balinda Stonehearth."], "Horde")
 			
 			if( self.db.profile.combat ) then
 				SSPVP:CombatText(string.format(L["-%d Reinforcements"], 100), SSPVP:GetFactionColor("Alliance"))
@@ -136,7 +136,7 @@ function AV:UPDATE_WORLD_STATES()
 	if( hordeReinf > 0 ) then
 		local diff = hordeReinf - reinf
 		if( diff == 100 ) then
-			SSPVP:ChatMessage(L["The Alliance has slain Captain Galvangar."], SSPVP:GetFactionColor("Alliance"))
+			SSPVP:ChatMessage(L["The Alliance has slain Captain Galvangar."], "Alliance")
 
 			if( self.db.profile.combat ) then
 				SSPVP:CombatText(string.format(L["-%d Reinforcements"], 100), SSPVP:GetFactionColor("Horde"))
