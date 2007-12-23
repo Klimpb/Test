@@ -30,7 +30,7 @@ SSPVPLocals = setmetatable({
 	["You have the battlefield entry window hidden for %s, will not auto join."] = "你已经隐藏战场进入窗口，战场助手取消自动进入%s。",
 	
 	["%s %d points (%d rating)"] = "%s %d 点数 (%d 级别)",
-	["/ %d personal (%d rating)"] = "/ %s %d 点数 (%d 级别)",
+	["/ %d personal (%d rating)"] = "/ %d 点数 (%d 级别)",
 	
 	["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"] = "你确定要离开%s (%dvs%d)正在打或者排队的竞技场吗？",
 	["You are about to leave the active or queued battleground %s, are you sure?"] = "你确定要离开%s正在打或者排队的战场吗？",
@@ -69,6 +69,10 @@ SSPVPLocals = setmetatable({
 	["%d personal rating in %s (%dvs%d)"] = " %s (%dvs%d)的个人得分为%d。",
 	["%s is ready to join, auto leave disabled."] = "%s准备进入，自动离开关闭。",
 	
+	-- Modified queue window
+	["You can now enter %s and have %s left."] = "你现在可以确认%s，并可离开%s。",
+	
+	
 	-- Mover
 	["PvP Objectives Anchor"] = "PvP目标框体锚点",
 	["Score Objectives Anchor"] = "记分板框体锚点",
@@ -105,29 +109,61 @@ SSPVPLocals = setmetatable({
 	["%s is out of range"] = "%s不在范围",
 	
 	-- Sync queuing for AV
-	["Dropping Alterac Valley queues."] = "取消团排奥山。",
-	["Alterac Valley queue stopped."] = "团排奥山已停止。",
-	["Queuing for Alterac Valley in %d seconds."] = "奥特兰克山谷已经排队%d秒。",
-	["Queuing for Alterac Valley in %d second."] = "奥特兰克山谷已经排队%d秒。",
-	["Queue for Alterac Valley!"] = "奥特兰克山谷队列!",
-	["Alterac Valley sync queue has been stopped by %s."] = "%s停止了奥特兰克山谷的团排。",
-	["Alterac Valley queue has been dropped by %s."] = "%s取消了奥特兰克山谷的团排。",
-	
 	["You must be in a raid or party to do this."] = "你必须是队长才能这样做。",
 	["You must be group leader, or assist to do this."] = "你必须是队长或者团长才能这样做",
 	["You have been queued for Alterac Valley by %s."] = "%s帮你加入了奥特兰克山谷的团排。",
-	["Invalid number entered for sync queue."] = "无效的人群申请参加团排。",
+	["You provided an invalid instance ID to join."] = "你加入了一个无效的战场队列。",
 	
-	["Following are queued/inside Alterac Valley: %s"] = "跟随排队/进入奥特兰克山谷: %s",
-
-	["Following are not ready: %s"] = "没有准备好的人: %s",
+	["Queuing %d seconds."] = "奥特兰克山谷已经排队%d秒。",
+	["Queuing %d second."] = "奥特兰克山谷已经排队%d秒。",
+	["Queue for Alterac Valley!"] = "奥特兰克山谷队列!",
+	
+	["Battlemaster window ready check started, you have 10 seconds to get the window open."] = "战场准备检查启用，你有10秒钟开启窗口。",
+	["Leaving Alterac Valley queues."] = "取消团排奥山。",
+		
+	["Alterac Valley sync queue has been stopped by %s."] = "%s停止了奥特兰克山谷的团排。",
+	["Alterac Valley queue stopped."] = "团排奥山已停止。",
+	["Alterac Valley queue has been dropped by %s."] = "%s取消了奥特兰克山谷的团排。",
+	
+	["Forcing join on instance #%d."] = "强制加入战场#%d。",
+	["Invalid number entered for sync queue."] = "无效的人群申请参加团排。",
+	["Joining Alterac Valley #%d at the request of %s"] = "%s请求加入奥山#%d。",
+	["%s has requested you join Alterac Valley #%d, but you have force join disabled."] = "%s已经请求加入奥山#%d，但是你可以强制取消。",
+	
+    ["Ready: %s"] = "准备好: %s",
+	["Not Ready: %s"] = "未准备好: %s",
 	["Everyone is ready to go!"] = "所有人都准备好了",
 	
-	["Total Players: %d"] = "总玩家: %d",
-	["Confirm #%d: %d"] = "确认 #%d: %d",
-	["Confirm Misc: %d"] = "确认版本: %d",
-	["Queued: %d"] = "队列: %d",
-	["Active #%d: %d"] = "有效的 #%d: %d",
+	-- Queue status GUI for AV
+	["Queue Status"] = "排队状态",
+	["Name"] = "名字",
+	["Status"] = "状态",
+	["Queue"] = "队列",
+	["Version"] = "版本",
+	
+	["Unknown"] = "未知",
+	["Not queued"] = "没有队列",
+	["Inside #%d"] = "#%d内部",
+	["Confirm #%d"] = "证实 #%d",
+	["Queued Any"] = "任意队列",
+	["Queued #%d"] = "队列 #%d",
+	["Offline"] = "离线",
+	["Online"] = "在线",
+	["Ready"] = "准备好",
+	["Not ready"] = "未准备好",
+	
+	["Total Players"] = "总体玩家",
+	["Ready"] = "准备好",
+	["Not Ready"] = "未准备好",
+	
+	["Ready Check"] = "准备检查",
+	["Sync Queue"] = "同步队列",
+	["Drop Queue"] = "取消队列",
+	
+	["New version available!"] = "新版本可用！",
+	["AFK"] = "AFK",
+	["Next Update"] = "下一次更新",
+	["You are about to send a queue drop request, are you sure?"] = "你将要发送队列取消请求，你确定么？",
 	
 	-- CT support
 	["-%d Reinforcements"] = "-%d 援兵",
@@ -236,7 +272,10 @@ SSPVPLocals = setmetatable({
 	[" - cancel - Cancels a running sync."] = " - cancel - 取消已经开始的团排计时。",
 	[" - drop - Drops all Alterac Valley queues."] = " - drop - 取消所有的团排奥山。",
 	[" - update - Forces a status update on everyones Alterac Valley queues."] = " - update - 强制更新团排奥山的状态。",
-
+    [" - ready - Does a check to see who has the battlemaster window open and is ready to queue."] = " - ready - 检查队友的战场窗口是否开启病是否准备好。",
+	[" - join <instanceID> - Forces everyone with the specified instance id to join Alterac Valley."] = " - join <instanceID> - 强制每一个人加入一个特定的奥山队列。",
+	[" - status - Shows the status list of everyone regarding queue or window."] = " - status - 显示关于团队中团排的个人信息。",
+	
 	["You do not have Alterac Valley syncing enabled, and cannot use any of the slash commands yourself."] = "你没有开启团排奥山选项, 你不能使用任何相关配置命令",
 	
 	["SSPVP slash commands"] = "SSPVP设置命令",
@@ -250,7 +289,6 @@ SSPVPLocals = setmetatable({
 	["Auto join and leave has been suspended for the next 5 minutes, or until you log off."] = "5分钟内自动加入和离开被悬挂，或者你可以手动取消。",
 	["Suspension has been removed, you will now auto join and leave again."] = "悬挂已被取消，你可以再次自动加入和离开",
 	["Suspension is still active, will not auto join or leave."] = "悬挂仍被开启，不能自动加入和离开",
-	["Battlemaster ready check started, you have 10 seconds to get the window open."] = "战场准备检查启用，你有10秒钟开启窗口。",
 	
 	["[%d vs %d] %d rating = %d points"] = "[%d vs %d] %d 级别 = %d 荣誉点数",
 	["[%d vs %d] %d rating = %d points - %d%% = %d points"] = "[%d vs %d] %d 级别 = %d 荣誉点数 - %d%% = %d 荣誉点数",
@@ -378,9 +416,11 @@ SSPVPLocals = setmetatable({
 	["Sync Queue"] = "团队排队",
 	["Enable sync queuing"] = "开启团队排队",
 	["Allows you to sync queue with other SSPVP2, StinkyQueue or LightQueue users at the same time increasing your chance of getting into the same match."] = "允许你连同其他的SSPVP2, StinkyQueue 或 LightQueue 的使用者增加你进入相同战场的机会（团排）。",
+	["Allow group leader or assist to force join you into a specific Alterac Valley"] = "允许团长或助理强制帮你排入指定奥山战场",
 	
 	["Show player queue status in overlay"] = "显示玩家队列状态",
 	["Displays how many people are queued, number of people who have confirmation for specific instance id's and the instance id's that people are currently playing inside."] = "显示多少人正在排队，并显示队员的一些信息。",
+	["When the leader is ready for the group to join an Alterac Valley, he can force everyone into it with the required instance id. You will still be shown the instance id to join even if you disable this."] = "当团长准备加入一个团排奥山时，他可以强制每个人加入一个相同的战场队列。你可以一直显示队列即使你取消了它。",
 	
 	-- EOTS/AB/WSG
 	["Flag Carrier"] = "夺取旗帜",
@@ -441,3 +481,4 @@ SSPVPLocals = setmetatable({
     BINDING_NAME_ETARFLAG = "选中敌方持旗者";
     BINDING_NAME_FTARFLAG = "选中我方持旗者";
 
+SSPVPRevision = tonumber(string.match("$Revision: 461 $", "(%d+)")) or 0
