@@ -5,9 +5,7 @@ local L = SSPVPLocals
 local carriers = {["alliance"] = {}, ["horde"] = {}}
 local HEALTH_TIMEOUT = 10
 
-function Flag:OnEnable()
-	if( self.defaults ) then return end
-
+function Flag:OnInitialize()
 	self.defaults = {
 		profile = {
 			wsg = {
@@ -31,6 +29,8 @@ function Flag:OnEnable()
 	
 	self.db = SSPVP.db:RegisterNamespace("flag", self.defaults)	
 	playerName = UnitName("player")
+
+	self:CreateButtons()
 end
 
 function Flag:EnableModule(abbrev)
@@ -53,6 +53,8 @@ function Flag:EnableModule(abbrev)
 	
 	self:ScheduleRepeatingTimer("ScanParty", 0.50)
 	self.activeBF = abbrev
+	
+	self:UpdateAllAttributes()
 end
 
 function Flag:DisableModule()
@@ -72,7 +74,8 @@ function Flag:DisableModule()
 	
 	self:Hide("horde")
 	self:Hide("alliance")
-	SSPVP:UnregisterOOCUpdate("UpdateCarrierAttributes")
+	
+	SSPVP:UnregisterOOCUpdate("UpdateAllAttributes")
 	SSPVP:UnregisterOOCUpdate("UpdateStatus")
 
 end
@@ -206,15 +209,18 @@ function Flag:ResetHealth(type)
 	end
 end
 
+function Flag:UpdateAllAttributes()
+	self:UpdateCarrierAttributes("alliance")
+	self:UpdateCarrierAttributes("horde")
+end
+
 -- We split these into two different functions, so we can do color/text/health updates
 -- while in combat, but update targeting when out of it
 function Flag:UpdateCarrierAttributes(faction)
 	if( not carriers[faction] ) then
 		return
-
 	end
 	
-
 	-- Carrier changed but we can't update it yet
 	local carrier = carriers[faction].name
 	if( self[faction].carrier ~= carrier ) then
@@ -222,14 +228,10 @@ function Flag:UpdateCarrierAttributes(faction)
 	else
 		self[faction]:SetAlpha(1.0)
 	end
-
-	if( not carrier ) then
-		return
-	end
-
+	
 	-- In combat, can't change anything
 	if( InCombatLockdown() ) then
-		SSPVP:RegisterOOCUpdate(self, "UpdateCarrierAttributes", faction)
+		SSPVP:RegisterOOCUpdate(self, "UpdateAllAttributes")
 		return
 	end
 	
@@ -260,7 +262,7 @@ function Flag:UpdateCarrierAttributes(faction)
 	self[faction]:ClearAllPoints()
 	self[faction]:SetPoint("LEFT", UIParent, "BOTTOMLEFT", posFrame:GetRight() + 8, posFrame:GetTop() - posY)
 	self[faction]:SetAttribute("type", "macro")
-	self[faction]:SetAttribute("macrotext", string.gsub(self.db.profile[self.activeBF].macro, "*name", carrier))
+	self[faction]:SetAttribute("macrotext", string.gsub(self.db.profile[self.activeBF].macro, "*name", carrier or ""))
 end
 
 function Flag:UpdateCarrier(faction, skipAttrib)
@@ -307,9 +309,6 @@ end
 
 -- Parse event for changes
 function Flag:ParseMessage(event, msg)
-	-- Issues if we don't do quick button check
-	self:CreateButtons()
-	
 	-- More sane for us to do it here
 	local faction
 	if( self.activeBF == "wsg" ) then
