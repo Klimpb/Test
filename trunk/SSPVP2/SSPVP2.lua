@@ -289,7 +289,8 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				activeID = nil
 				activeBF = nil
 				playerTeamWon = nil
-			
+				screenTaken = nil
+	
 				self:CancelTimer("RequestBattlefieldScoreData")
 
 				for name, module in pairs(self.modules) do
@@ -472,7 +473,6 @@ end
 
 -- Screenshot taken
 function SSPVP:ScreenshotTaken()
-	screenTaken = nil
 	local format = GetCVar("screenshotFormat")
 	-- jpeg format is used, jpg is the actual ext it's saved as
 	if( format == "jpeg" ) then
