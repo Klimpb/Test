@@ -54,6 +54,7 @@ function Flag:EnableModule(abbrev)
 	self:ScheduleRepeatingTimer("ScanParty", 0.50)
 	self.activeBF = abbrev
 	
+	self:CreateButtons()
 	self:UpdateAllAttributes()
 end
 
