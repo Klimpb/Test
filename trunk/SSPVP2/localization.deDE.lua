@@ -1,6 +1,10 @@
 -- Übersetzung von Warkiller102(Server: Terrodar Char: Hinatahyuuga)
 -- Translation by Warkiller102(Server: Terrodar Char: Hinatahyuuga)
-SSPVPLocals = {
+if( GetLocale() ~= "deDE" ) then
+	return
+end
+
+SSPVPLocals = setmetatable({
 	-- Battlefield names
 	["Warsong Gulch"] = "Kriegshymnenschlucht",
 	["Arathi Basin"] = "Arathibecken",
@@ -485,10 +489,4 @@ SSPVPLocals = {
 	["group"] = "In Gruppe oder Raid",
 	["instance"] = "Instanz",
 	["none"] = "Alles andere",
-}
-
-BINDING_HEADER_SSPVP = "SSPVP";
-BINDING_NAME_ETARFLAG = "Target enemy flag carrier";
-BINDING_NAME_FTARFLAG = "Target friendly flag carrier";
-
-SSPVPRevision = tonumber(string.match("$Revision: 463 $", "(%d+)")) or 0
+}, {__index = SSPVPLocals})
