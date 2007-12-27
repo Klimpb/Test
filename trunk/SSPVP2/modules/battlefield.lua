@@ -17,23 +17,20 @@ function BF:OnInitialize()
 	}
 	
 	self.db = SSPVP.db:RegisterNamespace("battlefield", self.defaults)
+	
+	hooksecurefunc("WorldMapZoneMinimapDropDown_OnClick", self.CheckMinimap)
 end
 
 function BF:EnableModule(abbrev)
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL")
 	self.activeBF = abbrev
 	
+	--WorldMapZoneMinimapDropDown_OnClick
 	-- May not want to auto release in arenas incase a team mates going to try
 	-- and ressurect you
 	if( abbrev ~= "arena" ) then
 		self:RegisterEvent("PLAYER_DEAD")
-
-		if( SHOW_BATTLEFIELD_MINIMAP == "1" ) then
-			if( not BattlefieldMinimap ) then
-				BattlefieldMinimap_LoadUI()
-			end
-			BattlefieldMinimap:Show()
-		end
+		self:CheckMinimap()
 	end
 end
 function BF:DisableModule()
@@ -44,6 +41,19 @@ function BF:DisableModule()
 
 	-- Hide minimap if it shouldn't be hidden in all zones
 	if( SHOW_BATTLEFIELD_MINIMAP ~= "2" and BattlefieldMinimap and BattlefieldMinimap:IsShown() ) then
+		BattlefieldMinimap:Hide()
+	end
+end
+
+-- Should we be showing the minimap?
+function BF:CheckMinimap()
+	if( SHOW_BATTLEFIELD_MINIMAP == "1" or SHOW_BATTLEFIELD_MINIMAP == "2" ) then
+		if( not BattlefieldMinimap ) then
+			BattlefieldMinimap_LoadUI()
+		end
+		BattlefieldMinimap:Show()
+
+	elseif( BattlefieldMinimap ) then
 		BattlefieldMinimap:Hide()
 	end
 end

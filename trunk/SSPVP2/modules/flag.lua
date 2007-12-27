@@ -2,7 +2,7 @@ local Flag = SSPVP:NewModule("Flag", "AceEvent-3.0", "AceTimer-3.0")
 Flag.activeIn = "bg"
 
 local L = SSPVPLocals
-local carriers = {["alliance"] = {}, ["horde"] = {}}
+local carriers = {["Alliance"] = {}, ["Horde"] = {}}
 local HEALTH_TIMEOUT = 10
 
 function Flag:OnInitialize()
@@ -29,8 +29,6 @@ function Flag:OnInitialize()
 	
 	self.db = SSPVP.db:RegisterNamespace("flag", self.defaults)	
 	playerName = UnitName("player")
-
-	self:CreateButtons()
 end
 
 function Flag:EnableModule(abbrev)
@@ -39,6 +37,9 @@ function Flag:EnableModule(abbrev)
 		self.isActive = nil
 		return
 	end
+
+	self.activeBF = abbrev
+	self:ScheduleRepeatingTimer("ScanParty", 0.50)
 		
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "ParseMessage")
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "ParseMessage")
@@ -51,31 +52,30 @@ function Flag:EnableModule(abbrev)
 		self:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
 	end
 	
-	self:ScheduleRepeatingTimer("ScanParty", 0.50)
-	self.activeBF = abbrev
-	
+	-- Do we have to wait for UPDATE_WORLD_STATES to position?
 	self:CreateButtons()
-	self:UpdateAllAttributes()
+	if( not self.Alliance or not self.Horde ) then
+		self:RegisterEvent("UPDATE_WORLD_STATES")	
+	else
+		self:UpdateAllAttributes()
+	end
 end
 
 function Flag:DisableModule()
+	for k in pairs(carriers["Alliance"]) do
+		carriers["Alliance"][k] = nil
+	end
+	
+	for k, v in pairs(carriers["Horde"]) do
+		carriers["Horde"][k] = nil
+	end
+
 	self:CancelAllTimers()
 	self:UnregisterAllEvents()
+	self:Hide("Horde")
+	self:Hide("Alliance")
 	
 	SSOverlay:RemoveCategory("timer")
-	
-	for k in pairs(carriers["alliance"]) do
-		carriers["alliance"][k] = nil
-
-	end
-	
-	for k, v in pairs(carriers["horde"]) do
-		carriers["horde"][k] = nil
-	end
-	
-	self:Hide("horde")
-	self:Hide("alliance")
-	
 	SSPVP:UnregisterOOCUpdate("UpdateAllAttributes")
 	SSPVP:UnregisterOOCUpdate("UpdateStatus")
 
@@ -93,19 +93,29 @@ function Flag:Reload()
 	end
 	
 	if( self.isActive ) then
-		self:UpdateCarrier("alliance")
-		self:UpdateCarrier("horde")
+		self:UpdateCarrier("Alliance")
+		self:UpdateCarrier("Horde")
 	end
 end
 
 -- Update carriers incase we have class
 function Flag:UPDATE_BATTLEFIELD_SCORE()
-	if( carriers["alliance"].name ) then
-		self:UpdateCarrier("alliance", true)
+	if( carriers["Alliance"].name ) then
+		self:UpdateCarrier("Alliance", true)
 	end
 	
-	if( carriers["horde"].name ) then
-		self:UpdateCarrier("horde", true)
+	if( carriers["Horde"].name ) then
+		self:UpdateCarrier("Horde", true)
+	end
+end
+
+-- Check if it's time to do a position
+function Flag:UPDATE_WORLD_STATES()
+	self:CreateButtons()
+	
+	if( self.Alliance and self.Horde ) then
+		self:UpdateAllAttributes()
+		self:UnregisterEvent("UPDATE_WORLD_STATES")
 	end
 end
 
@@ -133,18 +143,12 @@ end
 
 -- Update health
 function Flag:UpdateHealth(unit)
-	if( not UnitExists(unit) ) then
+	if( not UnitExists(unit) or not UnitFactionGroup(unit) ) then
 		return
 	end
-		
 
 	local name = UnitName(unit)
 	local faction = UnitFactionGroup(unit)
-	if( not faction ) then
-		return
-	end
-	
-	faction = string.lower(faction)
 	if( carriers[faction].name == name ) then
 		carriers[faction].health = floor((UnitHealth(unit) / UnitHealthMax(unit) * 100) + 0.5)
 		
@@ -188,13 +192,13 @@ function Flag:IsTargeted(name)
 	return nil
 end
 
--- More then 5 seconds without updates means they're too far away
-function Flag:ResetallianceHealth()
-	self:ResetHealth("alliance")
+-- More then HEALTH_TIMEOUT seconds without updates means they're too far away
+function Flag:ResetAllianceHealth()
+	self:ResetHealth("Alliance")
 end
 
-function Flag:ResethordeHealth()
-	self:ResetHealth("horde")
+function Flag:ResetHordeHealth()
+	self:ResetHealth("Horde")
 end
 
 function Flag:ResetHealth(type)
@@ -211,17 +215,13 @@ function Flag:ResetHealth(type)
 end
 
 function Flag:UpdateAllAttributes()
-	self:UpdateCarrierAttributes("alliance")
-	self:UpdateCarrierAttributes("horde")
+	self:UpdateCarrierAttributes("Alliance")
+	self:UpdateCarrierAttributes("Horde")
 end
 
 -- We split these into two different functions, so we can do color/text/health updates
 -- while in combat, but update targeting when out of it
 function Flag:UpdateCarrierAttributes(faction)
-	if( not carriers[faction] ) then
-		return
-	end
-	
 	-- Carrier changed but we can't update it yet
 	local carrier = carriers[faction].name
 	if( self[faction].carrier ~= carrier ) then
@@ -235,14 +235,14 @@ function Flag:UpdateCarrierAttributes(faction)
 		SSPVP:RegisterOOCUpdate(self, "UpdateAllAttributes")
 		return
 	end
-	
+
 	-- This should be changed later, to automatically position to the icon
 	-- button if it's being used for PvP objectives
 	local posFrame
 	local posY = 0
 	if( self.activeBF == "eots" ) then
 		posY = 5
-		if( faction == "alliance" ) then
+		if( faction == "Alliance" ) then
 			posFrame = AlwaysUpFrame1Text
 		else
 			posFrame = AlwaysUpFrame2Text
@@ -250,15 +250,20 @@ function Flag:UpdateCarrierAttributes(faction)
 	elseif( self.activeBF == "wsg" ) then
 		posY = 13
 		
-		-- If we're updating an alliance carrier, then show it at the horde button
+		-- If we're updating an Alliance carrier, then show it at the Horde button
 		-- also, position at the dynamic icon instead of the text
-		if( faction == "horde" ) then
-			posFrame = AlwaysUpFrame2DynamicIconButton
-		else
+		if( faction == "Alliance" ) then
 			posFrame = AlwaysUpFrame1DynamicIconButton
+		else
+			posFrame = AlwaysUpFrame2DynamicIconButton
 		end
 	end
 	
+	-- Cannot position, it's likely this is due to the always up frames not being created yet
+	if( not posFrame ) then
+		return nil
+	end
+		
 	self[faction].carrier = carrier
 	self[faction]:ClearAllPoints()
 	self[faction]:SetPoint("LEFT", UIParent, "BOTTOMLEFT", posFrame:GetRight() + 8, posFrame:GetTop() - posY)
@@ -269,10 +274,6 @@ end
 function Flag:UpdateCarrier(faction, skipAttrib)
 	if( not skipAttrib ) then
 		self:UpdateCarrierAttributes(faction)
-	end
-	
-	if( not carriers[faction] ) then
-		return
 	end
 	
 	-- No carrier, hide it, this is bad
@@ -313,17 +314,17 @@ function Flag:ParseMessage(event, msg)
 	-- More sane for us to do it here
 	local faction
 	if( self.activeBF == "wsg" ) then
-		-- Reverse the factions because alliance found = horde event
-		-- horde found = alliance event
+		-- Reverse the factions because Alliance found = Horde event
+		-- Horde found = Alliance event
 		if( string.match(msg, L["Alliance"]) ) then
-			faction = "horde"
+			faction = "Horde"
 		elseif( string.match(msg, L["Horde"]) ) then
-			faction = "alliance"
+			faction = "Alliance"
 		end
 	elseif( event == "CHAT_MSG_BG_SYSTEM_HORDE" ) then
-		faction = "horde"
+		faction = "Horde"
 	elseif( event == "CHAT_MSG_BG_SYSTEM_ALLIANCE" ) then
-		faction = "alliance"
+		faction = "Alliance"
 	end
 	
 	-- WSG, pick up
@@ -403,16 +404,16 @@ end
 -- Update everything, we do this here instead of specifics
 -- so if we drop the flag, then pick it up in combat it won't show it, then hide
 function Flag:UpdateStatus()
-	if( carriers["alliance"].name ) then
-		self:Show("alliance")
+	if( carriers["Alliance"].name ) then
+		self:Show("Alliance")
 	else
-		self:Hide("alliance")
+		self:Hide("Alliance")
 	end
 	
-	if( carriers["horde"].name ) then
-		self:Show("horde")
+	if( carriers["Horde"].name ) then
+		self:Show("Horde")
 	else
-		self:Hide("horde")
+		self:Hide("Horde")
 	end
 end
 
@@ -479,62 +480,59 @@ function Flag:UPDATE_BINDINGS()
 	end
 end
 
+local function carrierPostClick(self)
+	local faction = self.type
+	if( IsAltKeyDown() and carriers[faction].name ) then
+		SSPVP:ChannelMessage(string.format(L["%s flag carrier %s, held for %s."], L[faction], carriers[faction].name, SecondsToTime(GetTime() - carriers[faction].time)))
+	end
+
+	if( self:GetAlpha() ~= 1.0 ) then
+		UIErrorsFrame:AddMessage(string.format(L["Cannot target %s, in combat"], carriers[faction].name), 1.0, 0.1, 0.1, 1.0)
+	elseif( UnitExists("target") and UnitName("target") == carriers[faction].name ) then
+		UIErrorsFrame:AddMessage(string.format(L["Targetting %s"], carriers[faction].name), 1.0, 0.1, 0.1, 1.0)
+	elseif( carriers[faction].name ) then
+		UIErrorsFrame:AddMessage(string.format(L["%s is out of range"], carriers[faction].name), 1.0, 0.1, 0.1, 1.0)
+	end
+end
+
 -- Create our target buttons
 function Flag:CreateButtons()
-	if( not self.alliance and AlwaysUpFrame1Text ) then
-		self.alliance = CreateFrame("Button", "SSFlagAlliance", UIParent, "SecureActionButtonTemplate")
-		self.alliance:SetHeight(25)
-		self.alliance:SetWidth(150)
-		self.alliance:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame1Text:GetRight() + 8, AlwaysUpFrame1Text:GetTop() - 5)
-		self.alliance:RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp", "Button4Up", "Button5Up")
-		self.alliance:SetScript("PostClick", function(self)
-			if( IsAltKeyDown() and carriers["alliance"].name ) then
-				SSPVP:ChannelMessage(string.format(L["Alliance flag carrier %s, held for %s."], carriers["alliance"].name, SecondsToTime(GetTime() - carriers["alliance"].time)))
-			end
-			
-			if( UnitExists("target") and UnitName("target") == carriers["alliance"].name ) then
-				UIErrorsFrame:AddMessage(string.format(L["Targetting %s"], carriers["alliance"].name), 1.0, 0.1, 0.1, 1.0)
-			elseif( carriers["alliance"].name ) then
-				UIErrorsFrame:AddMessage(string.format(L["%s is out of range"], carriers["alliance"].name), 1.0, 0.1, 0.1, 1.0)
-			end
-		end)
+	if( not self.Alliance and AlwaysUpFrame1Text ) then
+		self.Alliance = CreateFrame("Button", "SSFlagAlliance", UIParent, "SecureActionButtonTemplate")
+		self.Alliance:SetHeight(25)
+		self.Alliance:SetWidth(150)
+		self.Alliance:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame1Text:GetRight() + 8, AlwaysUpFrame1Text:GetTop() - 5)
+		self.Alliance:RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp", "Button4Up", "Button5Up")
+		self.Alliance.type = "Alliance"
+		self.Alliance:SetScript("PostClick", carrierPostClick)
 
-		self.alliance.text = self.alliance:CreateFontString(nil, "BACKGROUND")
-		self.alliance.text:SetPoint("TOPLEFT", self.alliance, "TOPLEFT", 0, 0)
-		self.alliance.text:SetFont((GameFontNormal:GetFont()), 11)
-		self.alliance.text:SetShadowOffset(1, -1)
-		self.alliance.text:SetShadowColor(0, 0, 0, 1)
-		self.alliance.text:SetJustifyH("LEFT")
-		self.alliance.text:SetHeight(25)
-		self.alliance.text:SetWidth(150)
+		self.Alliance.text = self.Alliance:CreateFontString(nil, "BACKGROUND")
+		self.Alliance.text:SetPoint("TOPLEFT", self.Alliance, "TOPLEFT", 0, 0)
+		self.Alliance.text:SetFont((GameFontNormal:GetFont()), 11)
+		self.Alliance.text:SetShadowOffset(1, -1)
+		self.Alliance.text:SetShadowColor(0, 0, 0, 1)
+		self.Alliance.text:SetJustifyH("LEFT")
+		self.Alliance.text:SetHeight(25)
+		self.Alliance.text:SetWidth(150)
 	end
 	
-	if( not self.horde and AlwaysUpFrame2Text ) then
-		self.horde = CreateFrame("Button", "SSFlagHorde", UIParent, "SecureActionButtonTemplate")
-		self.horde:SetHeight(25)
-		self.horde:SetWidth(150)
-		self.horde:ClearAllPoints()
-		self.horde:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame2Text:GetRight() + 8, AlwaysUpFrame2Text:GetTop() - 5)
-		self.horde:RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp", "Button4Up", "Button5Up")
-		self.horde:SetScript("PostClick", function()
-			if( IsAltKeyDown() and carriers["horde"].name ) then
-				SSPVP:ChannelMessage(string.format(L["Horde flag carrier %s, held for %s."], carriers["horde"].name, SecondsToTime(GetTime() - carriers["horde"].time)))
-			end
+	if( not self.Horde and AlwaysUpFrame2Text ) then
+		self.Horde = CreateFrame("Button", "SSFlagHorde", UIParent, "SecureActionButtonTemplate")
+		self.Horde:SetHeight(25)
+		self.Horde:SetWidth(150)
+		self.Horde:ClearAllPoints()
+		self.Horde:SetPoint("LEFT", UIParent, "BOTTOMLEFT", AlwaysUpFrame2Text:GetRight() + 8, AlwaysUpFrame2Text:GetTop() - 5)
+		self.Horde:RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp", "Button4Up", "Button5Up")
+		self.Horde.type = "Horde"
+		self.Horde:SetScript("PostClick", carrierPostClick)
 
-			if( UnitExists("target") and UnitName("target") == carriers["horde"].name ) then
-				UIErrorsFrame:AddMessage(string.format(L["Targetting %s"], carriers["horde"].name), 1.0, 0.1, 0.1, 1.0)
-			elseif( carriers["horde"].name ) then
-				UIErrorsFrame:AddMessage(string.format(L["%s is out of range"], carriers["horde"].name), 1.0, 0.1, 0.1, 1.0)
-			end
-		end)
-
-		self.horde.text = self.horde:CreateFontString(nil, "BACKGROUND")
-		self.horde.text:SetPoint("TOPLEFT", self.horde, "TOPLEFT", 0, 0)
-		self.horde.text:SetFont((GameFontNormal:GetFont()), 11)
-		self.horde.text:SetShadowOffset(1, -1)
-		self.horde.text:SetShadowColor(0, 0, 0, 1)
-		self.horde.text:SetJustifyH("LEFT")
-		self.horde.text:SetHeight(25)
-		self.horde.text:SetWidth(150)
+		self.Horde.text = self.Horde:CreateFontString(nil, "BACKGROUND")
+		self.Horde.text:SetPoint("TOPLEFT", self.Horde, "TOPLEFT", 0, 0)
+		self.Horde.text:SetFont((GameFontNormal:GetFont()), 11)
+		self.Horde.text:SetShadowOffset(1, -1)
+		self.Horde.text:SetShadowColor(0, 0, 0, 1)
+		self.Horde.text:SetJustifyH("LEFT")
+		self.Horde.text:SetHeight(25)
+		self.Horde.text:SetWidth(150)
 	end
 end

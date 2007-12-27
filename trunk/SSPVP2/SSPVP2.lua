@@ -346,6 +346,8 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				screenTaken = true
 				Screenshot()
 			end
+		elseif( self.db.profile.leave.delay <= 0 ) then
+			self:LeaveBattlefield()
 		else
 			self:ScheduleTimer("LeaveBattlefield", self.db.profile.leave.delay)
 		end
@@ -414,7 +416,7 @@ function SSPVP:LeaveBattlefield()
 		return
 	end
 	
-	-- Make sure we can leave
+	-- Check for suspension
 	if( suspendMod ) then
 		self:Print(L["Suspension is still active, will not auto join or leave."])
 		return
@@ -437,22 +439,24 @@ function SSPVP:LeaveBattlefield()
 	-- within 0.5 seconds, sometimes it's within 1-3 seconds. If you have auto leave set to 0
 	-- then you'll likely leave before you get credit, so delay the actual leave (if need be)
 	-- until the quest is credited to us
-	-- CHANGE ME BACK TO GetBattlefieldWinner() WHEN FIXED
-	if( playerTeamWon and select(2, IsInInstance()) == "pvp" ) then
-		local callToArms = string.format(L["Call to Arms: %s"], activeBF)
-		for i=1, GetNumQuestLogEntries() do
-			local questName, _, _, _, _, _, isComplete = GetQuestLogTitle(i)
-			
-			-- Quest isn't complete yet, AND we have it.
-			-- Meaning, schedule for a log update and auto leave once it's complete
-			if( string.match(questName, callToArms) and not isComplete ) then
-				self:Print(string.format(L["You currently have the battleground daily quest for %s, auto leave has been set to occure once the quest completes."], activeBF))
-				self:RegisterEvent("QUEST_LOG_UPDATE")
-				return
+	if( select(2, IsInInstance()) == "pvp" ) then
+		-- CHANGE ME BACK TO GetBattlefieldWinner() WHEN FIXED
+		local abbrev = self:GetAbbrev(activeBF)
+		if( ( abbrev ~= "eots" and playerTeamWon ) or ( abbrev == "eots" and SSPVP.modules.Match:CheckPlayerWon() ) ) then
+			local callToArms = string.format(L["Call to Arms: %s"], activeBF)
+			for i=1, GetNumQuestLogEntries() do
+				local questName, _, _, _, _, _, isComplete = GetQuestLogTitle(i)
+
+				-- Quest isn't complete yet, AND we have it.
+				-- Meaning, schedule for a log update and auto leave once it's complete
+				if( string.match(questName, callToArms) and not isComplete ) then
+					self:Print(string.format(L["You currently have the battleground daily quest for %s, auto leave has been set to occure once the quest completes."], activeBF))
+					self:RegisterEvent("QUEST_LOG_UPDATE")
+					return
+				end
 			end
 		end
 	end
-	
 
 	confirmLeave = true
 	LeaveBattlefield()
@@ -464,8 +468,8 @@ function SSPVP:QUEST_LOG_UPDATE()
 	for i=1, GetNumQuestLogEntries() do
 		local questName, _, _, _, _, _, isComplete = GetQuestLogTitle(i)
 		if( string.match(questName, callToArms) and isComplete ) then
-			self:LeaveBattlefield()
 			self:UnregisterEvent("QUEST_LOG_UPDATE")
+			self:LeaveBattlefield()
 			return
 		end
 	end
@@ -479,10 +483,15 @@ function SSPVP:ScreenshotTaken()
 		format = "jpg"
 	end
 
-	self:Print(string.format(L["Screenshot saved as WoWScrnShot_%s.%s."], date("%m%d%y_%H%M%S"), format))
 	self:UnregisterEvent("SCREENSHOT_SUCCEDED")
 	self:UnregisterEvent("SCREENSHOT_FAILED")
-	self:ScheduleTimer("LeaveBattlefield", self.db.profile.leave.delay)
+	self:Print(string.format(L["Screenshot saved as WoWScrnShot_%s.%s."], date("%m%d%y_%H%M%S"), format))
+
+	if( self.db.profile.leave.delay <= 0 ) then
+		self:LeaveBattlefield()
+	else
+		self:ScheduleTimer("LeaveBattlefield", self.db.profile.leave.delay)
+	end
 end
 
 -- Now check priorities before we join the battlefield
@@ -502,7 +511,7 @@ function SSPVP:JoinBattlefield()
 	end
 	
 	-- Disable auto join if the windows hidden
-	if( self.db.profile.join.window and not StaticPopup_FindVisible("CONFIRM_BATTLEFIELD_ENTRY", joinID) ) then
+	if( self.db.profile.join.window and ( ( not StaticPopupDialogs["CONFIRM_NEW_BFENTRY"] and not StaticPopup_FindVisible("CONFIRM_BATTLEFIELD_ENTRY", joinID) ) or ( StaticPopupDialogs["CONFIRM_NEW_BFENTRY"] and not StaticPopup_FindVisible("CONFIRM_NEW_BFENTRY", joinID) ) ) ) then
 		self:Print(string.format(L["You have the battlefield entry window hidden for %s, will not auto join."], (GetBattlefieldStatus(joinID))))
 
 		joinID = nil
@@ -622,6 +631,7 @@ function SSPVP:Echo(msg, color)
 	end
 end
 
+-- Ace3 doesn't provide this with the colors like Dongle does, so do it ourself
 function SSPVP:Print(msg)
 	DEFAULT_CHAT_FRAME:AddMessage("|cFF33FF99SSPVP|r: " .. msg)
 end
@@ -673,7 +683,7 @@ function SSPVP:CombatText(text, color)
 	elseif( IsAddOnLoaded("MikScrollingBattleText") ) then
 		MikSBT.DisplayMessage(text, MikSBT.DISPLAYTYPE_NOTIFICATION, false, color.r * 255, color.g * 255, color.b * 255)		
 	
-	-- Blizzard custom text
+	-- Blizzard Combat Text
 	elseif( IsAddOnLoaded("Blizzard_CombatText") ) then
 		-- Haven't cached the movement function yet
 		if( not COMBAT_TEXT_SCROLL_FUNCTION ) then

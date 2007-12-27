@@ -85,8 +85,7 @@ SSPVPLocals = {
 	["Week"] = "Week",
 	
 	-- Flags
-	["Alliance flag carrier %s, held for %s."] = "Alliance flag carrier %s, held for %s.",
-	["Horde flag carrier %s, held for %s."] = "Horde flag carrier %s, held for %s.",
+	["%s flag carrier %s, held for %s."] = "%s flag carrier %s, held for %s.",
 	
 	["was picked up by (.+)!"] = "was picked up by (.+)!",
 	["captured the"] = "captured the",
@@ -99,6 +98,7 @@ SSPVPLocals = {
 	["Held Time: %s"] = "Held Time: %s",
 	["Capture Time: %s"] = "Capture Time: %s",
 	
+	["Cannot target %s, in combat"] = "Cannot target %s, in combat",
 	["Targetting %s"] = "Targetting %s",
 	["%s is out of range"] = "%s is out of range",
 	
