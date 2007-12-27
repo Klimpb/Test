@@ -30,10 +30,10 @@ SSPVPLocals = setmetatable({
 	["Higher priority battlefield ready, auto joining %s in %d seconds."] = "Schlachtfeld mit h\195\182herer Priorit\195\164t gefunden, Auto-Beitreten zu %s in %d Sekunden.",
 	["You're current activity is a higher priority then %s, not auto joining."] = "Ihr macht gerade etwas mit h\195\182herer Priorit\195\164t als %s, Auto-Beitreten deaktiviert.",
 
-	["You have the battlefield entry window hidden for %s, will not auto join."] = "You have the battlefield entry window hidden for %s, will not auto join.",
+	["You have the battlefield entry window hidden for %s, will not auto join."] = "Du hast das Schlachtfeld Fenster versteckt f\195\188r %s, es wird nicht automatisch beigetreten.",
 	
 	["%s %d points (%d rating)"] = "%s %d Punkte (%d Wertung)",
-	["/ %d personal (%d rating)"] = "/ %d persönlich (%d Wertung)",
+	["/ %d personal (%d rating)"] = "/ %d pers\195\182nlich (%d Wertung)",
 	
 	["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"] = "Ihr seid gerade dabei, die aktive oder angemeldete Arena %s (%d vs %d) zu verlassen, seid Ihr sicher?",
 	["You are about to leave the active or queued battleground %s, are you sure?"] = "Ihr seid gerade dabei, das aktive oder angemeldete Schlachtfeld %s zu verlassen, seid Ihr sicher?",
@@ -69,11 +69,11 @@ SSPVPLocals = setmetatable({
 	["Flag Respawn: %s"] = "Flaggen-Respawn: %s",
 	["Auto release disabled, %d %s until release"] = "Automatische Freilassung abgeschaltet, %d %s bis zur Freilassung",
 	
-	["%d personal rating in %s (%dvs%d)"] = "%d persönliche Wertung in %s (%dvs%d)",
+	["%d personal rating in %s (%dvs%d)"] = "%d pers\195\182nliche Wertung in %s (%dvs%d)",
 	["%s is ready to join, auto leave disabled."] = "%s ist zum Betritt bereit, automatisch Verlassen abgeschaltet.",
 	
 	-- Modified queue window
-	["You are now eligible to enter %s. %s left to join."] = "Du kannst jetzt %s Betreten. %s noch zum Betreten.",
+	["You are now eligible to enter %s. %s left to join."] = "Du kannst jetzt %s beitreten. %s noch zum beitreten Zeit.",
 	
 	-- Mover
 	["PvP Objectives Anchor"] = "PvP Ziele Anker",
@@ -123,14 +123,14 @@ SSPVPLocals = setmetatable({
 	["Battlemaster window ready check started, you have 10 seconds to get the window open."] = "Kampfmeiser-Fenster \195\188berpr\195\188fung gestartet, du hast 10 Sekunden, um das Fenster zu \195\182ffnen.",
 	["Leaving Alterac Valley queues."] = "Verlassen der Alterac Warteschlange.",
 	
-	["Alterac Valley sync queue has been stopped by %s."] = "Alterac Valley sync queue has been stopped by %s.",
+	["Alterac Valley sync queue has been stopped by %s."] = "Alterac Synchronisierungs Warteschlange wurde gestoppt von %s.",
 	["Alterac Valley queue stopped."] = "Alteractal Warteschlange gestoppt.",
-	["Alterac Valley queue has been dropped by %s."] = "Alterac Valley queue has been dropped by %s.",
+	["Alterac Valley queue has been dropped by %s."] = "Alterac Synchronisierungs Warteschlange wurde abgebrochen von %s.",
 	
 	["Forcing join on instance #%d."] = "Versuche der Instanz beizutreten #%d.",
-	["Invalid number entered for sync queue."] = "Ung\195\188ltige Nummer eigegeben f\195\188r synchrone Warteschlange.",
+	["Invalid number entered for sync queue."] = "Ung\195\188ltige Nummer eingegeben f\195\188r Synchronisierungs Warteschlange.",
 	["Joining Alterac Valley #%d at the request of %s"] = "Betrete das Alterac #%d auf Anfrage von %s",
-	["%s has requested you join Alterac Valley #%d, but you have force join disabled."] = "%s fragt ob du dem Alterac beitreten willst #%d, aber du hast schnelles Beitreten ausgeschaltet.",
+	["%s has requested you join Alterac Valley #%d, but you have force join disabled."] = "%s fragt ob du dem Alterac #%d beitreten willst, aber du hast schnelles Beitreten ausgeschaltet.",
 	
 	["Ready: %s"] = "Bereit: %s",
 	["Not Ready: %s"] = "Nicht Bereit: %s",
@@ -167,7 +167,7 @@ SSPVPLocals = setmetatable({
 	["Next Update"] = "N\195\164chstes Update",
 	["You are about to send a queue drop request, are you sure?"] = "Du bist dabei einen Abbruchantrag f\195\188r die Warteschlange durchzuf\195\188hren, bist du sicher?",
 	
-	-- CT support
+	-- CT support / CT Hilfe
 	["-%d Reinforcements"] = "-%d Verst\195\164rkung",
 	["+%d Points"] = "+%d Punkte",
 	
@@ -176,7 +176,7 @@ SSPVPLocals = setmetatable({
 	["Servers"] = "Server",
 	["Classes"] = "Klassen",
 	
-	-- Arathi basin
+	-- Arathi basin / Arathibecken
 	["claims the ([^!]+)"] = "hat ([^!]+) besetzt!",
 	["has taken the ([^!]+)"] = "hat ([^!]+) eingenommen!",
 	["has assaulted the ([^!]+)"] = "hat ([^!]+) angegriffen!",
@@ -188,7 +188,7 @@ SSPVPLocals = setmetatable({
 	["Bases to win: %d"] = "Basen zum Sieg: %d",
 	["Base Final: %d"] = "Basen am Ende: %d",
 	
-	-- Alterac valley
+	-- Alterac valley / Alteractal
 	["Herald"] = "Herold",
 	["Snowfall Graveyard"] = "Der Schneewehenfriedhof",
 	["claims the Snowfall graveyard"] = "hat den Schneewehenfriedhof besetzt",
@@ -199,13 +199,13 @@ SSPVPLocals = setmetatable({
 	["Reinforcements: ([0-9]+)"] = "Verst\195\164rkung: ([0-9]+)",
 	["%s will be captured by the %s in %s"] = "%s wird von der %s in %s erobert!",
 	
-	-- Eye of the Storm
+	-- Eye of the Storm / Auge des Sturms
 	["Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000"] = "Basen: ([0-9]+)  Siegpunkte: ([0-9]+)%/2000",
 	["Bases %d  Points %d/2000"] = "Basen %d  Punkte %d/2000",
 	["flag has been reset"] = "Die Flagge wurde zur\195\188ckgesetzt.",
 	
-	-- Gods
-	["Ivus the Forest Lord"] = "Ivus der Waldf\195\188rs",
+	-- Gods / Götter
+	["Ivus the Forest Lord"] = "Ivus der Waldf\195\188rst",
 	["Lokholar the Ice Lord"] = "Lokholar der Eislord",
 	
 	["Ivus Moving: %s"] = "Ivus der Waldf\195\188rst in Bewegung: %s",
@@ -214,7 +214,7 @@ SSPVPLocals = setmetatable({
 	["Wicked, wicked, mortals"] = "Gemeine, Gemeine, Sterbliche",
 	["WHO DARES SUMMON LOKHOLA"] = "WER WAGT ES LOKHOLA HERBEIZURUFEN?",
 
-	-- Captain Galvangar
+	-- Captain Galvangar / Hauptmann Galvangar
 	["Captain Galvangar"] = "Hauptmann Galvangar",
 	
 	["The Alliance has slain Captain Galvangar."] = "Die Allianz hat Hauptmann Galvangar get\195\182tet.",
@@ -224,7 +224,7 @@ SSPVPLocals = setmetatable({
 	["Your kind has no place in Alterac Valley"] = "F\195\188r Eure Art ist kein Platz im Alteractal!",
 	["I'll never fall for that, fool!"] = "Ich werde niemals fallen, Dummkopf!",
 	
-	-- Captain Balinda
+	-- Captain Balinda / Hauptmann Balinda Steinbruch
 	["Captain Balinda Stonehearth"] = "Hauptmann Balinda Steinbruch",
 	
 	["The Horde has slain Captain Balinda Stonehearth."] = "Die Horde hat Hauptmann Balinda Steinbruch get\195\182tet.",
@@ -234,7 +234,7 @@ SSPVPLocals = setmetatable({
 	["Begone, uncouth scum!"] = "Verschwinde, dreckiger Abschaum!",
 	["Filthy Frostwolf cowards"] = "R\195\164udige Frostwolf-Feiglinge",
 	
-	-- Drek'Thar
+	-- Drek'Thar / Drek'Thar
 	["Drek'Thar"] = "Drek'Thar",
 	
 	["The Alliance has engaged Drek'Thar."] = "Die Allianz hat Drek'Thar angegriffen.",
@@ -244,7 +244,7 @@ SSPVPLocals = setmetatable({
 	["Stormpike filth!"] = "Sturmlanzenabschaum!",
 	["You seek to draw the General of the Frostwolf"] = "Ihr versucht, den General der Frostwolf Armee aus seinem Bunker zu locken? PAH das ich nicht Lache!",
 	
-	-- Vanndar
+	-- Vanndar Stormpike / Vanndar Sturmlanze
 	["Vanndar Stormpike"] = "Vanndar Sturmlanze",
 	
 	["The Horde has reset Vanndar Stormpike."] = "Die Horde hat Vanndar Sturmlanze zur\195\188ckgesetzt.",
@@ -254,7 +254,7 @@ SSPVPLocals = setmetatable({
 	["Soldiers of Stormpike, your General is under attack"] = "Soldaten des Sturmlanzenklans, euer General wird angegriffen!",	
 	["You'll never get me out of me"] = "Ihr werdet mich niemals aus meinem Bunker locken!",	
 
-	-- Text for catching time until match starts
+	-- Text for catching time until match starts / Zeiten bevor das Spiel startet
 	["2 minute"] = "2 Minuten",
 	["1 minute"] = "1 Minute",
 	["30 seconds"] = "30 Sekunden",
@@ -262,7 +262,7 @@ SSPVPLocals = setmetatable({
 	["Thirty seconds"] = "drei\195\159ig Sekunden",
 	["One minute"] = "Eine Minute",
 	
-	-- Slash commands
+	-- Slash commands / Slash Befehle
 	["SSPVP Arena slash commands"] = "SSPVP Arena slash('/') Befehle",
 	[" - rating <rating> - Calculates points given from the passed rating."] = " - rating <rating> - Errechnet die gegebenen Punkte von der letzten Wertung.",
 	[" - points <points> - Calculates rating required to reach the passed points."] = " - points <points> - Errechnet die Bewertung, die erfordert wird, um die gebrauchten Punkte zu erreichen.",
@@ -301,7 +301,7 @@ SSPVPLocals = setmetatable({
 	
 	["+%d points (%d rating) / %d points (%d rating)"] = "+%d Punkte (%d Wertung) / %d Punkte (%d Wertung)",
 
-	-- Overlay categories
+	-- Overlay categories / Übersichts Kategorien
 	["Faction Balance"] = "Fraktionsverteilung",
 	["Timers"] = "Timer",
 	["Match Info"] = "Spiel Info",
@@ -311,7 +311,7 @@ SSPVPLocals = setmetatable({
 	["Frame Moving"] = "Fenster bewegen",
 	["Alterac Valley sync queuing"] = "Alterac Synchronisierungs Warteschlange",
 	
-	-- GOOEY
+	-- GOOEY / GOOEY
 	["General"] = "Allgemein",
 	["Auto Queue"] = "Auto-Warteschlange",
 	["Battlefield"] = "Schlachtfeld",
@@ -321,7 +321,7 @@ SSPVPLocals = setmetatable({
 
 
 
-	-- GENERAL
+	-- GENERAL / Allgeimein
 	["Play"] = "Spielen",
 	["Stop"] = "Stoppen",
 	
@@ -364,7 +364,7 @@ SSPVPLocals = setmetatable({
 	["Lock capture bar"] = "Fixiere Eroberungsbalken",
 	["Shows an anchor above the frame that lets you move it, the frame you're trying to move may have to be visible to actually move it."] = "Zeigt einen Anker \195\188ber dem Rahmen, mit dem sich das Fenster verschieben l\195\164\195\159t, der Rahmen muss daf\195\188r Sichtbar sein.",
 	
-	-- BATTLEFIELD
+	-- BATTLEFIELD / Schlachtfeld
 	["Death"] = "Tod",
 	["Scoreboard"] = "Punkteanzeige",
 	["Color player name by class"] = "F\195\164rbe Spielernamen nach Klasse",
@@ -373,7 +373,7 @@ SSPVPLocals = setmetatable({
 	["Release from corpse when inside an active battleground"] = "Automatisches Akzeptieren von Wiederbelebungen innerhalb eines aktiven Schlachtfelds",
 	["Release even with a soul stone active"] = "Automatische Geist-Freigabe auch mit einem aktiven Seelenstein",
 	
-	-- AUTO JOIN
+	-- AUTO JOIN / Automatisch Beitreten
 	["Delay"] = "Verz\195\182gerung",
 	["Join priorities"] = "Beitritts Priorit\195\164ten",
 	["Enable auto join"] = "Aktiviere Auto-Beitreten",
@@ -385,7 +385,7 @@ SSPVPLocals = setmetatable({
 	["Arena join delay"] = "Verz\195\182gerung beim Beitreten von Arenen",
 	["Don't auto join a battlefield if the queue window is hidden"] = "Nicht automatisch beitreten, wenn das Warteschlangen Fenster versteckt wird.",
 	
-	-- AUTO LEAVE
+	-- AUTO LEAVE / Automatisch Verlassen
 	["Auto Leave"] = "Auto-Verlassen",
 	["Confirmation"] = "Best\195\164tigung",
 	["Confirm when leaving a battlefield queue through minimap list"] = "Best\195\164tige, wenn du eine Schlachtfeld Warteschlange \195\188ber die Minimap Liste verlassen willst",
@@ -395,7 +395,7 @@ SSPVPLocals = setmetatable({
 	["Enable auto leave"] = "Auto-Verlassen",
 	["Screenshot score board when game ends"] = "Screenshot der Punkteanzeige bei Spielende",
 	
-	-- OVERLAY
+	-- OVERLAY / Übersichtstafel
 	["Frame"] = "Rahmen",
 	["Color"] = "Farbe",
 	["Lock overlay"] = "Fixiere Info-Fenster",
@@ -414,14 +414,14 @@ SSPVPLocals = setmetatable({
 	["Use short time format"] = "Benutze kurzes Zeitformat",
 	["Shows timers as HH:MM:SS instead of X Minutes, X Seconds"] = "Zeigt die Zeit als HH:MM:SS anstelle von den X Minuten, X Sekunden",
 	
-	-- AV
+	-- AV / AV
 	["Alerts"] = "Alarme",
 	["Timers"] = "Zeiten",
 	["Enable capture timers"] = "Aktiviere Eroberungstimer",
 	["Enable interval capture messages"] = "Aktiviere Intervall f\195\188r Eroberungsnachrichten",
 	["Seconds between capture messages"] = "Intervall in Sekunden zwischen den Nachrichten",
 	["Show resources gained through mines"] = "Zeigt die Ressourcen, die durch die Minen gewonnen wurden",
-	["Show resources lost from captains and towers in MSBT/SCT/FCT"] = "Zeigt die verloren Ressourcen von Kommandanten und T\195\188rmen MSBT/SCT/FCT",
+	["Show resources lost from captains and towers in MSBT/SCT/FCT"] = "Zeigt die verloren Ressourcen von Kommandanten und T\195\188rmen in MSBT/SCT/FCT an",
 	["None"] = "Nichts",
 	["25%"] = "25%",
 	["50%"] = "50%",
@@ -436,7 +436,7 @@ SSPVPLocals = setmetatable({
 	["Displays how many people are queued, number of people who have confirmation for specific instance id's and the instance id's that people are currently playing inside."] = "Zeigt an, wie viele Leute in der Warteschlange sind, Zahl der Leute, die Best\195\164tigung f\195\188r eine spezielle Instanz ID haben und die Instanz ID, auf welcher die Leute derzeit Spielen.",
 	["When the leader is ready for the group to join an Alterac Valley, he can force everyone into it with the required instance id. You will still be shown the instance id to join even if you disable this."] = "Wenn der Anf\195\188hrer der Gruppe bereit ist dem Alterac beizutreten, kann er jeder schnell in die gleiche Instanz ID bringen. Du bekommst die Instanz ID nochmals angezeigt, auch wenn du das Fenster ausgeschaltet hast.",
 	
-	-- EOTS/AB/WSG
+	-- EOTS/AB/WSG / EOTS/AB/WSG
 	["Flag Carrier"] = "Flaggentr\195\164ger",
 	["Match Info"] = "Spiel Info",
 	
@@ -454,7 +454,7 @@ SSPVPLocals = setmetatable({
 	["Macro Text"] = "Makro Text",
 	["Text to execute when clicking on the flag carrier button"] = "Beim Klicken auszugebender Text, wenn man auf den Flaggentr\195\164ger klickt",
 	
-	-- Disable modules
+	-- Disable modules / Deaktiviere Module
 	["Modules"] = "Module",
 	["Disable %s"] = "Deaktiviere %s",
 	["match information"] = "Spielinformationen",
@@ -467,7 +467,7 @@ SSPVPLocals = setmetatable({
 
 
 	["Timers for Alterac Valley when capturing nodes, as well interval alerts on time left before capture."] = "Zeiten f\195\188r das Alterac, als T\195\188rme oder Friedh\195\182fe erobert wurden, au\195\159erdem kommen in intervallen Alarme welche die Zeiten bis zur Eroberung anzeigen.",
-	["Cleaning up the text in the PvP objectives along with points gained from captures in Eye of the Storm."] = "S\195\164bern des Textes der PvP Ziele, die von den erworbenen Punkten durch das Erobern im Auge des Sturms.",
+	["Cleaning up the text in the PvP objectives along with points gained from captures in Eye of the Storm."] = "S\195\164ubern des Textes der PvP Ziele, die von den erworbenen Punkten durch das Erobern im Auge des Sturms erhalten wurden.",
 	
 	["battleground"] = "Schlachtfeld",
 	["General battleground specific changes like auto release."] = "Spezifische \195\132nderungen des allgemeinen Schlachtfeldes wie automatische Geist-Freigabe.",
@@ -478,7 +478,7 @@ SSPVPLocals = setmetatable({
 	["Disable auto release"] = "Deaktiviere automatische Geist-Freigabe",
 	["Disables auto release for this specific battleground."] = "Deaktivierung automatischer Geist-Freigabe f\195\188r dieses spezielle Schlachtfeld.",
 	
-	-- Priorities
+	-- Priorities / Prioritäten
 	["afk"] = "Wenn AFK",
 	["ratedArena"] = "Gewertete Arena",
 	["skirmArena"] = "Ungewertete Arena",
@@ -490,3 +490,7 @@ SSPVPLocals = setmetatable({
 	["instance"] = "Instanz",
 	["none"] = "Alles andere",
 }, {__index = SSPVPLocals})
+
+BINDING_HEADER_SSPVP = "SSPVP";
+BINDING_NAME_ETARFLAG = "Ziel feindlicher Flaggentr\195\164ger";
+BINDING_NAME_FTARFLAG = "Ziel verb\195\188ndeter Flaggentr\195\164ger";
