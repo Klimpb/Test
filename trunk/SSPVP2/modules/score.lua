@@ -9,6 +9,8 @@ local friendlies = {}
 local servers = {}
 local classes = {}
 
+local classColors = {}
+
 local scoresRepositioned
 local playerName
 
@@ -18,11 +20,16 @@ function Score:OnInitialize()
 			level = false,
 			icon = true,
 			color = true,
+			sameServer = true,
 		},
 	}
 	
 	self.db = SSPVP.db:RegisterNamespace("score", self.defaults)	
 	playerName = UnitName("player")
+	
+	for class, color in pairs(RAID_CLASS_COLORS) do
+		classColors[class] = string.format("|cff%02x%02x%02x", color.r * 255, color.g * 255, color.b * 255)
+	end
 end
 
 function Score:EnableModule()
@@ -280,18 +287,13 @@ hooksecurefunc("WorldStateScoreFrame_Update", function()
 				getglobal("WorldStateScoreButton" .. i .. "ClassButtonIcon"):Hide()
 			end
 
-			-- Color names by class
-			if( Score.db.profile.color and name ~= playerName ) then
-				nameText:SetVertexColor(RAID_CLASS_COLORS[classToken].r, RAID_CLASS_COLORS[classToken].g, RAID_CLASS_COLORS[classToken].b )
-			end
-
 			-- Show level next to the name
 			local level = ""
 			if( Score.db.profile.level ) then
 				if( enemies[name] ) then
-					level = "|cffffffff[" .. enemies[name] .. "]|r "
+					level = "[" .. enemies[name] .. "] "
 				elseif( friendlies[name] ) then
-					level = "|cffffffff[" .. friendlies[name] .. "]|r "
+					level = "[" .. friendlies[name] .. "] "
 				end
 			end
 
@@ -308,11 +310,22 @@ hooksecurefunc("WorldStateScoreFrame_Update", function()
 			-- Append server name to everyone even if they're from the same server
 			if( string.match(name, "-") ) then
 				name, server = string.match(name, "(.+)%-(.+)")
-			else
-				server = GetRealmName()				
+			elseif( Score.db.profile.sameServer ) then
+				server = GetRealmName()	
 			end
 			
-			nameText:SetText(level .. name .. " |cffffffff- " .. server .. "|r")
+			-- Add class color
+			local color = ""
+			if( Score.db.profile.color and classColors[classToken] ) then
+				color = classColors[classToken]
+			end
+			
+			-- Server provided, so show it!
+			if( server ) then
+				nameText:SetFormattedText("%s%s%s|r - %s", level, color, name, server)
+			else
+				nameText:SetFormattedText("%s%s%s|r", level, color, name)
+			end
 		end
 	end
 end)
