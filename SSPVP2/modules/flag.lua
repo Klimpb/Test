@@ -37,7 +37,7 @@ function Flag:EnableModule(abbrev)
 		self.isActive = nil
 		return
 	end
-
+	
 	self.activeBF = abbrev
 	self:ScheduleRepeatingTimer("ScanParty", 0.50)
 		
@@ -72,13 +72,18 @@ function Flag:DisableModule()
 
 	self:CancelAllTimers()
 	self:UnregisterAllEvents()
-	self:Hide("Horde")
-	self:Hide("Alliance")
 	
+
 	SSOverlay:RemoveCategory("timer")
 	SSPVP:UnregisterOOCUpdate("UpdateAllAttributes")
 	SSPVP:UnregisterOOCUpdate("UpdateStatus")
 
+	if( InCombatLockdown() ) then
+		self:Hide("Horde")
+		self:Hide("Alliance")
+	else
+		SSPVP:RegisterOOCUpdate(self, "UpdateStatus")
+	end
 end
 
 function Flag:Reload()
@@ -421,7 +426,6 @@ end
 function Flag:Show(faction)
 	if( not faction or not self[faction] ) then
 		return
-
 	end
 	
 	-- Just because flag changes in combat, doesn't mean 
