@@ -1,9 +1,13 @@
-local Flag = SSPVP:NewModule("Flag", "AceEvent-3.0", "AceTimer-3.0")
+local Flag = SSPVP:NewModule("Flag", "AceEvent-3.0")
 Flag.activeIn = "bg"
 
 local L = SSPVPLocals
 local carriers = {["Alliance"] = {}, ["Horde"] = {}}
+local allianceUpdate = -1
+local hordeUpdate = -1
+local partyUpdate = 0
 local HEALTH_TIMEOUT = 10
+local healthMonitor = CreateFrame("Frame")
 
 function Flag:OnInitialize()
 	self.defaults = {
@@ -29,6 +33,7 @@ function Flag:OnInitialize()
 	
 	self.db = SSPVP.db:RegisterNamespace("flag", self.defaults)	
 	playerName = UnitName("player")
+	healthMonitor:Hide()
 end
 
 function Flag:EnableModule(abbrev)
@@ -39,7 +44,6 @@ function Flag:EnableModule(abbrev)
 	end
 	
 	self.activeBF = abbrev
-	self:ScheduleRepeatingTimer("ScanParty", 0.50)
 		
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "ParseMessage")
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "ParseMessage")
@@ -59,9 +63,16 @@ function Flag:EnableModule(abbrev)
 	else
 		self:UpdateAllAttributes()
 	end
+	
+	-- Start checking for health updates
+	healthMonitor:Show()
 end
 
 function Flag:DisableModule()
+	-- Stop checking
+	healthMonitor:Hide()
+
+	
 	for k in pairs(carriers["Alliance"]) do
 		carriers["Alliance"][k] = nil
 	end
@@ -73,7 +84,6 @@ function Flag:DisableModule()
 	self:CancelAllTimers()
 	self:UnregisterAllEvents()
 	
-
 	SSOverlay:RemoveCategory("timer")
 	SSPVP:UnregisterOOCUpdate("UpdateAllAttributes")
 	SSPVP:UnregisterOOCUpdate("UpdateStatus")
@@ -158,8 +168,13 @@ function Flag:UpdateHealth(unit)
 		carriers[faction].health = floor((UnitHealth(unit) / UnitHealthMax(unit) * 100) + 0.5)
 		
 		self:UpdateCarrier(faction)
-		self:CancelTimer("Reset" .. faction .. "Health")
-		self:ScheduleTimer("Reset" .. faction .. "Health", HEALTH_TIMEOUT)
+		
+		if( faction == "Alliance" ) then
+			allianceUpdate = HEALTH_TIMEOUT
+		else
+
+			hordeUpdate = HEALTH_TIMEOUT
+		end
 	end
 end
 
@@ -198,18 +213,14 @@ function Flag:IsTargeted(name)
 end
 
 -- More then HEALTH_TIMEOUT seconds without updates means they're too far away
-function Flag:ResetAllianceHealth()
-	self:ResetHealth("Alliance")
-end
-
-function Flag:ResetHordeHealth()
-	self:ResetHealth("Horde")
-end
-
 function Flag:ResetHealth(type)
 	-- If we still have them targeted, don't reset timeout
 	if( self:IsTargeted(carriers[type].name) ) then
-		self:ScheduleTimer("Reset" .. type .. "Health", HEALTH_TIMEOUT)
+		if( type == "Alliance" ) then
+			allianceUpdate = HEALTH_TIMEOUT
+		else
+			hordeUpdate = HEALTH_TIMEOUT
+		end
 		return
 	end
 
@@ -539,4 +550,35 @@ function Flag:CreateButtons()
 		self.Horde.text:SetHeight(25)
 		self.Horde.text:SetWidth(150)
 	end
+	
+	if( self.Alliance and self.Horde ) then
+		self:UPDATE_BINDINGS()
+	end
 end
+
+-- Handle health time outs + party scan
+healthMonitor:SetScript("OnUpdate", function(self, elapsed)
+	partyUpdate = partyUpdate + elapsed
+	if( partyUpdate >= 0.50 ) then
+		partyUpdate = 0
+		Flag:ScanParty()
+	end
+	
+	if( allianceUpdate >= 0 ) then
+		allianceUpdate = allianceUpdate - elapsed
+		
+		if( allianceUpdate <= 0 ) then
+			allianceUpdate = -1
+			Flag:ResetHealth("Alliance")
+		end
+	end
+	
+	if( hordeUpdate >= 0 ) then
+		hordeUpdate = hordeUpdate - elapsed
+		
+		if( hordeUpdate <= 0 ) then
+			hordeUpdate = -1
+			Flag:ResetHealth("Horde")
+		end
+	end
+end)

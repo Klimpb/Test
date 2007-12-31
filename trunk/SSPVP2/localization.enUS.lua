@@ -21,7 +21,7 @@ SSPVPLocals = {
 	["You are now in the queue for %s."] = "You are now in the queue for %s.",
 	
 	["Higher priority battlefield ready, auto joining %s in %d seconds."] = "Higher priority battlefield ready, auto joining %s in %d seconds.",
-	["You're current activity is a higher priority then %s, not auto joining."] = "You're current activity is a higher priority then %s, not auto joining.",
+	["Your current activity is a higher priority then %s, not auto joining."] = "Your current activity is a higher priority then %s, not auto joining.",
 	["You have the battlefield entry window hidden for %s, will not auto join."] = "You have the battlefield entry window hidden for %s, will not auto join.",
 	
 	["%s %d points (%d rating)"] = "%s %d points (%d rating)",
@@ -308,8 +308,9 @@ SSPVPLocals = {
 	["Auto Queue"] = "Auto Queue",
 	["Battlefield"] = "Battlefield",
 	["Overlay"] = "Overlay",
-	["Auto Join"] = "Auto Join",
 	["Display"] = "Display",
+	["Joining"] = "Joining",
+	["Leaving"] = "Leaving",
 
 	-- GENERAL
 	["Play"] = "Play",
@@ -359,9 +360,9 @@ SSPVPLocals = {
 	["Hide class icon next to names"] = "Hide class icon next to names",
 	["Show player levels next to name"] = "Show player levels next to name",
 	["Release from corpse when inside an active battleground"] = "Release from corpse when inside an active battleground",
-	["Release even with a soul stone active"] = "Release even with a soul stone active",
+	["Automatically use soul stone if any on death"] = "Automatically use soul stone if any on death",
 	
-	-- AUTO JOIN
+	-- JOIN
 	["Delay"] = "Delay",
 	["Join priorities"] = "Join priorities",
 	["Enable auto join"] = "Enable auto join",
@@ -373,8 +374,7 @@ SSPVPLocals = {
 	["Arena join delay"] = "Arena join delay",
 	["Don't auto join a battlefield if the queue window is hidden"] = "Don't auto join a battlefield if the queue window is hidden",
 	
-	-- AUTO LEAVE
-	["Auto Leave"] = "Auto Leave",
+	-- LEAVE
 	["Confirmation"] = "Confirmation",
 	["Confirm when leaving a battlefield queue through minimap list"] = "Confirm when leaving a battlefield queue through minimap list",
 	["Confirm when leaving a finished battlefield through score"] = "Confirm when leaving a finished battlefield through score",
