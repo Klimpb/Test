@@ -13,8 +13,8 @@ function Config:OnInitialize()
 	OHObj:RegisterCategory(L["General"], self, "General", nil, 1)
 	OHObj:RegisterCategory(L["Modules"], self, "Modules", nil, 2)
 	OHObj:RegisterCategory(L["Battlefield"], self, "Battlefield", nil, 3)
-	OHObj:RegisterCategory(L["Auto Join"], self, "AutoJoin", nil, 4)
-	OHObj:RegisterCategory(L["Auto Leave"], self, "AutoLeave", nil, 5)
+	OHObj:RegisterCategory(L["Joining"], self, "Join", nil, 4)
+	OHObj:RegisterCategory(L["Leaving"], self, "Leave", nil, 5)
 	OHObj:RegisterCategory(L["Overlay"], self, "Overlay", nil, 6)
 	OHObj:RegisterCategory(L["Warsong Gulch"], self, "WSG", nil, 7)
 	OHObj:RegisterCategory(L["Alterac Valley"], self, "AV", nil, 8)
@@ -66,7 +66,7 @@ function Config:Battlefield()
 		
 		{ group = L["Death"], type = "groupOrder", order = 3 },
 		{ order = 1, group = L["Death"], text = L["Release from corpse when inside an active battleground"], type = "check", var = {"Battlefield", "release"}},
- 		{ order = 2, group = L["Death"], text = L["Release even with a soul stone active"], type = "check", var = {"Battlefield", "releaseSS"}},
+ 		{ order = 2, group = L["Death"], text = L["Automatically use soul stone if any on death"], type = "check", var = {"Battlefield", "soulstone"}},
  	}
 
 	return HousingAuthority:CreateConfiguration(config, {onSet = "Reload", set = "Set", get = "Get", handler = Config})
@@ -156,7 +156,7 @@ local function movePriorityDown(self)
 	updatePriorityList(frame, true)
 end
 
-function Config:AutoJoin()
+function Config:Join()
 	local configFrame = CreateFrame("Frame", nil, OptionHouse:GetFrame("addon"))
 	
 
@@ -229,7 +229,7 @@ function Config:AutoJoin()
 end
 
 -- AUTO LEAVE
-function Config:AutoLeave()
+function Config:Leave()
 	local config = {
  		{ group = L["General"], type = "groupOrder", order = 1 },
 		{ order = 1, group = L["General"], text = L["Enable auto leave"], type = "check", var = {"leave", "enabled"}},

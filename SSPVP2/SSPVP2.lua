@@ -545,7 +545,7 @@ function SSPVP:JoinBattlefield()
 	
 	-- Make sure we can auto join
 	if( ( self.db.profile.join.priority == "less" and priority < joinPriority ) or ( self.db.profile.join.priority == "lseql" and priority <= joinPriority ) ) then
-		self:Print(string.format(L["You're current activity is a higher priority then %s, not auto joining."], select(2, GetBattlefieldStatus(joinID))))
+		self:Print(string.format(L["Your current activity is a higher priority then %s, not auto joining."], select(2, GetBattlefieldStatus(joinID))))
 	else
 		AcceptBattlefieldPort(joinID, true)
 	end

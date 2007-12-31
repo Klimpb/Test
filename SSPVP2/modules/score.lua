@@ -91,7 +91,6 @@ end
 local function sortTotals(a, b)
 	if( not a ) then
 		return true
-
 	elseif( not b ) then
 		return false
 	end
@@ -308,8 +307,9 @@ hooksecurefunc("WorldStateScoreFrame_Update", function()
 			end
 
 			-- Append server name to everyone even if they're from the same server
+			local server
 			if( string.match(name, "-") ) then
-				name, server = string.match(name, "(.+)%-(.+)")
+				name, server = string.match(name, "(.-)%-(.*)$")
 			elseif( Score.db.profile.sameServer ) then
 				server = GetRealmName()	
 			end

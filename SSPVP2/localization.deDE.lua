@@ -11,7 +11,6 @@ SSPVPLocals = setmetatable({
 	["Alterac Valley"] = "Alteractal",
 	["Eye of the Storm"] = "Auge des Sturms",
 
-
 	["Blade's Edge Arena"] = "Arena des Schergrats",
 	["Nagrand Arena"] = "Arena von Nagrand",
 	["Ruins of Lordaeron"] = "Ruinen von Lordaeron",
@@ -28,8 +27,7 @@ SSPVPLocals = setmetatable({
 	["You are now in the queue for %s."] = "Du bist jetzt in der Warteschlange f\195\188r %s.",
 	
 	["Higher priority battlefield ready, auto joining %s in %d seconds."] = "Schlachtfeld mit h\195\182herer Priorit\195\164t gefunden, Auto-Beitreten zu %s in %d Sekunden.",
-	["You're current activity is a higher priority then %s, not auto joining."] = "Ihr macht gerade etwas mit h\195\182herer Priorit\195\164t als %s, Auto-Beitreten deaktiviert.",
-
+	["Your current activity is a higher priority then %s, not auto joining."] = "Ihr macht gerade etwas mit h\195\182herer Priorit\195\164t als %s, Auto-Beitreten deaktiviert.",
 	["You have the battlefield entry window hidden for %s, will not auto join."] = "Du hast das Schlachtfeld Fenster versteckt f\195\188r %s, es wird nicht automatisch beigetreten.",
 	
 	["%s %d points (%d rating)"] = "%s %d Punkte (%d Wertung)",
@@ -93,8 +91,7 @@ SSPVPLocals = setmetatable({
 	["Week"] = "Woche",
 	
 	-- Flags
-	["Alliance flag carrier %s, held for %s."] = "Flaggentr\195\164ger der Allianz %s, gehalten f\195\188r %s.",
-	["Horde flag carrier %s, held for %s."] = "Flaggentr\195\164ger der Horde %s, gehalten f\195\188r %s.",
+	["%s flag carrier %s, held for %s."] = "Flaggentr\195\164ger der %s %s, gehalten f\195\188r %s.",
 	
 	["was picked up by (.+)!"] = "(.+) hat die Flagge der (.+) aufgenommen!",
 	["captured the"] = "(.+) hat die Flagge der (.+) errungen",
@@ -107,6 +104,7 @@ SSPVPLocals = setmetatable({
 	["Held Time: %s"] = "Gehalten: %s",
 	["Capture Time: %s"] = "Eroberungszeit: %s",
 	
+	["Cannot target %s, in combat"] = "Kann %s nicht ins Ziel nehmen, da er im Kampf ist",
 	["Targetting %s"] = "Ziel: %s",
 	["%s is out of range"] = "%s ist au\195\159er Reichweite",
 	
@@ -319,15 +317,12 @@ SSPVPLocals = setmetatable({
 	["Auto Join"] = "Auto-Beitreten",
 	["Display"] = "Anzeige",
 
-
-
 	-- GENERAL / Allgeimein
 	["Play"] = "Spielen",
 	["Stop"] = "Stoppen",
 	
 	["Sound file"] = "Sounddatei",
 	["Timer channel"] = "Timer Channel",
-
 	["Show team summary after rated arena ends"] = "Zeigt die Mannschaftszusammenfassung nach dem Ende einer bewerteten Arenarunde",
 	["Auto append server name while in battlefields for whispers"] = "Automatisch den Servername an ihre Fl\195\188sternachrichten eingef\195\188gen",
 	["Auto queue when inside of a group and leader"] = "Automatische Warteschlange wenn du innerhalb einer Gruppe bist oder der Anf\195\188hrer",
@@ -336,7 +331,6 @@ SSPVPLocals = setmetatable({
 	["Raid"] = "Schlachtgruppe",
 	
 	["Shows how much personal rating you gain/lost, will only show up if it's no the same amount of points as your actual team got."] = "Zeigt wie viel pers\195\182nliche Wertung man bekommen/verloren hat, wird nur angezeit wenn es nicht die gleiche Wertung wie die Teamwertung ist.",
-
 
 	["Show personal rating change after arena ends"] = "Zeige pers\195\182nliche Wertung, nachdem die Arena beendet ist.",
 	
@@ -465,7 +459,6 @@ SSPVPLocals = setmetatable({
 
 	["Timers for Arathi Basin when capturing nodes."] = "Zeiten f\195\188r das Arathibecken, als die Flaggen erorert wurden.",
 
-
 	["Timers for Alterac Valley when capturing nodes, as well interval alerts on time left before capture."] = "Zeiten f\195\188r das Alterac, als T\195\188rme oder Friedh\195\182fe erobert wurden, au\195\159erdem kommen in intervallen Alarme welche die Zeiten bis zur Eroberung anzeigen.",
 	["Cleaning up the text in the PvP objectives along with points gained from captures in Eye of the Storm."] = "S\195\164ubern des Textes der PvP Ziele, die von den erworbenen Punkten durch das Erobern im Auge des Sturms erhalten wurden.",
 	
@@ -479,7 +472,7 @@ SSPVPLocals = setmetatable({
 	["Disables auto release for this specific battleground."] = "Deaktivierung automatischer Geist-Freigabe f\195\188r dieses spezielle Schlachtfeld.",
 	
 	-- Priorities / Prioritäten
-	["afk"] = "Wenn AFK",
+	["afk"] = "Nicht an der Tastatur",
 	["ratedArena"] = "Gewertete Arena",
 	["skirmArena"] = "Ungewertete Arena",
 	["eots"] = "Auge des Sturms",
@@ -494,3 +487,5 @@ SSPVPLocals = setmetatable({
 BINDING_HEADER_SSPVP = "SSPVP";
 BINDING_NAME_ETARFLAG = "Ziel feindlicher Flaggentr\195\164ger";
 BINDING_NAME_FTARFLAG = "Ziel verb\195\188ndeter Flaggentr\195\164ger";
+
+SSPVPRevision = tonumber(string.match("$Revision: 472 $", "(%d+)")) or 0
