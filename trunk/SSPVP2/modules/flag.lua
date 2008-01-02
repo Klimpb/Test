@@ -496,6 +496,10 @@ end
 
 local function carrierPostClick(self)
 	local faction = self.type
+	if( not carriers[faction].name ) then
+		return
+	end
+	
 	if( IsAltKeyDown() and carriers[faction].name ) then
 		SSPVP:ChannelMessage(string.format(L["%s flag carrier %s, held for %s."], L[faction], carriers[faction].name, SecondsToTime(GetTime() - carriers[faction].time)))
 	end
