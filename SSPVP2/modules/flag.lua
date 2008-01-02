@@ -81,7 +81,6 @@ function Flag:DisableModule()
 		carriers["Horde"][k] = nil
 	end
 
-	self:CancelAllTimers()
 	self:UnregisterAllEvents()
 	
 	SSOverlay:RemoveCategory("timer")
