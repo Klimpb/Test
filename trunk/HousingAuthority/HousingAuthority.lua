@@ -159,7 +159,7 @@ local function positionWidgets(columns, parent, widgets, positionGroup, isGroup)
 				-- Shift the info button slightly down for anything besides input
 				-- so it appears centered on the widget
 				local pad = 0
-				if( widgets.data.type ~= "input" ) then
+				if( widget.data.type ~= "input" ) then
 					pad = -3
 				end
 				
@@ -544,14 +544,15 @@ local function dropdownRowClicked(self)
 	if( not parent.data.multi ) then
 		setValue(parent.parent, parent.data, self.key)
 		showDropdown(parent)
-
 		self:GetParent():Hide()
 	else
 		local selectedKeys = getValue(parent.parent, parent.data)
 		if( selectedKeys[self.key] ) then
-			selectedKeys[self.key] = nil	
+			selectedKeys[self.key] = nil
+			self.check:Hide()
 		else
 			selectedKeys[self.key] = true
+			self.check:Show()
 		end
 	
 		setValue(parent.parent, parent.data, selectedKeys)
