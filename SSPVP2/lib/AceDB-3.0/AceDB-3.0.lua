@@ -1,4 +1,4 @@
---[[ $Id: AceDB-3.0.lua 56968 2007-12-14 09:24:47Z ammo $ ]]
+--[[ $Id: AceDB-3.0.lua 57721 2007-12-31 14:55:01Z nevcairiel $ ]]
 local ACEDB_MAJOR, ACEDB_MINOR = "AceDB-3.0", 1
 local AceDB, oldminor = LibStub:NewLibrary(ACEDB_MAJOR, ACEDB_MINOR)
 
@@ -341,6 +341,7 @@ function DBObjectLib:SetProfile(name)
 	
 	self.profile = nil
 	self.keys["profile"] = name
+	self.sv.profileKeys[charKey] = name
 
 	-- Callback: OnProfileChanged, database, newProfileKey
 	self.callbacks:Fire("OnProfileChanged", self, name)

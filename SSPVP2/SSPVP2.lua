@@ -11,7 +11,7 @@ SSPVP = LibStub("AceAddon-3.0"):NewAddon("SSPVP", "AceConsole-3.0", "AceEvent-3.
 
 local L = SSPVPLocals
 
-local activeBF, activeID, joinID, joinAt, joinPriority, screenTaken, confirmLeave, suspendMod
+local activeBF, activeID, joinID, joinAt, joinPriority, screenTaken, confirmLeave, suspendMod, scoreTimer
 
 local teamTotals = {[2] = 0, [3] = 0, [5] = 0}
 local statusInfo = {}
@@ -77,7 +77,7 @@ function SSPVP:OnInitialize()
 		if( input == "suspend" ) then
 			if( suspendMod ) then
 				self:DisableSuspense()
-				self:CancelTimer("DisableSuspense")
+				self:CancelTimer("DisableSuspense", true)
 			else
 				suspendMod = true
 				self:Print(L["Auto join and leave has been suspended for the next 5 minutes, or until you log off."])
@@ -251,7 +251,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 						joiningAt = GetTime() + delay
 						joinPriority = priority
 						
-						self:CancelTimer("JoinBattlefield")
+						self:CancelTimer("JoinBattlefield", true)
 						self:ScheduleTimer("JoinBattlefield", delay)
 						
 						self:Print(string.format(L["Higher priority battlefield ready, auto joining %s in %d seconds."], map, delay))
@@ -279,7 +279,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 
 				-- No sense in requesting scores if you're in arena
 				if( abbrev ~= "arena" ) then
-					self:ScheduleRepeatingTimer(RequestBattlefieldScoreData, 15)
+					scoreTimer = self:ScheduleRepeatingTimer(RequestBattlefieldScoreData, 15)
 					RequestBattlefieldScoreData()
 				end
 				
@@ -292,7 +292,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				playerTeamWon = nil
 				screenTaken = nil
 	
-				self:CancelTimer("RequestBattlefieldScoreData")
+				self:CancelTimer(scoreTimer)
 
 				for name, module in pairs(self.modules) do
 					if( module.isActive ) then

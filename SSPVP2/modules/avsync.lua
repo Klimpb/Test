@@ -146,10 +146,9 @@ function AVSync:ReadyCheck()
 	self:SendMessage(L["Battlemaster window ready check started, you have 10 seconds to get the window open."])
 
 	-- Send request in 10 seconds, check results in 15
-	self:CancelTimer("SendAddonMessage")
-	self:CancelTimer("CheckResults")
+	self:CancelTimer("SendAddonMessage", true)
+	self:CancelTimer("CheckResults", true)
 	
-
 	self:ScheduleTimer("SendAddonMessage", 10, "WINDOW")
 	self:ScheduleTimer("CheckResults", 15, "WINDOW")
 end
@@ -163,13 +162,10 @@ function AVSync:CheckResults()
 			table.insert(totalNotReady, data.name)
 		end
 	end
-	
+		
 	if( #(totalNotReady) == 0 ) then
 		self:SendMessage(L["Everyone is ready to go!"])
-		return
-	end
-	
-	if( #(totalNotReady) > 0 ) then
+	else
 		self:SendMessage(string.format(L["Not Ready: %s"], table.concat(totalNotReady, ", ")))
 	end
 end
@@ -953,6 +949,7 @@ function AVSync:UpdateGUI()
 	end
 	
 	-- Figure out stats
+	local totalPlayers = 0
 	local totalReady = 0
 	local totalNotready = 0
 	local totalUnknown = 0
@@ -965,6 +962,8 @@ function AVSync:UpdateGUI()
 			else
 				totalUnknown = totalUnknown + 1
 			end
+			
+			totalPlayers = totalPlayers + 1
 		end
 		
 		-- New version available
@@ -973,7 +972,7 @@ function AVSync:UpdateGUI()
 		end
 	end
 
-	self.totalPlayers:SetText(#(playerStatus))
+	self.totalPlayers:SetText(totalPlayers)
 	self.totalReady:SetText(totalReady)
 	self.totalNotready:SetText(totalNotready)
 	self.totalUnknown:SetText(totalUnknown)

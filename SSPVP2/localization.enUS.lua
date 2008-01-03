@@ -362,6 +362,7 @@ SSPVPLocals = {
 	["Release from corpse when inside an active battleground"] = "Release from corpse when inside an active battleground",
 	["Automatically use soul stone if any on death"] = "Automatically use soul stone if any on death",
 	
+	
 	-- JOIN
 	["Delay"] = "Delay",
 	["Join priorities"] = "Join priorities",
