@@ -1,4 +1,5 @@
 local AVSync = SSPVP:NewModule("AVSync", "AceEvent-3.0", "AceTimer-3.0", "AceConsole-3.0")
+AVSync.activeIn = "bf"
 
 local L = SSPVPLocals
 
@@ -125,6 +126,22 @@ function AVSync:OnDisable()
 
 	self:UnregisterAllEvents()
 	self:CancelAllTimers()
+end
+
+function AVSync:EnableModule()
+	self:UnregisterEvent("RAID_ROSTER_UPDATE")
+end
+
+function AVSync:DisableModule()
+	if( self.db.profile.enabled ) then
+
+		self:RegisterEvent("RAID_ROSTER_UPDATE", "UpdateGroup")
+		
+		-- Reset our table
+		for i=#(playerStatus), 1, -1 do
+			table.remove(playerStatus, i)
+		end
+	end
 end
 
 function AVSync:Reload()
