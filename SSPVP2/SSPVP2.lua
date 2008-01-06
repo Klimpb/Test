@@ -11,7 +11,7 @@ SSPVP = LibStub("AceAddon-3.0"):NewAddon("SSPVP", "AceConsole-3.0", "AceEvent-3.
 
 local L = SSPVPLocals
 
-local activeBF, activeID, joinID, joinAt, joinPriority, screenTaken, confirmLeave, suspendMod, scoreTimer
+local activeBF, activeID, joinID, joinAt, joinPriority, screenTaken, confirmLeave, suspendMod
 
 local teamTotals = {[2] = 0, [3] = 0, [5] = 0}
 local statusInfo = {}
@@ -279,7 +279,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 
 				-- No sense in requesting scores if you're in arena
 				if( abbrev ~= "arena" ) then
-					scoreTimer = self:ScheduleRepeatingTimer(RequestBattlefieldScoreData, 15)
+					self:ScheduleRepeatingTimer(RequestBattlefieldScoreData, 15)
 					RequestBattlefieldScoreData()
 				end
 				
@@ -292,7 +292,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				playerTeamWon = nil
 				screenTaken = nil
 	
-				self:CancelTimer(scoreTimer)
+				self:CancelTimer("RequestBattlefieldScoreData", true)
 
 				for name, module in pairs(self.modules) do
 					if( module.isActive ) then
