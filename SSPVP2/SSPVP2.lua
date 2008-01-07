@@ -245,7 +245,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 					self:ScheduleTimer("JoinBattlefield", delay)
 					
 				-- Check if priority is higher
-				elseif( joinID ~= i ) then
+				elseif( joinID ~= i and self.db.profile.join.enabled ) then
 					if( ( self.db.profile.join.priority == "less" and joinPriority < priority ) or ( self.db.profile.join.priority == "lseql" and joinPriority <= priority ) ) then
 						joinID = i
 						joiningAt = GetTime() + delay
