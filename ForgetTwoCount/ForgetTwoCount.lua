@@ -73,9 +73,8 @@ function CacheReagents()
 	end
 
 	-- Loop-o-doom
-	local reagent, text, offset, numSpells
 	for book=1, MAX_SKILLLINE_TABS do
-	    _, _, offset, numSpells = GetSpellTabInfo( book )
+	    local _, _, offset, numSpells = GetSpellTabInfo( book )
 
 	    for i=1, numSpells do
 		tooltip:SetSpell( offset + i, BOOKTYPE_SPELL )
@@ -84,8 +83,7 @@ function CacheReagents()
 			text = getglobal( tooltip:GetName() .. "TextLeft" .. j ):GetText()
 
 			if( string.match( text, "^" .. L["Reagents"] ) ) then
-				_, reagent = string.split( "\n", text )
-				
+				local _, reagent = string.split( "|n", text )
 				spellReagents[ ( GetSpellName( offset + i, BOOKTYPE_SPELL ) ) ] = string.lower( reagent )
 				break
 			end
