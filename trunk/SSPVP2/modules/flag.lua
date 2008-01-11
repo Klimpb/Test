@@ -72,7 +72,6 @@ function Flag:DisableModule()
 	-- Stop checking
 	healthMonitor:Hide()
 
-	
 	for k in pairs(carriers["Alliance"]) do
 		carriers["Alliance"][k] = nil
 	end
@@ -87,7 +86,7 @@ function Flag:DisableModule()
 	SSPVP:UnregisterOOCUpdate("UpdateAllAttributes")
 	SSPVP:UnregisterOOCUpdate("UpdateStatus")
 
-	if( InCombatLockdown() ) then
+	if( not InCombatLockdown() ) then
 		self:Hide("Horde")
 		self:Hide("Alliance")
 	else

@@ -198,7 +198,7 @@ SSPVPLocals = setmetatable({
 	["%s will be captured by the %s in %s"] = "%s wird von der %s in %s erobert!",
 	
 	-- Eye of the Storm / Auge des Sturms
-	["Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000"] = "Basen: ([0-9]+)  Siegpunkte: ([0-9]+)%/2000",
+	["Bases: ([0-9]+)  Victory Points: ([0-9]+)/2000"] = "Basen: ([0-9]+)  Siegespunkte: ([0-9]+)%/2000",
 	["Bases %d  Points %d/2000"] = "Basen %d  Punkte %d/2000",
 	["flag has been reset"] = "Die Flagge wurde zur\195\188ckgesetzt.",
 	
