@@ -1,4 +1,4 @@
-local Flag = SSPVP:NewModule("Flag", "AceEvent-3.0")
+local Flag = SSPVP:NewModule("Flag", "AceEvent-3.0", "AceTimer-3.0")
 Flag.activeIn = "bg"
 
 local L = SSPVPLocals
@@ -59,7 +59,7 @@ function Flag:EnableModule(abbrev)
 	-- Do we have to wait for UPDATE_WORLD_STATES to position?
 	self:CreateButtons()
 	if( not self.Alliance or not self.Horde ) then
-		self:RegisterEvent("UPDATE_WORLD_STATES")	
+		self:ScheduleRepeatingTimer("CheckButtons", 0.25)
 	else
 		self:UpdateAllAttributes()
 	end
@@ -72,6 +72,7 @@ function Flag:DisableModule()
 	-- Stop checking
 	healthMonitor:Hide()
 
+	-- Reset saved info
 	for k in pairs(carriers["Alliance"]) do
 		carriers["Alliance"][k] = nil
 	end
@@ -123,12 +124,11 @@ function Flag:UPDATE_BATTLEFIELD_SCORE()
 end
 
 -- Check if it's time to do a position
-function Flag:UPDATE_WORLD_STATES()
+function Flag:CheckButtons()
 	self:CreateButtons()
-	
 	if( self.Alliance and self.Horde ) then
 		self:UpdateAllAttributes()
-		self:UnregisterEvent("UPDATE_WORLD_STATES")
+		self:CancelTimer("CheckButtons", true)
 	end
 end
 
