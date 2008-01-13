@@ -301,20 +301,20 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 		
 		-- Hide games/played/-/wins/loses label, and shift them down a bit
 		local label = getglobal(name .. "GamesLabel")
-		--label:ClearAllPoints()
-		--label:SetPoint("BOTTOMLEFT", name .. "TypeLabel", "BOTTOMRIGHT", -22, 16)
+		label:ClearAllPoints()
+		label:SetPoint("BOTTOMLEFT", name .. "TypeLabel", "BOTTOMRIGHT", -28, 16)
 		label:Hide()
 		
 		local label = getglobal(name .. "WinLossLabel")
-		--label:ClearAllPoints()
-		--label:SetPoint("LEFT", name .. "GamesLabel", "RIGHT", -5, 0)
+		label:ClearAllPoints()
+		label:SetPoint("LEFT", name .. "GamesLabel", "RIGHT", -14, 0)
 		label:Hide()
 		
 		local label = getglobal(name .. "PlayedLabel")
-		--label:ClearAllPoints()
-		--label:SetPoint("LEFT", name .. "WinLossLabel", "RIGHT", 19, 0)
+		label:ClearAllPoints()
+		label:SetPoint("LEFT", name .. "WinLossLabel", "RIGHT", 10, 0)
 		label:Hide()
-		
+
 		-- Create our custom widgets
 		local season = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
 		season:SetPoint("BOTTOMLEFT", name .. "Name", "BOTTOMLEFT", 0, -41)
@@ -335,29 +335,48 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 		local loss = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
 		loss:SetPoint("LEFT", dash, "RIGHT", 0, 0)
 		
-		--local winPercent = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
-		--winPercent:SetPoint("LEFT", dash, "RIGHT", 25, 0)
-		--winPercent:SetText("34.4%")
-
+		local winPercent = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+		winPercent:SetPoint("LEFT", dash, "RIGHT", 25, 0)
+		
 		local played = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
-		played:SetPoint("TOP", name .. "Played", "BOTTOM", 0, -7)
+		played:SetPoint("BOTTOMLEFT", name .. "Played", "BOTTOMLEFT", 20, -17)
+
+		local seasonPercent = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+		seasonPercent:SetPoint("BOTTOMRIGHT", name .. "Rating", "BOTTOMRIGHT", -8, -41)
+
+		local weekPlayed = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+		weekPlayed:SetPoint("BOTTOMLEFT", name .. "Played", "BOTTOMLEFT", 20, 0)
+
+		local weekPercent = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+		weekPercent:SetPoint("BOTTOMRIGHT", name .. "Rating", "BOTTOMRIGHT", -8, -24)
+
+		local weekWinPercent = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+		weekWinPercent:SetPoint("BOTTOMRIGHT", name .. "-" , "BOTTOMRIGHT", 60, 0)
+
+		local seasonWinPercent = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+		seasonWinPercent:SetPoint("BOTTOMRIGHT", dash, "BOTTOMRIGHT", 60, 0)
 		
 		parentFrame.seasonWin = win
 		parentFrame.seasonLoss = loss
 		parentFrame.seasonGames = game
 		parentFrame.seasonPlayed = played
+		parentFrame.seasonPlayedPercent = seasonPercent
+		parentFrame.seasonWinPercent = seasonWinPercent
+		
+		parentFrame.weekPlayed = weekPlayed
+		parentFrame.weekPlayedPercent = weekPercent
+		parentFrame.weekWinPercent = weekWinPercent
 	end
 	
 	-- DISPLAY!
 	-- WEEK
-
 	getglobal(name .. "TypeLabel"):SetText(L["Week"])
+	getglobal(name .. "Played"):Hide()
 	 
 	getglobal(name .. "Games"):SetText(weekPlayed)
 	getglobal(name .. "Wins"):SetText(weekWins)
 	getglobal(name .. "Loss"):SetText(weekPlayed - weekWins)		
 	
-	local played = getglobal(name .. "Played")
 	local percent = playerPlayed / weekPlayed
 	if( weekPlayed == 0 or playerPlayed == 0 ) then
 		percent = 0
@@ -368,8 +387,23 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 		color = "|cffff2020"
 	end
 	
-	played:SetText(string.format("%d %s(%.f%%)|r", playerPlayed, color, percent * 100))
-	played:SetVertexColor(1.0, 1.0, 1.0)
+	parentFrame.weekPlayed:SetFormattedText("%d", playerPlayed)
+	parentFrame.weekPlayedPercent:SetFormattedText("[%s%d%%%s]", color, percent * 100, FONT_COLOR_CODE_CLOSE)
+	parentFrame.weekPlayedPercent:SetVertexColor(1.0, 1.0, 1.0)
+	
+	local percent = weekWins / weekPlayed
+	if( weekWins == 0 or weekPlayed == 0 ) then
+		percent = 0	
+	end
+	
+	local color = "|cffffffff"
+	if( percent > 0.60 ) then
+		color = "|cff20ff20"
+	elseif( percent < 0.30 ) then
+		color = "|cffff2020"
+	end
+	
+	parentFrame.weekWinPercent:SetFormattedText("[%s%d%%%s]", color, percent * 100, FONT_COLOR_CODE_CLOSE)
 	
 	-- SEASON
 	parentFrame.seasonWin:SetText(seasonWins)
@@ -377,16 +411,30 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 	parentFrame.seasonLoss:SetText(seasonPlayed - seasonWins)
 	parentFrame.seasonGames:SetText(seasonPlayed)
 	
-
 	-- Do we want to show percent, or personal?
 	local percent = seasonPlayerPlayed / seasonPlayed
 	local color = "|cff20ff20"
 	if( percent < 0.30 ) then
 		color = "|cffff2020"
-
 	end
 
-	parentFrame.seasonPlayed:SetText(string.format("%d %s(%.f%%)|r", playerRating, color, percent * 100))
+	parentFrame.seasonPlayed:SetFormattedText("%d", playerRating)
+	parentFrame.seasonPlayedPercent:SetFormattedText("[%s%d%%%s]", color, percent * 100, FONT_COLOR_CODE_CLOSE)
+	parentFrame.seasonPlayedPercent:SetVertexColor(1.0, 1.0, 1.0)
+
+	local percent = seasonWins / seasonPlayed
+	if( seasonWins == 0 or seasonPlayed == 0 ) then
+		percent = 0	
+	end
+	
+	local color = "|cffffffff"
+	if( percent > 0.60 ) then
+		color = "|cff20ff20"
+	elseif( percent < 0.30 ) then
+		color = "|cffff2020"
+	end
+	
+	parentFrame.seasonWinPercent:SetFormattedText("[%s%d%%%s]", color, percent * 100, FONT_COLOR_CODE_CLOSE)
 end
 
 -- Modifies the team details page to show percentage of games played
