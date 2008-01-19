@@ -53,8 +53,8 @@ SSPVPLocals = {
 	
 	["Unavailable"] = "Unavailable",
 	["<1 Min"] = "<1 Min",
-	["Join Suspended"] = "Join Suspended",
-	["Join Disabled"] = "Join Disabled",
+	["Disabled"] = "Disabled",
+	["Suspended"] = "Suspended",
 	["Joining"] = "Joining",
 	["(.+) Mark of Honor"] = "(.+) Mark of Honor",
 	["%s |cffffffff(%dvs%d)|r"] = "%s |cffffffff(%dvs%d)|r",

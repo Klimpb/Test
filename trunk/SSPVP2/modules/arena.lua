@@ -322,40 +322,51 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 		season:SetJustifyV("BOTTOM")
 		season:SetText(L["Season"])
 		
+		-- Total season played
 		local game = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
 		game:SetPoint("TOP", name .. "Games", "BOTTOM", 0, -7)
 
+		-- Divider won/lost
 		local dash = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
 		dash:SetPoint("TOP", name .. "-", "BOTTOM", 0, -7)
 		dash:SetText(" - ")
 		
+		-- Total season won
 		local win = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
 		win:SetPoint("RIGHT", dash, "LEFT", 0, 0)
 
+		-- Total season lost
 		local loss = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
 		loss:SetPoint("LEFT", dash, "RIGHT", 0, 0)
 		
+		-- Week win percent
 		local winPercent = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
 		winPercent:SetPoint("LEFT", dash, "RIGHT", 25, 0)
 		
-		local played = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
-		played:SetPoint("BOTTOMLEFT", name .. "Played", "BOTTOMLEFT", 20, -17)
-
+		-- Season played percent
 		local seasonPercent = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
 		seasonPercent:SetPoint("BOTTOMRIGHT", name .. "Rating", "BOTTOMRIGHT", -8, -41)
-
-		local weekPlayed = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
-		weekPlayed:SetPoint("BOTTOMLEFT", name .. "Played", "BOTTOMLEFT", 20, 0)
-
+	
+		-- Week percent played
 		local weekPercent = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
 		weekPercent:SetPoint("BOTTOMRIGHT", name .. "Rating", "BOTTOMRIGHT", -8, -24)
 
+		-- Week win percent
 		local weekWinPercent = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
 		weekWinPercent:SetPoint("BOTTOMRIGHT", name .. "-" , "BOTTOMRIGHT", 60, 0)
 
+		-- Season win percent
 		local seasonWinPercent = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
 		seasonWinPercent:SetPoint("BOTTOMRIGHT", dash, "BOTTOMRIGHT", 60, 0)
 		
+		-- Season player rating
+		local played = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+		played:SetPoint("BOTTOMRIGHT", name .. "Rating", "BOTTOMRIGHT", -50, -41)
+
+		-- Week # played
+		local weekPlayed = parentFrame:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
+		weekPlayed:SetPoint("BOTTOMRIGHT", name .. "Rating", "BOTTOMRIGHT", -50, -24)
+
 		parentFrame.seasonWin = win
 		parentFrame.seasonLoss = loss
 		parentFrame.seasonGames = game
