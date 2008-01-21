@@ -84,7 +84,7 @@ end
   Begin Library Implementation
 ---------------------------------------------------------------------------]]
 local major = "OptionHouse-1.1"
-local minor = tonumber(string.match("$Revision: 428 $", "(%d+)") or 1)
+local minor = tonumber(string.match("$Revision$", "(%d+)") or 1)
 
 assert(LibStub, string.format("%s requires LibStub.", major))
 
