@@ -84,7 +84,7 @@ end
   Begin Library Implementation
 ---------------------------------------------------------------------------]]
 local major = "HousingAuthority-1.2"
-local minor = tonumber(string.match("$Revision: 428 $", "(%d+)") or 1)
+local minor = tonumber(string.match("$Revision$", "(%d+)") or 1)
 
 assert(LibStub, string.format("%s requires LibStub.", major))
 local HAInstance, oldRevision = LibStub:NewLibrary(major, minor)

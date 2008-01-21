@@ -7,7 +7,7 @@
 ]]
 
 SSPVP = DongleStub("Dongle-1.1"):New("SSPVP")
-SSPVP.revision = tonumber(string.match("$Revision: 428 $", "(%d+)") or 1)
+SSPVP.revision = tonumber(string.match("$Revision$", "(%d+)") or 1)
 
 local L = SSPVPLocals
 
@@ -980,7 +980,7 @@ function SSPVP:UnregisterOOCUpdate(func)
 	end
 end
 
-function SSPVPRegisterOOCUpdate(handler, func)
+function SSPVP:RegisterOOCUpdate(handler, func)
 	if( type(handler) == "table" and type(func) == "string" ) then
 		table.insert(queuedUpdates, {func = func, handler = handler})
 	elseif( type(handler) == "function" or type(handler) == "string" ) then

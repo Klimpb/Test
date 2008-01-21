@@ -55,8 +55,6 @@ SSPVPLocals = {
 	
 	["PVP Flag: %s"] = "PVP Flag: %s",
 	
-	["Call to Arms: (.+)"] = "Call to Arms: (.+)",
-	
 	-- Starting in searchs
 	["2 minute"] = "2 minute", 
 	["1 minute"] = "1 minute",

@@ -1,6 +1,6 @@
 ## Interface: 20300
 ## Title: SSPVP
-## Version: $Revision: 428 $
+## Version: $Revision$
 ## Notes: PvP, Battleground and Arena mod
 ## Author: Mayen
 ## SavedVariables: SSPVPDB
