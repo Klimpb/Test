@@ -11,41 +11,13 @@ local Module = PerfectRaid:NewModule("PerfectRaid-ExtraThings")
 * button.aura - Defined in PerfectRaid_Buffs.lua, this is the "buffs" text that appears by default next to the right-hand side of the health bar.
 ]]
 
-local L = {
-	["Anchor tooltip to bottom right of screen"] = "Anchor tooltip to bottom right of screen",
-}
-
-local Highlight
-local hookedOption
 
 function Module:Initialize()
-	Highlight = PerfectRaid:HasModule("PerfectRaid-Highlight")
-	
 	-- Disable the evil fading
 	local Options = PerfectRaid:HasModule("PerfectRaid-Options")
 	Options.FadeIn = function(self, frame)
 		frame:Show()
 	end
-end
-
--- Hook into the highlight modules configuration
-function Module:CreateOptions(opt)
-	local check = CreateFrame("CheckButton", "PRHighlight_ToolipAnchor", PROptions_Highlight, "PRCheckTemplate")
-	check:SetPoint("TOPRIGHT", PRHighlight_Tooltip.Label, "TOPRIGHT", 80, 5)
-	check.Label:SetText(L["Anchor tooltip to bottom right of screen"])
-
-	PROptions_Highlight:HookScript("OnShow", function()
-		PRHighlight_ToolipAnchor:SetChecked(PerfectRaid.db.profile.highlight.frameanchor)
-		PRHighlight_ToolipAnchor:Show()
-	end)
-	
-	PRHighlight_Save:HookScript("OnClick", function()
-		PerfectRaid.db.profile.highlight.frameanchor = PRHighlight_ToolipAnchor:GetChecked() and true or false
-	end)
-
-	PRHighlight_Cancel:HookScript("OnClick", function()
-		PRHighlight_ToolipAnchor:SetChecked(PerfectRaid.db.profile.highlight.frameanchor)
-	end)
 end
 
 -- Create the backdrop, and the OnEnter/OnLeave scripts
@@ -60,33 +32,7 @@ local backdrop = {
 	},
 }
 
-local function OnEnter(frame)
-	local opt = PerfectRaid.db.profile.highlight
-	if( opt.tooltip and frame.unit ) then
-		if( opt.frameanchor ) then
-			UnitFrame_UpdateTooltip(frame)
-		else
-			GameTooltip:SetOwner(frame, "ANCHOR_BOTTOMRIGHT")
-			GameTooltip:SetUnit(frame.unit)
-		end
-	end
-
-	if( opt.mouseover ) then
-		frame:SetBackdropColor(0.9, 0.9, 0.9, 0.3)
-	end
-end
-
-local function OnLeave(frame)
-	GameTooltip:Hide()
-	Highlight:UpdateUnit(nil, frame)
-end
-
 function Module:UpdateButtonLayout(button, options)
-	if( not button.raise ) then
-		button.raise = CreateFrame("Frame", nil, button.healthbar)
-		button.raise:SetAllPoints()
-	end
-
 	button.leftbox:ClearAllPoints()
 	button.leftbox:SetPoint("TOPLEFT", 0, 0)
 	button.leftbox:SetPoint("BOTTOMRIGHT", button, "BOTTOMLEFT", 1, 0)
@@ -99,7 +45,4 @@ function Module:UpdateButtonLayout(button, options)
 	
 	button:SetBackdrop(backdrop)
 	button:SetBackdropColor(0, 0, 0, 0)
-
-	button:SetScript("OnEnter", OnEnter)
-	button:SetScript("OnLeave", OnLeave)
 end
