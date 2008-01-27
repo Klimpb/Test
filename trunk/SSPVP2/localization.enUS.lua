@@ -68,8 +68,9 @@ SSPVPLocals = {
 	["You are now eligible to enter %s. %s left to join."] = "You are now eligible to enter %s. %s left to join.",
 	
 	-- Mover
-	["PvP Objectives Anchor"] = "PvP Objectives Anchor",
-	["Score Objectives Anchor"] = "Score Objectives Anchor",
+	["Capture bar anchor"] = "Capture bar anchor",
+	["PvP objectives anchor"] = "PvP objectives anchor",
+	["Score objectives anchor"] = "Score objectives anchor",
 	["Left Click + Drag to move the frame, Right Click + Drag to reset it to it's original position."] = "Left Click + Drag to move the frame, Right Click + Drag to reset it to it's original position.",
 	
 	-- Win API is broken /wrist
@@ -360,7 +361,7 @@ SSPVPLocals = {
 	["Hide class icon next to names"] = "Hide class icon next to names",
 	["Show player levels next to name"] = "Show player levels next to name",
 	["Release from corpse when inside an active battleground"] = "Release from corpse when inside an active battleground",
-	["Automatically use soul stone if any on death"] = "Automatically use soul stone if any on death",
+	["Automatically use soul stone, if any on death"] = "Automatically use soul stone, if any on death",
 	
 	
 	-- JOIN
