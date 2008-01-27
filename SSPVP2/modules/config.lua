@@ -47,7 +47,7 @@ function Config:General()
  		{ group = L["Frame Moving"], type = "groupOrder", order = 5 },
 		{ order = 1, group = L["Frame Moving"], text = L["Lock PvP objectives"], help = L["Shows an anchor above the frame that lets you move it, the frame you're trying to move may have to be visible to actually move it."], type = "check", var = {"Move", "pvp"}},
 		{ order = 2, group = L["Frame Moving"], text = L["Lock scoreboard"], help = L["Shows an anchor above the frame that lets you move it, the frame you're trying to move may have to be visible to actually move it."], type = "check", var = {"Move", "score"}},
-		--{ order = 3, group = L["Frame Moving"], text = L["Lock capture bar"], help = L["Shows an anchor above the frame that lets you move it, the frame you're trying to move may have to be visible to actually move it."], type = "check", var = {"Move", "capture"}},
+		{ order = 3, group = L["Frame Moving"], text = L["Lock capture bar"], help = L["Shows an anchor above the frame that lets you move it, the frame you're trying to move may have to be visible to actually move it."], type = "check", var = {"Move", "capture"}},
 	}
 	
 	return HousingAuthority:CreateConfiguration(config, {onSet = "Reload", set = "Set", get = "Get", handler = Config})
@@ -66,7 +66,7 @@ function Config:Battlefield()
 		
 		{ group = L["Death"], type = "groupOrder", order = 3 },
 		{ order = 1, group = L["Death"], text = L["Release from corpse when inside an active battleground"], type = "check", var = {"Battlefield", "release"}},
- 		{ order = 2, group = L["Death"], text = L["Automatically use soul stone if any on death"], type = "check", var = {"Battlefield", "soulstone"}},
+ 		{ order = 2, group = L["Death"], text = L["Automatically use soul stone, if any on death"], type = "check", var = {"Battlefield", "soulstone"}},
  	}
 
 	return HousingAuthority:CreateConfiguration(config, {onSet = "Reload", set = "Set", get = "Get", handler = Config})
