@@ -467,6 +467,13 @@ end
 
 -- Update bindings
 function Flag:UPDATE_BINDINGS()
+	if( InCombatLockdown() ) then
+		SSPVP:RegisterOOCUpdate(self, "UPDATE_BINDINGS")
+
+		return
+	end
+	
+
 	local friendlyFaction, enemyFaction
 	if( UnitFactionGroup("player") == "Alliance" ) then
 		enemyFaction = "Horde"
