@@ -3,7 +3,14 @@ local function OnUpdate(self, ...)
 		self.NCF_OnUpdate(self, ...)
 	end
 	
-	self:SetValue(GetTime())
+	local time = GetTime()
+	if( select(2, self:GetMinMaxValues()) <= time ) then
+		self.border:Hide()
+		self.icon:Hide()
+		self:Hide()
+	else
+		self:SetValue(time)
+	end
 end
 
 local function findUnhookedFrames(...)
@@ -20,8 +27,13 @@ local function hookFrames(...)
 		local bar = findUnhookedFrames(select(i, ...):GetChildren())
 		if( bar ) then
 			bar.NPCFHooked = true
-
-			local cast = select(2, bar:GetParent():GetChildren())
+			
+			local parent = bar:GetParent()
+			local cast = select(2, parent:GetChildren())
+			local border, icon = select(2, parent:GetRegions())
+			
+			cast.border = border
+			cast.icon = icon
 			cast.NCF_OnUpdate = cast:GetScript("OnUpdate")
 			cast:SetScript("OnUpdate", OnUpdate)
 		end
