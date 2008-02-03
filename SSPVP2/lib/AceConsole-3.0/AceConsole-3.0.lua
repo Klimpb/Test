@@ -1,5 +1,5 @@
---[[ $Id: AceConsole-3.0.lua 56939 2007-12-13 20:03:55Z nevcairiel $ ]]
-local MAJOR,MINOR = "AceConsole-3.0", 0
+--[[ $Id: AceConsole-3.0.lua 60131 2008-02-03 13:03:56Z nevcairiel $ ]]
+local MAJOR,MINOR = "AceConsole-3.0", 1
 
 local AceConsole, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
 
@@ -8,6 +8,16 @@ if not AceConsole then return end -- No upgrade needed
 AceConsole.embeds = AceConsole.embeds or {} -- table containing objects AceConsole is embedded in.
 AceConsole.commands = AceConsole.commands or {} -- table containing commands registered
 AceConsole.weakcommands = AceConsole.weakcommands or {} -- table containing self, command => func references for weak commands that don't persist through enable/disable
+
+-- local upvalues
+local _G = _G
+local pairs = pairs
+local select = select
+local type = type
+local tostring = tostring
+local strfind = string.find
+local strsub = string.sub
+local max = math.max
 
 -- AceConsole:Print( [chatframe,] ... )
 --
@@ -63,6 +73,7 @@ function AceConsole:RegisterChatCommand( command, func, persist, silent )
 	if not persist then
 		AceConsole.weakcommands[self][command] = func
 	end
+	return true
 end
 
 
@@ -73,11 +84,13 @@ function AceConsole:UnregisterChatCommand( command )
 	local name = AceConsole.commands[command]
 	if name then
 		SlashCmdList[name] = nil
-		setglobal("SLASH_"..name.."1", nil)
+		_G["SLASH_" .. name .. "1"] = nil
 		hash_SlashCmdList["/" .. command:upper()] = nil
 		AceConsole.commands[command] = nil
 	end
 end
+
+function AceConsole:IterateChatCommands() return pairs(AceConsole.commands) end
 
 
 local function nils(n, ...)
