@@ -1,4 +1,4 @@
---[[ $Id: AceTimer-3.0.lua 57695 2007-12-30 23:29:44Z mikk $ ]]
+--[[ $Id: AceTimer-3.0.lua 60131 2008-02-03 13:03:56Z nevcairiel $ ]]
 --[[
 	Basic assumptions:
 	* In a typical system, we do more re-scheduling per second than there are timer pulses per second
@@ -18,7 +18,7 @@
 	- ALLOWS unscheduling ANY timer (including the current running one) at any time, including during OnUpdate processing
 ]]
 
-local MAJOR, MINOR = "AceTimer-3.0", 0
+local MAJOR, MINOR = "AceTimer-3.0", 1
 local AceTimer, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
 
 if not AceTimer then return end -- No upgrade needed
@@ -28,8 +28,10 @@ AceTimer.hash = AceTimer.hash or {}         -- Array of [0..BUCKET-1] = linked l
 AceTimer.selfs = AceTimer.selfs or {}       -- Array of [self]={[handle]=timerobj, [handle2]=timerobj2, ...}
 AceTimer.frame = AceTimer.frame or CreateFrame("Frame", "AceTimer30Frame")
 
-local pcall = pcall
+local type = type
+local next = next
 local pairs = pairs
+local select = select
 local tostring = tostring
 local floor = floor
 local max = max
