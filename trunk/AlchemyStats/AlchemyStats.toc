@@ -5,4 +5,8 @@
 ## Version: $Revision: 322 $
 ## Author: Mayen
 
+localization.enUS.lua
+localization.deDE.lua
+localization.frFR.lua
+
 AlchemyStats.lua
