@@ -1,0 +1,8 @@
+## Interface: 23000
+## Title: Alchemy Stats
+## Notes: Tracks total potions made, and total procs
+## SavedVariables: AlchemyStatDB, AlchemyStats
+## Version: $Revision: 322 $
+## Author: Mayen
+
+AlchemyStats.lua
