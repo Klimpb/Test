@@ -18,35 +18,6 @@ local function Print(msg)
 	DEFAULT_CHAT_FRAME:AddMessage("|cFF33FF99" .. L["Alchemy"] .. "|r: " .. msg)
 end
 
---[[
-function addon:CHAT_MSG_LOOT(msg)
-	local item, amount = deformat(msg, LOOT_ITEM_CREATED_SELF_MULTIPLE)
-	if not item or not amount then
-		item, amount = deformat(msg, LOOT_ITEM_CREATED_SELF), 1
-	end
-
-	if not item then return end
-
-	local itemName, itemLink, itemRarity = GetItemInfo(item)
-	if not itemLink then return	end
-
-	local itemId = tonumber(select(3, itemLink:find("item:(%d+):")))
-	if not itemId or not PT:ItemInSet(itemId, "Tradeskill.Crafted.Alchemy") then return	end
-
-	-- Track creations, how many we have made of one item
-	self.db.profile.creations[itemId] = (self.db.profile.creations[itemId] and self.db.profile.creations[itemId] or 0) + amount
-
-	-- Track procs
-	if not self.db.profile.counts[itemId] then
-		self.db.profile.counts[itemId] = {}
-	end
-
-	self.db.profile.counts[itemId][amount] = (self.db.profile.counts[itemId][amount] and self.db.profile.counts[itemId][amount] or 0) + 1
-
-	self:UpdateTooltip()
-end
-]]
-
 function Format(text)
 	text = string.gsub(text, "([%^%(%)%.%[%]%*%+%-%?])", "%%%1")
 	text = string.gsub(text, "%%s", "(.+)")
@@ -91,6 +62,10 @@ local function OnEvent(self, event, msg)
 		if( not name and not amount ) then
 			name = string.match(msg, createdSingle)
 			amount = 1
+		end
+		
+		if( not name ) then
+			return
 		end
 		
 		local itemid = string.match(name, "item:([0-9]+):")
