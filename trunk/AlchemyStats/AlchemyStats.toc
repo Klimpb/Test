@@ -1,9 +1,14 @@
 ## Interface: 23000
 ## Title: Alchemy Stats
 ## Notes: Tracks total potions made, and total procs
-## SavedVariables: AlchemyStatDB, AlchemyStats
+## SavedVariables: AlchemyStatsDB, AlchemyStatsData
 ## Version: $Revision: 322 $
 ## Author: Mayen
+
+libs\LibStub-1.0\LibStub-1.0.xml
+libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
+libs\AceAddon-3.0\AceAddon-3.0.xml
+libs\AceEvent-3.0\AceEvent-3.0.xml
 
 localization.enUS.lua
 localization.deDE.lua
