@@ -27,10 +27,6 @@ function Arena:OnEnable()
 	else
 		self:RegisterEvent("ADDON_LOADED")
 	end
-		
-	-- Tracking our current arena things
-	self:RegisterEvent("ARENA_TEAM_UPDATE")
-	self:ARENA_TEAM_UPDATE()
 end
 
 function Arena:OnDisable()
@@ -56,12 +52,6 @@ function Arena:Reload()
 	if( self.isActive ) then
 		self:UnregisterAllEvents()
 		self:EnableModule()
-	end
-
-	if( self.db.profile.personal ) then
-		self:RegisterEvent("ARENA_TEAM_ROSTER_UPDATE")
-	else
-		self:UnregisterEvent("ARENA_TEAM_ROSTER_UPDATE")
 	end
 end
 
@@ -132,25 +122,6 @@ local function getRating(points, teamSize)
 	return rating
 end
 
--- Store latest arena team info
-function Arena:ARENA_TEAM_UPDATE()
-	for i=1, MAX_ARENA_TEAMS do
-		local teamName, teamSize, _, _, _, _, _, _, _, _, playerRating = GetArenaTeam(i)
-		if( teamName ) then
-			local id = teamName .. teamSize
-
-			if( not arenaTeams[id] ) then
-				arenaTeams[id] = {}
-			end
-
-			arenaTeams[id].size = teamSize
-			arenaTeams[id].index = i
-			arenaTeams[id].personal = playerRating
-		end
-
-	end
-end
-
 -- Rating/personal rating change
 -- How many points gained/lost
 function Arena:UPDATE_BATTLEFIELD_STATUS()
@@ -171,6 +142,22 @@ function Arena:UPDATE_BATTLEFIELD_STATUS()
 		end
 		
 		local firstInfo, secondInfo, playerWon, playerPersonal, enemyRating
+
+		-- Grab player team info, watching the event seems to have issues so we do it this way instead
+		for i=1, MAX_ARENA_TEAMS do
+			local teamName, teamSize, _, _, _, _, _, _, _, _, playerRating = GetArenaTeam(i)
+			if( teamName ) then
+				local id = teamName .. teamSize
+
+				if( not arenaTeams[id] ) then
+					arenaTeams[id] = {}
+				end
+
+				arenaTeams[id].size = teamSize
+				arenaTeams[id].index = i
+				arenaTeams[id].personal = playerRating
+			end
+		end
 
 		-- Ensure that the players team is shown first
 		for i=0, 1 do

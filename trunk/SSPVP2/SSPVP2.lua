@@ -7,6 +7,14 @@
 	2     Release: November 18th 2007
 ]]
 
+--[[
+## LoadManagers: AddonLoader
+## X-LoadOn-Slash: /sspvp, /av, /arena
+## X-LoadOn-CHAT_MSG_ADDON: if( arg1 == "SSAV" ) then AddonLoader:LoadAddOn("SSPVP2") end
+## X-LoadOn-Arena: true
+## X-LoadOn-Battleground: true
+]]
+
 SSPVP = LibStub("AceAddon-3.0"):NewAddon("SSPVP", "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
 
 local L = SSPVPLocals
@@ -759,7 +767,7 @@ end
 -- Leaving queues, or hitting leave battlefield through minimap
 local Orig_AcceptBattlefieldPort = AcceptBattlefieldPort
 function AcceptBattlefieldPort(id, accept, ...)
-	if( not accept and SSPVP.db.profile.leave.portConfirm and not confirmPortLeave[id] ) then
+	if( (not accept or accept == 0) and SSPVP.db.profile.leave.portConfirm and not confirmPortLeave[id] ) then
 		local _, map, _, _, _, teamSize = GetBattlefieldStatus(id)
 		if( teamSize > 0 ) then
 			StaticPopupDialogs["CONFIRM_PORT_LEAVE"].text = string.format(L["You are about to leave the active or queued arena %s (%dvs%d), are you sure?"], map, teamSize, teamSize)
