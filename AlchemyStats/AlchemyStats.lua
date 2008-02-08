@@ -54,6 +54,12 @@ end
 
 -- Record number of items made from each skill
 function AlchemyStats:TRADE_SKILL_UPDATE()
+	if( GetTradeSkillLine() ~= L["Alchemy"] ) then
+		return
+
+	end
+	
+
 	for i=1, GetNumTradeSkills() do
 		local itemLink = GetTradeSkillItemLink(i)
 		if( itemLink ) then
