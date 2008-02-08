@@ -11,6 +11,7 @@ AlchemyStatLocals = {
 
 	["Item"] = "Item",
 	["Created"] = "Created",
+	["Made"] = "Made",
 	["Procs"] = "Procs",
 	["One"] = "One",
 	["Two"] = "Two",

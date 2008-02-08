@@ -186,7 +186,6 @@ function AlchemyStats:UpdateStats()
 		data.fourChance = 0
 
 		if( data.totalMade > 0 ) then
-
 			if( data.totalProcs > 0 ) then
 				data.procChance = data.totalProcs / data.totalMade * 100
 			end
@@ -324,8 +323,8 @@ function AlchemyStats:CreateGUI()
 	self.frame:SetMovable(true)
 	self.frame:EnableMouse(true)
 	self.frame:SetClampedToScreen(true)
-	self.frame.sortType = "name"
-	self.frame.sortOrder = true
+	self.frame.sortType = "total"
+	self.frame.sortOrder = false
 	self.frame:Hide()
 	
 	self.frame:SetBackdrop({
@@ -358,11 +357,13 @@ function AlchemyStats:CreateGUI()
 	title:RegisterForDrag("LeftButton")
 	title:SetScript("OnDragStart", function(self)
 		self.isMoving = true
+		AlchemyStats.frame:StartMoving()
 	end)
 	
 	title:SetScript("OnDragStop", function(self)
 		if( self.isMoving ) then
 			self.isMoving = nil
+			AlchemyStats.frame:StopMovingOrSizing()
 		end
 	end)
 	
