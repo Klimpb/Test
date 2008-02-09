@@ -11,6 +11,7 @@ local itemType = {
 	["Elixir"] = L["Elixir Master"],
 	["Potion"] = L["Potion Master"],
 	["Elemental"] = L["Transmutation Master"],
+	["Meta"] = L["Transmutation Master"],
 }
 
 function AlchemyStats:OnInitialize()
@@ -88,12 +89,13 @@ function AlchemyStats:CHAT_MSG_LOOT(event, msg)
 
 	-- Parse out the item id
 	local itemid = string.match(name, "item:([0-9]+):")
+	local subType = select(7, GetItemInfo(itemid))
 
 	amount = tonumber(amount)
 	itemid = tonumber(itemid)
 
 	-- Something messed up
-	if( not itemid or not amount or not tradeNumName[itemid] ) then
+	if( not itemid or not amount or not tradeNumName[itemid] or not itemType[subType] ) then
 		return
 	end
 
@@ -128,7 +130,6 @@ function AlchemyStats:CHAT_MSG_LOOT(event, msg)
 	end
 	
 	-- Store if we could dup these through masteries
-	local subType = select(7, GetItemInfo(itemid))
 	local mastery = self:GetMastery()
 	local hasMastery = "no"
 	if( mastery and itemType[subType] and itemType[subType] == mastery ) then
