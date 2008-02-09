@@ -154,7 +154,7 @@ function AlchemyStats:UpdateStats()
 			
 
 			if( not tempData[itemid] ) then
-				tempData[itemid] = {total = 0, totalMade = 0, totalProcs = 0, noProc = 0, oneProc = 0, twoProc = 0, threeProc = 0, fourProc = 0}
+				tempData[itemid] = {total = 0, totalMade = 0, numMade = 0, totalProcs = 0, noProc = 0, oneProc = 0, twoProc = 0, threeProc = 0, fourProc = 0}
 			end
 			
 			local name, link = GetItemInfo(itemid)
@@ -163,8 +163,11 @@ function AlchemyStats:UpdateStats()
 			tempData[itemid].link = link
 			tempData[itemid].name = name
 			tempData[itemid].itemid = itemid
+			tempData[itemid].numMade = tempData[itemid].numMade + totalNumMade
 			
 			if( hasMastery == "yes" ) then
+				totalProc = oneProc + twoProc + threeProc + fourProc
+				
 				tempData[itemid].isMastery = true
 				tempData[itemid].totalMade = tempData[itemid].totalMade + totalProc + noProc
 				tempData[itemid].totalProcs = tempData[itemid].totalProcs + totalProc
@@ -187,7 +190,7 @@ function AlchemyStats:UpdateStats()
 
 		if( data.totalMade > 0 ) then
 			if( data.totalProcs > 0 ) then
-				data.procChance = data.totalProcs / data.totalMade * 100
+				data.procChance = data.totalProcs / data.numMade * 100
 			end
 			
 			if( data.oneProc > 0 ) then
