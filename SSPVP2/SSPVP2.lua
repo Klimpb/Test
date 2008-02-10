@@ -7,14 +7,6 @@
 	2     Release: November 18th 2007
 ]]
 
---[[
-## LoadManagers: AddonLoader
-## X-LoadOn-Slash: /sspvp, /av, /arena
-## X-LoadOn-CHAT_MSG_ADDON: if( arg1 == "SSAV" ) then AddonLoader:LoadAddOn("SSPVP2") end
-## X-LoadOn-Arena: true
-## X-LoadOn-Battleground: true
-]]
-
 SSPVP = LibStub("AceAddon-3.0"):NewAddon("SSPVP", "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
 
 local L = SSPVPLocals
@@ -117,7 +109,7 @@ function SSPVP:OnEnable()
 	self:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
 	self:RegisterEvent("PLAYER_REGEN_ENABLED")
 	
-	-- REMOVE ME WHEN GetBattlefieldWinner() IS FIXED
+	-- REMOVE ME WHEN GetBattlefieldWinner() IS FIXED (GOOD LUCK WITH THAT)
 	self:RegisterEvent("CHAT_MSG_MONSTER_YELL", "CheckBattlegroundWinner")
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL", "CheckBattlegroundWinner")
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "CheckBattlegroundWinner")
