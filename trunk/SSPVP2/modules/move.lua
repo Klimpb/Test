@@ -33,9 +33,10 @@ function Move:SavePosition(type, frame)
 	if( not self.db.profile.position[type] ) then
 		self.db.profile.position[type] = {}
 	end
-
-	self.db.profile.position[type].x = frame:GetLeft()
-	self.db.profile.position[type].y = frame:GetTop()
+	
+	local scale = frame:GetEffectiveScale()
+	self.db.profile.position[type].x = frame:GetLeft() * scale
+	self.db.profile.position[type].y = frame:GetTop() * scale
 end
 
 -- Reset to the default
@@ -57,8 +58,11 @@ function Move:RestorePosition(type, frame)
 		return
 	end
 	
+	local x, y = self.db.profile.position[type].x, self.db.profile.position[type].y
+	local scale = frame:GetEffectiveScale()
+	
 	frame:ClearAllPoints()
-	frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", self.db.profile.position[type].x, self.db.profile.position[type].y)
+	frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x / scale, y / scale)
 end
 
 -- CAPTURE BARS

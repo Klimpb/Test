@@ -440,22 +440,24 @@ function SSOverlay:CreateFrame()
 	end
 		
 	-- Position to saved area
+	local scale = self.frame:GetEffectiveScale()
 	if( not growUp ) then
-		self.frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", self.db.profile.x, self.db.profile.y)
+		self.frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", self.db.profile.x / scale, self.db.profile.y / scale)
 	else
-		self.frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", self.db.profile.x, self.db.profile.y)
+		self.frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", self.db.profile.x / scale, self.db.profile.y / scale)
 	end
 
 	self.frame:SetScript("OnMouseUp", function(self)
 		if( self.isMoving ) then
 			self:StopMovingOrSizing()
 
-			SSOverlay.db.profile.x = self:GetLeft()
+			local scale = self:GetEffectiveScale()
+			SSOverlay.db.profile.x = self:GetLeft() * scale
 			
 			if( not growUp ) then
-				SSOverlay.db.profile.y = self:GetTop()
+				SSOverlay.db.profile.y = self:GetTop() * scale
 			else
-				SSOverlay.db.profile.y = self:GetBottom()
+				SSOverlay.db.profile.y = self:GetBottom() * scale
 			end
 		end
 	end)
