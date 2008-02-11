@@ -41,7 +41,7 @@ function AVSync:OnInitialize()
 			
 		-- Cancels a count down
 		elseif( input == "cancel" ) then
-			self:CancelTimers()
+			self:CancelAllTimers()
 			self:SendMessage(L["Alterac Valley queue stopped."])
 			
 		-- Drops all confirmed and queued AVs
