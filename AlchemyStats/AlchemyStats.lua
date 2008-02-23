@@ -535,9 +535,9 @@ function AlchemyStats:CreateGUI()
 end
 
 function AlchemyStats:UpdateGUI()
+	self = AlchemyStats
 	if( not self.frame ) then
 		return
-
 	end
 	
 
@@ -555,7 +555,7 @@ function AlchemyStats:UpdateGUI()
 		threeProc = threeProc + data.threeProc
 		fourProc = fourProc + data.fourProc
 		
-		if( id >= FauxScrollFrame_GetOffset(self.frame.scroll) and usedRows <= 15 ) then
+		if( id >= FauxScrollFrame_GetOffset(self.frame.scroll) and usedRows < 15 ) then
 			usedRows = usedRows + 1
 			
 			local row = self.rows[usedRows]
