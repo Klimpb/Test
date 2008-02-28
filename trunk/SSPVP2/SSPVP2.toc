@@ -32,7 +32,6 @@ modules\match.lua
 modules\flag.lua
 modules\eots.lua
 modules\av.lua
-modules\avsync.lua
 modules\ab.lua
 modules\battlefield.lua
 modules\window.lua

@@ -72,24 +72,6 @@ function Config:Battlefield()
 	return HousingAuthority:CreateConfiguration(config, {onSet = "Reload", set = "Set", get = "Get", handler = Config})
 end
 
-function Config:Battlefield()
-	local config = {
-		{ group = L["General"], type = "groupOrder", order = 1 },
-		{ order = 1, group = L["General"], text = L["Auto append server name while in battlefields for whispers"], help = L["Automatically append \"-server\" to peoples names when you whisper them, if multiple people are found to match the same name then it won't add the server."], type = "check", var = {"Battlefield", "whispers"}},
- 		
-		{ group = L["Scoreboard"], type = "groupOrder", order = 2 },
- 		{ order = 1, group = L["Scoreboard"], text = L["Color player name by class"], type = "check", var = {"Score", "color"}},
- 		{ order = 2, group = L["Scoreboard"], text = L["Hide class icon next to names"], type = "check", var = {"Score", "icon"}},
- 		{ order = 3, group = L["Scoreboard"], text = L["Show player levels next to name"], type = "check", var = {"Score", "level"}},
-		
-		{ group = L["Death"], type = "groupOrder", order = 3 },
-		{ order = 1, group = L["Death"], text = L["Release from corpse when inside an active battleground"], type = "check", var = {"Battlefield", "release"}},
- 		{ order = 2, group = L["Death"], text = L["Release even with a soul stone active"], type = "check", var = {"Battlefield", "releaseSS"}},
- 	}
-
-	return HousingAuthority:CreateConfiguration(config, {onSet = "Reload", set = "Set", get = "Get", handler = Config})
-end
-
 -- AUTO JOIN
 local function sortPriorities(a, b)
 	if( a[1] == b[1] ) then
@@ -281,11 +263,6 @@ function Config:AV()
 		{ order = 2, group = L["Alerts"], text = L["Enable interval capture messages"], type = "check", var = {"AV", "announce"}},
 		{ order = 3, group = L["Alerts"], text = L["Seconds between capture messages"], type = "input", numeric = true, width = 30, var = {"AV", "interval"}},
 		{ order = 4, group = L["Alerts"], text = L["Interval frequency increase"], type = "dropdown", list = {{0, L["None"]}, {0.75, L["25%"]}, {0.50, L["50%"]}, {0.25, L["75%"]}},  var = {"AV", "speed"}},
-
-		{ group = L["Sync Queue"], type = "groupOrder", order = 3 },
-		{ order = 1, group = L["Sync Queue"], text = L["Enable sync queuing"], help = L["Allows you to sync queue with other SSPVP2, StinkyQueue or LightQueue users at the same time increasing your chance of getting into the same match."], type = "check", var = {"AVSync", "enabled"}},
-		{ order = 2, group = L["Sync Queue"], text = L["Show player queue status in overlay"], help = L["Displays how many people are queued, number of people who have confirmation for specific instance id's and the instance id's that people are currently playing inside."], type = "check", var = {"AVSync", "monitor"}},
-		{ order = 3, group = L["Sync Queue"], text = L["Allow group leader or assist to force join you into a specific Alterac Valley"], help = L["When the leader is ready for the group to join an Alterac Valley, he can force everyone into it with the required instance id. You will still be shown the instance id to join even if you disable this."], type = "check", var = {"AVSync", "forceJoin"}},
 
 		{ group = L["Death"], type = "groupOrder", order = 4 },
 		{ order = 1, group = L["Death"], text = L["Disable auto release"], help = L["Disables auto release for this specific battleground."], type = "check", var = {"Battlefield", "av"}},

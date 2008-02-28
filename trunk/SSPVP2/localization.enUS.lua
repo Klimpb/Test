@@ -103,63 +103,6 @@ SSPVPLocals = {
 	["Targetting %s"] = "Targetting %s",
 	["%s is out of range"] = "%s is out of range",
 	
-	-- Sync queuing for AV
-	["You must be in a raid or party to do this."] = "You must be in a raid or party to do this.",
-	["You must be group leader, or assist to do this."] = "You must be group leader, or assist to do this.",
-	["You have been queued for Alterac Valley by %s."] = "You have been queued for Alterac Valley by %s.",
-	["You provided an invalid instance ID to join."] = "You provided an invalid instance ID to join.",
-	
-	["Queuing %d seconds."] = "Queuing %d seconds.",
-	["Queuing %d second."] = "Queuing %d second.",
-	["Queue for Alterac Valley!"] = "Queue for Alterac Valley!",
-
-	["Battlemaster window ready check started, you have 10 seconds to get the window open."] = "Battlemaster window ready check started, you have 10 seconds to get the window open.",
-	["Leaving Alterac Valley queues."] = "Leaving Alterac Valley queues.",
-	
-	["Alterac Valley sync queue has been stopped by %s."] = "Alterac Valley sync queue has been stopped by %s.",
-	["Alterac Valley queue stopped."] = "Alterac Valley queue stopped.",
-	["Alterac Valley queue has been dropped by %s."] = "Alterac Valley queue has been dropped by %s.",
-	
-	["Forcing join on instance #%d."] = "Forcing join on instance #%d.",
-	["Invalid number entered for sync queue."] = "Invalid number entered for sync queue.",
-	["Joining Alterac Valley #%d at the request of %s"] = "Joining Alterac Valley #%d at the request of %s",
-	["%s has requested you join Alterac Valley #%d, but you have force join disabled."] = "%s has requested you join Alterac Valley #%d, but you have force join disabled.",
-	
-	["Ready: %s"] = "Ready: %s",
-	["Not Ready: %s"] = "Not Ready: %s",
-	["Everyone is ready to go!"] = "Everyone is ready to go!",
-	
-	-- Queue status GUI for AV
-	["Queue Status"] = "Queue Status",
-	["Name"] = "Name",
-	["Status"] = "Status",
-	["Queue"] = "Queue",
-	["Version"] = "Version",
-	
-	["Unknown"] = "Unknown",
-	["Not queued"] = "Not queued",
-	["Inside #%d"] = "Inside #%d",
-	["Confirm #%d"] = "Confirm #%d",
-	["Queued Any"] = "Queued Any",
-	["Queued #%d"] = "Queued #%d",
-	["Offline"] = "Offline",
-	["Online"] = "Online",
-	["Ready"] = "Ready",
-	["Not ready"] = "Not ready",
-	
-	["Total Players"] = "Total Players",
-	["Ready"] = "Ready",
-	["Not Ready"] = "Not Ready",
-	
-	["Ready Check"] = "Ready Check",
-	["Sync Queue"] = "Sync Queue",
-	["Drop Queue"] = "Drop Queue",
-	
-	["New version available!"] = "New version available!",
-	["AFK"] = "AFK",
-	["Next Update"] = "Next Update",
-	["You are about to send a queue drop request, are you sure?"] = "You are about to send a queue drop request, are you sure?",
-	
 	-- CT support
 	["-%d Reinforcements"] = "-%d Reinforcements",
 	["+%d Points"] = "+%d Points",
@@ -261,23 +204,11 @@ SSPVPLocals = {
 	[" - points <points> - Calculates rating required to reach the passed points."] = " - points <points> - Calculates rating required to reach the passed points.",
 	[" - attend <played> <team> - Calculates games required to reach 30% using the passed games <played> out of the <team> games played."] = " - attend <played> <team> - Calculates games required to reach 30% using the passed games <played> out of the <team> games played.",
 	[" - change <winner rating> <loser rating> - Calculates points gained/lost assuming the <winner rating> beats <loser rating>."] = " - change <winner rating> <loser rating> - Calculates points gained/lost assuming the <winner rating> beats <loser rating>.",
-	
-	["SSPVP Alterac Valley slash commands"] = "SSPVP Alterac Valley slash commands",
-	[" - sync <seconds> - Starts a count down for an Alterac Valley sync queue."] = " - sync <seconds> - Starts a count down for an Alterac Valley sync queue.",
-	[" - cancel - Cancels a running sync."] = " - cancel - Cancels a running sync.",
-	[" - drop - Drops all Alterac Valley queues."] = " - drop - Drops all Alterac Valley queues.",
-	[" - update - Forces a status update on everyones Alterac Valley queues."] = " - update - Forces a status update on everyones Alterac Valley queues.",
-	[" - ready - Does a check to see who has the battlemaster window open and is ready to queue."] = " - ready - Does a check to see who has the battlemaster window open and is ready to queue.",
-	[" - join <instanceID> - Forces everyone with the specified instance id to join Alterac Valley."] = " - join <instanceID> - Forces everyone with the specified instance id to join Alterac Valley.",
-	[" - status - Shows the status list of everyone regarding queue or window."] = " - status - Shows the status list of everyone regarding queue or window.",
-
-	["You do not have Alterac Valley syncing enabled, and cannot use any of the slash commands yourself."] = "You do not have Alterac Valley syncing enabled, and cannot use any of the slash commands yourself.",
-	
+		
 	["SSPVP slash commands"] = "SSPVP slash commands",
 	[" - suspend - Suspends auto join and leave for 5 minutes, or until you log off."] = " - suspend - Suspends auto join and leave for 5 minutes, or until you log off.",
 	[" - ui - Opens the OptionHouse configuration for SSPVP."] = " - ui - Opens the OptionHouse configuration for SSPVP.",
 	[" - Other slash commands"] = " - Other slash commands",
-	[" - /av - Alterac Valley sync queuing."] = " - /av - Alterac Valley sync queuing.",
 	[" - /arena - Easy Arena calculations and conversions"] = " - /arena - Easy Arena calculations and conversions",
 	
 	
@@ -302,7 +233,6 @@ SSPVPLocals = {
 	["Mine Reinforcement"] = "Mine Reinforcement",
 	["Battlefield Queue"] = "Battlefield Queue",
 	["Frame Moving"] = "Frame Moving",
-	["Alterac Valley sync queuing"] = "Alterac Valley sync queuing",
 	
 	-- GOOEY
 	["General"] = "General",
@@ -363,7 +293,6 @@ SSPVPLocals = {
 	["Release from corpse when inside an active battleground"] = "Release from corpse when inside an active battleground",
 	["Automatically use soul stone, if any on death"] = "Automatically use soul stone, if any on death",
 	
-	
 	-- JOIN
 	["Delay"] = "Delay",
 	["Join priorities"] = "Join priorities",
@@ -416,12 +345,7 @@ SSPVPLocals = {
 	["25%"] = "25%",
 	["50%"] = "50%",
 	["75%"] = "75%",
-	
-	["Sync Queue"] = "Sync Queue",
-	["Enable sync queuing"] = "Enable sync queuing",
-	["Allows you to sync queue with other SSPVP2, StinkyQueue or LightQueue users at the same time increasing your chance of getting into the same match."] = "Allows you to sync queue with other SSPVP2, StinkyQueue or LightQueue users at the same time increasing your chance of getting into the same match.",
-	["Allow group leader or assist to force join you into a specific Alterac Valley"] = "Allow group leader or assist to force join you into a specific Alterac Valley",
-		
+			
 	["Show player queue status in overlay"] = "Show player queue status in overlay",
 	["Displays how many people are queued, number of people who have confirmation for specific instance id's and the instance id's that people are currently playing inside."] = "Displays how many people are queued, number of people who have confirmation for specific instance id's and the instance id's that people are currently playing inside.",
 	["When the leader is ready for the group to join an Alterac Valley, he can force everyone into it with the required instance id. You will still be shown the instance id to join even if you disable this."] = "When the leader is ready for the group to join an Alterac Valley, he can force everyone into it with the required instance id. You will still be shown the instance id to join even if you disable this.",

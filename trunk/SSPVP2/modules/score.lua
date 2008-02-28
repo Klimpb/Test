@@ -151,7 +151,7 @@ function Score:GetTooltip(faction)
 		if( playerFaction == factionID ) then
 			local server
 			if( string.match(name, "%-") ) then
-				name, server = string.match(name, "(.+)%-(.+)")
+				name, server = string.match(name, "(.-)%-(.*)$")
 			else
 				server = GetRealmName()
 			end
