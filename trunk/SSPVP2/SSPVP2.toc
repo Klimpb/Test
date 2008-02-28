@@ -1,10 +1,10 @@
-## Interface: 20300
+## Interface: 20400
 ## Title: SSPVP 2
 ## Version: $Revision$
 ## Notes: PvP, Battleground and Arena mod
 ## Author: Mayen
 ## SavedVariables: SSPVPDB
-## OptionalDeps: LibStub, OptionHouse, HousingAuthority
+## OptionalDeps: Ace3, LibStub, OptionHouse, HousingAuthority
 
 lib\LibStub-1.0\LibStub-1.0.xml
 lib\CallbackHandler-1.0\CallbackHandler-1.0.xml
