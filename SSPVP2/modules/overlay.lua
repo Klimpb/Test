@@ -17,7 +17,6 @@ local categories = {
 	["match"] = { label = L["Match Info"], order = 30 },
 	["mine"] = { label = L["Mine Reinforcement"], order = 50 },
 	["queue"] = { label = L["Battlefield Queue"], order = 60 },
-	["avsync"] = { label = L["Alterac Valley sync queuing"], order = 70 },
 }
 
 function SSOverlay:OnInitialize()

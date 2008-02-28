@@ -61,8 +61,6 @@ function Match:EnableModule(abbrev)
 	
 	if( self.db.profile[abbrev].matchInfo or self.db.profile[abbrev].bases ) then
 		self:RegisterEvent("UPDATE_WORLD_STATES")
-		--self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "ParseMessage")
-		--self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "ParseMessage")
 	end
 end
 
@@ -84,36 +82,6 @@ function Match:Reload()
 		self:EnableModule()
 	end
 end
-
--- Checks if the player won inside EOTS (or AB)
--- since they don't fire the "Blah blah wins" messages for fucks know why reasons
-function Match:CheckPlayerWon()
-	local _, aPoints = self:GetCrtPoints("Alliance")
-	local _, hPoints = self:GetCrtPoints("Horde")
-	
-	if( not aPoints or not hPoints ) then
-		return nil
-	end
-	
-	if( aPoints >= 2000 and playerFaction == "Alliance" ) then
-		return true
-	elseif( hPoints >= 2000 and playerFaction == "Horde" ) then
-		return true	
-	end
-	
-	return nil
-end
-
--- Figure out if we need to force an update
--- We only do a change when bases change, because it's better
--- then recalculating every-single-point-change
---function Match:ParseMessage(event, msg)
---	if( string.match(msg, L["captured the"]) ) then
---		Alliance.bases = -1
---		Horde.bases = -1
---		self:UPDATE_WORLD_STATES()
---	end
---end
 
 -- Match info
 function Match:UPDATE_WORLD_STATES()	

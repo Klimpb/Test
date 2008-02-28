@@ -155,9 +155,7 @@ local backdrop = {bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
 local function showTooltip(self)
 	if( not tooltip ) then
 		tooltip = CreateFrame("GameTooltip", "SSInfoTooltip", nil, "GameTooltipTemplate")
-
 	end
-	
 
 	tooltip:SetOwner(self, "ANCHOR_RIGHT")
 	tooltip:SetText(L["Left Click + Drag to move the frame, Right Click + Drag to reset it to it's original position."], nil, nil, nil, nil, 1)

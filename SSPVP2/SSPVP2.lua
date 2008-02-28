@@ -18,9 +18,6 @@ local statusInfo = {}
 local queuedUpdates = {}
 local confirmPortLeave = {}
 
-local playerTeamWon
-local playerFaction
-
 function SSPVP:OnInitialize()
 	self.defaults = {
 		profile = {
@@ -93,7 +90,6 @@ function SSPVP:OnInitialize()
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - suspend - Suspends auto join and leave for 5 minutes, or until you log off."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - ui - Opens the OptionHouse configuration for SSPVP."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - Other slash commands"])
-			DEFAULT_CHAT_FRAME:AddMessage(L[" - /av - Alterac Valley sync queuing."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - /arena - Easy Arena calculations and conversions"])
 		end
 	end)
@@ -108,13 +104,6 @@ function SSPVP:OnEnable()
 	self:RegisterEvent("BATTLEFIELDS_SHOW")
 	self:RegisterEvent("UPDATE_BATTLEFIELD_STATUS")
 	self:RegisterEvent("PLAYER_REGEN_ENABLED")
-	
-	-- REMOVE ME WHEN GetBattlefieldWinner() IS FIXED (GOOD LUCK WITH THAT)
-	self:RegisterEvent("CHAT_MSG_MONSTER_YELL", "CheckBattlegroundWinner")
-	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL", "CheckBattlegroundWinner")
-	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "CheckBattlegroundWinner")
-	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "CheckBattlegroundWinner")
-	playerFaction = select(2, UnitFactionGroup("player"))
 end
 
 function SSPVP:OnDisable()
@@ -132,16 +121,14 @@ function SSPVP:DisableSuspense()
 	end
 end
 
--- REMOVE ME WHEN GetBattlefieldWinner() IS FIXED
-function SSPVP:CheckBattlegroundWinner(event, msg)
-	if( string.match(msg, L["The Horde wins"]) and playerFaction == "Horde" ) then
-		playerTeamWon = true 
-	elseif( string.match(msg, L["The Alliance wins"]) and playerFaction == "Alliance" ) then
-		playerTeamWon = true
-	end
-end
-
 function SSPVP:BATTLEFIELDS_SHOW()
+	-- Disable auto join and such if shift is down
+	if( IsShiftKeyDown() ) then
+		return
+
+	end
+	
+
 	local queued = 0
 	
 	for i=1, MAX_BATTLEFIELD_QUEUES do
@@ -289,7 +276,6 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			elseif( status ~= "active" and activeID == i ) then
 				activeID = nil
 				activeBF = nil
-				playerTeamWon = nil
 				screenTaken = nil
 	
 				self:CancelTimer("RequestBattlefieldScoreData", true)
@@ -441,15 +427,17 @@ function SSPVP:LeaveBattlefield()
 	-- then you'll likely leave before you get credit, so delay the actual leave (if need be)
 	-- until the quest is credited to us
 	if( select(2, IsInInstance()) == "pvp" ) then
-		-- CHANGE ME BACK TO GetBattlefieldWinner() WHEN FIXED
-		local abbrev = self:GetAbbrev(activeBF)
-		if( ( abbrev ~= "eots" and playerTeamWon ) or ( abbrev == "eots" and SSPVP.modules.Match:CheckPlayerWon() ) ) then
+		local playerFaction = 1
+		if( UnitFactionGroup("player") == "Horde" ) then
+			playerFaction = 0
+		end
+	
+		if( GetBattlefieldWinner() == playerFaction ) then
 			local callToArms = string.format(L["Call to Arms: %s"], activeBF)
 			for i=1, GetNumQuestLogEntries() do
 				local questName, _, _, _, _, _, isComplete = GetQuestLogTitle(i)
 
-				-- Quest isn't complete yet, AND we have it.
-				-- Meaning, schedule for a log update and auto leave once it's complete
+				-- Quest isn't complete yet, AND we have it. Meaning, schedule for a log update and auto leave once it's complete
 				if( string.match(questName, callToArms) and not isComplete ) then
 					self:Print(string.format(L["You currently have the battleground daily quest for %s, auto leave has been set to occure once the quest completes."], activeBF))
 					self:RegisterEvent("QUEST_LOG_UPDATE")

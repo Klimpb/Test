@@ -487,5 +487,3 @@ SSPVPLocals = setmetatable({
 BINDING_HEADER_SSPVP = "SSPVP";
 BINDING_NAME_ETARFLAG = "Ziel feindlicher Flaggentr\195\164ger";
 BINDING_NAME_FTARFLAG = "Ziel verb\195\188ndeter Flaggentr\195\164ger";
-
-SSPVPRevision = tonumber(string.match("$Revision: 472 $", "(%d+)")) or 0
