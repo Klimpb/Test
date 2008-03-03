@@ -1,5 +1,5 @@
---[[ $Id: AceConsole-3.0.lua 60131 2008-02-03 13:03:56Z nevcairiel $ ]]
-local MAJOR,MINOR = "AceConsole-3.0", 1
+--[[ $Id: AceConsole-3.0.lua 63220 2008-02-29 11:29:58Z nevcairiel $ ]]
+local MAJOR,MINOR = "AceConsole-3.0", 3
 
 local AceConsole, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
 
@@ -25,7 +25,7 @@ local max = math.max
 function AceConsole:Print(...)
 	local text = ""
 	if self ~= AceConsole then
-		text = tostring( self )..": "
+		text = "|cff33ff99"..tostring( self ).."|r: "
 	end
 
 	local frame = select(1, ...)
@@ -71,6 +71,7 @@ function AceConsole:RegisterChatCommand( command, func, persist, silent )
 	AceConsole.commands[command] = name
 	-- non-persisting commands are registered for enabling disabling
 	if not persist then
+		if not AceConsole.weakcommands[self] then AceConsole.weakcommands[self] = {} end
 		AceConsole.weakcommands[self][command] = func
 	end
 	return true
