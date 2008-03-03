@@ -349,7 +349,10 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 		
 		for i=1, MAX_BATTLEFIELD_QUEUES do
 			local status, map, instanceID, _, _, teamSize, isRegistered = GetBattlefieldStatus(i)
-			
+			if( not map or map == "" ) then
+				map = L["Unknown"]
+			end
+
 			if( teamSize > 0 ) then
 				-- Before arenas start you're queued for all arena maps
 				-- once queues ready, they tell us specifically what map we're going into
@@ -361,7 +364,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 					end
 				end
 				
-				map = string.format(L["%s (%dvs%d)"], map, teamSize, teamSize)
+				map = string.format(L["%s (%dvs%d)"], map or L["Unknown"], teamSize, teamSize)
 			end
 
 			if( status == "active" ) then

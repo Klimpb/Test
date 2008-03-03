@@ -1,4 +1,4 @@
---[[ $Id: AceTimer-3.0.lua 60131 2008-02-03 13:03:56Z nevcairiel $ ]]
+--[[ $Id: AceTimer-3.0.lua 63220 2008-02-29 11:29:58Z nevcairiel $ ]]
 --[[
 	Basic assumptions:
 	* In a typical system, we do more re-scheduling per second than there are timer pulses per second
@@ -18,7 +18,7 @@
 	- ALLOWS unscheduling ANY timer (including the current running one) at any time, including during OnUpdate processing
 ]]
 
-local MAJOR, MINOR = "AceTimer-3.0", 1
+local MAJOR, MINOR = "AceTimer-3.0", 3
 local AceTimer, oldminor = LibStub:NewLibrary(MAJOR, MINOR)
 
 if not AceTimer then return end -- No upgrade needed
@@ -308,7 +308,7 @@ function AceTimer:CancelAllTimers()
 	if selftimers then
 		for handle,v in pairs(selftimers) do
 			if type(v)=="table" then	-- avoid __ops, etc
-				AceTimer.CancelTimer(self, handle)
+				AceTimer.CancelTimer(self, handle, true)
 			end
 		end
 	end
@@ -381,6 +381,15 @@ function AceTimer:Embed(target)
 	end
 	return target
 end
+
+--AceTimer:OnEmbedDisable( target )
+-- target (object) - target object that AceTimer is embedded in.
+--
+-- cancel all timers registered for the object
+function AceTimer:OnEmbedDisable( target )
+	target:CancelAllTimers()
+end
+
 
 for addon in pairs(AceTimer.embeds) do
 	AceTimer:Embed(addon)
