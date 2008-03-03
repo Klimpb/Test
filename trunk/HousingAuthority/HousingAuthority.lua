@@ -550,7 +550,7 @@ local function dropdownRowClicked(self)
 	else
 		local selectedKeys = getValue(parent.parent, parent.data)
 		if( selectedKeys[self.key] ) then
-			selectedKeys[self.key] = nil
+			selectedKeys[self.key] = false
 			self.check:Hide()
 		else
 			selectedKeys[self.key] = true
