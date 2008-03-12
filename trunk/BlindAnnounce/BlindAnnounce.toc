@@ -1,0 +1,7 @@
+## Interface: 20300
+## Title: Blind Announce
+## Version: $Revision: 458 $
+## Notes: Announces who you blinded
+## Author: Mayen
+
+BlindAnnounce.lua
