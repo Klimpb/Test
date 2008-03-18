@@ -106,16 +106,6 @@ function ChatFrame_SystemEventHandler(event, ...)
 	return Orig_ChatFrame_SystemEventHandler(event, ...)
 end
 
--- Block marks created message
-local Orig_ChatFrame_MessageEventHandler = ChatFrame_MessageEventHandler
-function ChatFrame_MessageEventHandler(event, ...)
-	if( BF.isActive and event == "CHAT_MSG_LOOT" and string.match(arg1, L["(.+) Mark of Honor"]) ) then
-		return false		
-	end
-	
-	return Orig_ChatFrame_MessageEventHandler(event, ...)
-end
-
 -- Auto append server name
 local Orig_SendChatMessage = SendChatMessage
 function SendChatMessage(text, type, language, target, ...)

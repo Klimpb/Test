@@ -56,13 +56,13 @@ SSPVPLocals = {
 	["Disabled"] = "Disabled",
 	["Suspended"] = "Suspended",
 	["Joining"] = "Joining",
-	["(.+) Mark of Honor"] = "(.+) Mark of Honor",
 	["%s |cffffffff(%dvs%d)|r"] = "%s |cffffffff(%dvs%d)|r",
 	["Flag Respawn: %s"] = "Flag Respawn: %s",
 	["Auto release disabled, %d %s until release"] = "Auto release disabled, %d %s until release",
 	
 	["%d personal rating in %s (%dvs%d)"] = "%d personal rating in %s (%dvs%d)",
 	["%s is ready to join, auto leave disabled."] = "%s is ready to join, auto leave disabled.",
+	["Bugged game, no rating has been changed."] = "Bugged game, no rating has been changed.",
 	
 	-- Modified queue window
 	["You are now eligible to enter %s. %s left to join."] = "You are now eligible to enter %s. %s left to join.",
