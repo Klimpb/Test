@@ -126,6 +126,14 @@ end
 -- How many points gained/lost
 function Arena:UPDATE_BATTLEFIELD_STATUS()
 	if( GetBattlefieldWinner() and select(2, IsActiveBattlefieldArena()) ) then
+		-- Check if we had a bugged game and thus no rating change
+		for i=0, 1 do
+			if( select(2, GetBattlefieldTeamInfo(i)) == 0 ) then
+				SSPVP:Print(L["Bugged game, no rating has been changed."])
+				return
+			end
+		end
+
 		-- Figure out what bracket we're in
 		local bracket
 		for i=1, MAX_BATTLEFIELD_QUEUES do
