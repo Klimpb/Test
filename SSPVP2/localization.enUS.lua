@@ -43,6 +43,7 @@ SSPVPLocals = {
 	["Starting: %s"] = "Starting: %s",
 	
 	["the raid group.$"] = "the raid group.$",
+	["Eastern Kingdoms"] = "Eastern Kingdoms",
 	
 	["The"] = "The",
 	

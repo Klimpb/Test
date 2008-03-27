@@ -195,7 +195,6 @@ end
 function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 	for i=1, MAX_BATTLEFIELD_QUEUES do
 		local status, map, instanceID, _, _, teamSize, isRegistered = GetBattlefieldStatus(i)
-		
 		if( statusInfo[i] ~= status ) then
 			if( status == "confirm" ) then
 				local delay = 0
@@ -245,7 +244,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 					end
 				end
 				
-			elseif( status == "active" and activeID ~= i and instanceID > 0 ) then
+			elseif( status == "active" and activeID ~= i ) then
 				local abbrev = self:GetAbbrev(map)
 				for name, module in pairs(self.modules) do
 					-- Make sure the module is enabled, and that it can actually be enabled
@@ -367,7 +366,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				map = string.format(L["%s (%dvs%d)"], map or L["Unknown"], teamSize, teamSize)
 			end
 
-			if( status == "active" ) then
+			if( status == "active" and instanceID > 0 ) then
 				SSOverlay:RegisterText("queue" .. i, "queue", map .. ": #" .. instanceID)
 			elseif( status == "confirm" ) then
 				if( not self.db.profile.join.enabled ) then
@@ -588,7 +587,7 @@ function SSPVP:GetAbbrev(map)
 		return "av"
 	elseif( map == L["Eye of the Storm"] ) then
 		return "eots"
-	elseif( map == L["Blade's Edge Arena"] or map == L["Nagrand Arena"] or map == L["Ruins of Lordaeron"] ) then
+	elseif( map == L["Blade's Edge Arena"] or map == L["Nagrand Arena"] or map == L["Ruins of Lordaeron"] or map == L["Eastern Kingdoms"] ) then
 		return "arena"
 	end
 	
