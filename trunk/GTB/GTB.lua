@@ -215,18 +215,16 @@ end
 
 local function repositionFrames(group)
 	table.sort(group.usedBars, sortBars)
-	
-	local height = 0
-	local mod = 1
-	if( group.barGrowth == "DOWN" ) then
-		mod = -1
-	end
-	
+
 	for i, bar in pairs(group.usedBars) do
 		bar:ClearAllPoints()
 		
 		if( i > 1 ) then
-			bar:SetPoint("TOPLEFT", group.usedBars[i - 1], "BOTTOMLEFT", 0, 0)
+			if( group.barGrowth == "DOWN" ) then
+				bar:SetPoint("TOPLEFT", group.usedBars[i - 1], "BOTTOMLEFT", 0, 0)
+			else
+				bar:SetPoint("BOTTOMLEFT", group.usedBars[i - 1], "TOPLEFT", 0, 0)
+			end
 		else
 			bar:SetPoint(group.point, group.relativeFrame, group.relativePoint, group.xOff, group.yOff)
 		end
