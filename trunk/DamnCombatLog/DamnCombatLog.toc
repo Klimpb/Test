@@ -1,8 +1,9 @@
 ## Interface: 20400
-## Title: Damn log bar
-## Notes: Cleans up the ugly bar in the combat log
+## Title: Damn combat log
+## Notes: Cleans up the combat log a bit
 ## Author: Mayen
 ## Version: $Revision: 599 $
 ## LoadWith: Blizzard_CombatLog
+## SavedVariables: DCL_Config
 
-DamnLogBar.lua
+DamnCombatLog.lua
