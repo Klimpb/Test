@@ -1,0 +1,19 @@
+## Interface: 20300
+## Title: Arena Identify
+## Version: $Revision: 628 $
+## Author: Mayen
+## Notes: Helps speed up identifying enemies inside arenas
+## SavedVariables: ArenaIdentifyDB, ArenaIdentifyData
+## OptionalDeps: LibStub, Ace3
+
+lib\LibStub-1.0\LibStub-1.0.xml
+lib\CallbackHandler-1.0\CallbackHandler-1.0.xml
+lib\AceAddon-3.0\AceAddon-3.0.xml
+lib\AceDB-3.0\AceDB-3.0.xml
+lib\AceEvent-3.0\AceEvent-3.0.xml
+
+localization.enUS.lua
+localization.deDE.lua
+localization.frFR.lua
+
+ArenaIdentify.lua
