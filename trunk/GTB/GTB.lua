@@ -567,6 +567,7 @@ function GTB.RegisterBar(group, id, seconds, text, icon, r, g, b)
 	frame:SetStatusBarColor(frame.r, frame.g, frame.b)
 	frame:SetWidth(group.width)
 	frame:SetHeight(group.height)
+	frame:SetScale(group.scale)
 	frame:SetScript("OnUpdate", barOnUpdate)
 	frame:Show()
 	
