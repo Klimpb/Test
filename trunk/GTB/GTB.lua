@@ -300,8 +300,8 @@ end
 -- Group frame positioning, and all the timers inside it
 function GTB.SetPoint(group, point, relativeFrame, relativePoint, xOff, yOff)
 	argcheck(point, 2, "string")
-	argcheck(relativeFrame, 3, "table", "string", "nil")
-	argcheck(relativePoint, 4, "string", "nil")
+	argcheck(relativeFrame, 3, "table", "number", "string", "nil")
+	argcheck(relativePoint, 4, "string", "number", "nil")
 	argcheck(xOff, 5, "number", "nil")
 	argcheck(yOff, 6, "number", "nil")
 	assert(3, group.name and groups[group.name], string.format(L["MUST_CALL"], "SetPoint"))
@@ -311,9 +311,6 @@ function GTB.SetPoint(group, point, relativeFrame, relativePoint, xOff, yOff)
 	group.relativePoint = relativePoint
 	group.xOff = xOff
 	group.yOff = yOff
-	
-	group.frame:ClearAllPoints()
-	group.frame:SetPoint(point, relativeFrame, relativePoint, xOff, yOff)
 end
 
 -- Bar scale
