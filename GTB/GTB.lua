@@ -129,11 +129,14 @@ end
 local function fadeoutBar(self)
 	local group = groups[self.owner]
 	
-	if( type(group.onFadeHandler) == "table" and type(group.onFadeFunc) == "string" ) then
+	if( type(group.onFadeHandler) == "table" and type(group.onFadeFunc) == "string" and group.onFadeHandler[group.onFadeFunc] ) then
 		group.onFadeHandler[group.onFadeFunc](group.onFadeHandler, self.barID)			
 	elseif( type(group.onFadeFunc) == "string" ) then
-		getglobal(group.onFadeFunc)(self.barID)
-	elseif( type(group.onFadeFunc) == "function" ) then
+		local func = getglobal(group.onFadeFunc)
+		if( func ) then
+			func(self.barID)
+		end
+	elseif( type(group.onFadeFunc) == "function" and group.onFadeFunc ) then
 		group.onFadeFunc(self.barID)
 	end
 	
@@ -300,8 +303,8 @@ end
 -- Group frame positioning, and all the timers inside it
 function GTB.SetPoint(group, point, relativeFrame, relativePoint, xOff, yOff)
 	argcheck(point, 2, "string")
-	argcheck(relativeFrame, 3, "table", "number", "string", "nil")
-	argcheck(relativePoint, 4, "string", "number", "nil")
+	argcheck(relativeFrame, 3, "table", "string", "nil")
+	argcheck(relativePoint, 4, "string", "nil")
 	argcheck(xOff, 5, "number", "nil")
 	argcheck(yOff, 6, "number", "nil")
 	assert(3, group.name and groups[group.name], string.format(L["MUST_CALL"], "SetPoint"))
@@ -311,6 +314,9 @@ function GTB.SetPoint(group, point, relativeFrame, relativePoint, xOff, yOff)
 	group.relativePoint = relativePoint
 	group.xOff = xOff
 	group.yOff = yOff
+	
+	group.frame:ClearAllPoints()
+	group.frame:SetPoint(point, relativeFrame, relativePoint, xOff, yOff)
 end
 
 -- Bar scale
@@ -448,7 +454,6 @@ end
 function GTB.RegisterOnFade(group, handler, func)
 	argcheck(handler, 2, "table", "function", "string")
 	argcheck(func, 2, "string", "nil")
-	
 
 	if( func ) then
 		group.onFadeHandler = handler
