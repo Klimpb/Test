@@ -30,12 +30,15 @@ local function hookFrames(...)
 			
 			local parent = bar:GetParent()
 			local cast = select(2, parent:GetChildren())
-			local border, icon = select(2, parent:GetRegions())
 			
-			cast.border = border
-			cast.icon = icon
-			cast.NCF_OnUpdate = cast:GetScript("OnUpdate")
-			cast:SetScript("OnUpdate", OnUpdate)
+			if( not cast.NPCFHooked ) then
+				local border, icon = select(2, parent:GetRegions())
+				cast.NPCFHooked = true
+				cast.border = border
+				cast.icon = icon
+				cast.NCF_OnUpdate = cast:GetScript("OnUpdate")
+				cast:SetScript("OnUpdate", OnUpdate)
+			end
 		end
 	end
 end
