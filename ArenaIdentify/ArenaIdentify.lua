@@ -67,14 +67,16 @@ function ArenaIdentify:ScanUnits()
 				-- Send the data to the AF mod directly since addon messages are ignored
 				if( SSAF ) then
 					SSAF:AddEnemy(data.name, data.server, data.race, data.classToken, nil, data.powerType, unitid, data.guid)
+
+					local msg = string.format("ENEMY:%s,%s,%s,%s,%s,%s,%s,%s", data.name, data.server, data.race, data.classToken, "", data.powerType, "", data.guid)
+					SendAddonMessage("SSAF", msg, "BATTLEGROUND")
+
 				elseif( Proximo ) then
 					Proximo:AddToList(data.name, data.server, data.classToken, data.race, data.sex, 100, 100, "")						
+
+					local msg = string.format("ReceiveSync:%s,%s,%s,%s,%s,%s,%s,%s", data.name, data.server, data.classToken, data.race or "", data.sex or "", "100", "100", "")
+					SendAddonMessage("Proximo", msg, "PARTY")
 				end
-				
-				-- SSAF is smart enough to catch Proximo syncs, so it's not a big deal to just send them using Proximo format
-				-- and let SSAF sort it out for people
-				local msg = string.format("ReceiveSync:%s,%s,%s,%s,%s,%s,%s,%s", data.name, data.server, data.classToken, data.race or "", data.sex or "", "100", "100", "")
-				SendAddonMessage("Proximo", msg, "PARTY")
 			end
 		end
 	end
