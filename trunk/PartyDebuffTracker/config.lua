@@ -155,7 +155,8 @@ local function loadOptions()
 			},
 		},
 	}
-
+	
+	-- ANCHOR GROUP
 	options.args.anchors = {
 		type = "group",
 		order = 3,
@@ -164,7 +165,6 @@ local function loadOptions()
 		set = set,
 		handler = Config,
 		args = {
-	
 		},
 	}
 
@@ -175,6 +175,41 @@ local function loadOptions()
 		end
 		
 		Config:CreateAnchorDisplay(nil, id, data.text)
+	end	
+	
+	-- SPELL GROUP
+	options.args.spells = {
+		type = "group",
+		order = 4,
+		name = L["Spells"],
+		get = get,
+		set = set,
+		handler = Config,
+		args = {
+			desc = {
+				order = 0,
+				type = "description",
+				name = L["Lets you choose which spells should be displayed in the party timer anchors, this will not change how you actually send data to others."],
+			},
+			list = {
+				order = 1,
+				type = "group",
+				inline = true,
+				name = L["List"],
+				args = {},
+			},
+		},
+	}
+
+	-- Load spell list
+	for spellName, spellID in pairs(Trackery.db.profile.spellList) do
+		options.args.spells.args.list.args[tostring(spellID)] = {
+			order = 1,
+			type = "toggle",
+			name = spellName,
+			desc = string.format(L["Enable timers for %s."], spellName),
+			arg = "spellList." .. spellName,
+		}
 	end
 
 	-- DB Profiles
@@ -199,7 +234,7 @@ SlashCmdList["TRACKERY"] = function(msg)
 
 			for spellID, seconds in pairs(testList) do
 				local spellName, _, icon = GetSpellInfo(spellID)
-				Trackery.visual:CreateTimer("party" .. i, spellID, spellName, icon, seconds, UnitGUID("player"))
+				Trackery.visual:CreateTimer("party" .. i, spellID, spellName, icon, seconds, math.random(5), UnitGUID("player"))
 			end
 		end
 	

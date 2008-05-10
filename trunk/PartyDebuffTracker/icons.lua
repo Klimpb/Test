@@ -116,6 +116,13 @@ local function OnUpdate(self, elapsed)
 	else
 		self.text:SetFormattedText("%.1f", self.timeLeft)
 	end
+	
+	-- <=30% left, go red
+	--if( self.timeLeft <= self.redAt ) then
+	--	self.text:SetTextColor(1, 0, 0)
+	--else
+	--	self.text:SetTextColor(1, 1, 1)
+	--end
 end
 
 -- Create our little icon frame
@@ -134,9 +141,13 @@ local function createRow(parent)
 	frame.icon:SetPoint("LEFT")
 	
 	frame.text = frame:CreateFontString(nil, "BACKGROUND")
-	frame.text:SetFontObject(GameFontHighlight)
+	frame.text:SetFont((GameFontHighlight:GetFont()), 12, "OUTLINE")
 	frame.text:SetPoint("LEFT", POSITION_SIZE, 0)
 	--frame.text:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
+
+	frame.stackText = frame:CreateFontString(nil, "BACKGROUND")
+	frame.stackText:SetFont((GameFontHighlight:GetFont()), 12, "OUTLINE")
+	frame.stackText:SetPoint("BOTTOMRIGHT", frame.icon, "BOTTOMRIGHT", 0, 0)
 	
 	return frame
 end
@@ -243,7 +254,7 @@ function Icons:UnitDied(diedGUID)
 end
 
 -- Create a new timer
-function Icons:CreateTimer(showIn, spellID, spellName, icon, seconds, sourceGUID)
+function Icons:CreateTimer(showIn, spellID, spellName, icon, seconds, stack, sourceGUID)
 	local anchorFrame = Icons[showIn]
 	if( not anchorFrame or not Trackery.db.profile.anchors[showIn] or not Trackery.db.profile.anchors[showIn].enabled ) then
 		return
@@ -253,6 +264,13 @@ function Icons:CreateTimer(showIn, spellID, spellName, icon, seconds, sourceGUID
 	local frame = table.remove(anchorFrame.inactive, 1)
 	if( not frame ) then
 		frame = createRow(anchorFrame)
+	end
+	
+	if( stack > 0 ) then
+		frame.stackText:SetText(stack)
+		frame.stackText:Show()
+	else
+		frame.stackText:Hide()
 	end
 
 	-- Set it for when it fades
@@ -266,6 +284,8 @@ function Icons:CreateTimer(showIn, spellID, spellName, icon, seconds, sourceGUID
 	frame.startSeconds = seconds
 	frame.timeLeft = seconds
 	frame.lastUpdate = GetTime()
+	frame.stack = stack
+	frame.redAt = seconds * 0.30
 	
 	frame.type = anchorFrame.type
 	frame.icon:SetTexture(icon)

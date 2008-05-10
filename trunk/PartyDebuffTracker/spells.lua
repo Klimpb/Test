@@ -1,4 +1,28 @@
 TrackerySpells = {
+	-- Aimed Shot
+	[19434] = true,
+	[20900] = true,
+	[20901] = true,
+	[20902] = true,
+	[20903] = true,
+	[20904] = true,
+	[27065] = true,
+	
+	-- Mortal Strike
+	[12294] = true,
+	[21551] = true,
+	[21552] = true,
+	[21553] = true,
+	[25248] = true,
+	[30330] = true,
+	
+	-- Wound Poison
+	[13324] = true,
+	[13223] = true,
+	[13222] = true,
+	[13218] = true,
+	[27189] = true,
+	
 	-- Blind
 	[2094] = true,
 	

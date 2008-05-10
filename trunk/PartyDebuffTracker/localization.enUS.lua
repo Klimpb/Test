@@ -13,6 +13,8 @@ TrackeryLocals = {
 	
 	-- GUI
 	["General"] = "General",
+	["Spells"] = "Spells",
+	["List"] = "List",
 	
 	["Everywhere else"] = "Everywhere else",
 	["Battlegrounds"] = "Battlegrounds",
@@ -43,4 +45,7 @@ TrackeryLocals = {
 	
 	["Silent mode"] = "Silent mode",
 	["Disables everything except timer syncing, this is basically for people who only want this mod for broadcasting your debuff timers to someone else.."] = "Disables everything except timer syncing, this is basically for people who only want this mod for broadcasting your debuff timers to someone else..",
+
+	["Lets you choose which spells should be displayed in the party timer anchors, this will not change how you actually send data to others."] = "Lets you choose which spells should be displayed in the party timer anchors, this will not change how you actually send data to others.",
+	["Enable timers for %s."] = "Enable timers for %s.",
 }
