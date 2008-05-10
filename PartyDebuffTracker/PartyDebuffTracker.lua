@@ -14,14 +14,17 @@ local playerName
 local spellInfo = {}
 local currentDebuffs = {}
 local lastDebuffs = {}
+local currentStack = {}
+local lastStack = {}
 
 function Trackery:OnInitialize()
 	self.defaults = {
 		profile = {
+			silent = true,
 			showAnchors = false,
 			inside = {["arena"] = true},
+			spellList = {},
 			anchors = {
-				--["player"] = {enabled = true, text = "Player", displayType = "right", scale = 1.0},
 				["party1"] = {enabled = true, text = L["Party #1"], displayType = "down", scale = 1.0},
 				["party2"] = {enabled = true, text = L["Party #2"], displayType = "down", scale = 1.0},
 				["party3"] = {enabled = true, text = L["Party #3"], displayType = "down", scale = 1.0},
@@ -40,6 +43,14 @@ function Trackery:OnInitialize()
 	if( not self.visual ) then
 		self:UnregisterAllEvents()
 		return
+	end
+	
+	-- Setup a spell list, basically this lets us disable certain ones even if someone adds a custom spell to their DB
+	for id in pairs(self.spells) do
+		local name = GetSpellInfo(id)
+		if( name and self.db.profile.spellList[name] == nil ) then
+			self.db.profile.spellList[name] = id
+		end
 	end
 	
 	-- Monitor for zone change
@@ -112,26 +123,33 @@ function Trackery:PLAYER_AURAS_CHANGED()
 		
 		local name, rank = GetPlayerBuffName(buffID)
 		local id = name .. ":" .. rank
+		local spellID = spellInfo[id]
 		
-		if( spellInfo[id] ) then
+		if( spellID ) then
 			local timeLeft = GetPlayerBuffTimeLeft(buffID)
-			if( not lastDebuffs[id] or ( lastDebuffs[id] and timeLeft > lastDebuffs[id] ) ) then
-				self:SendMessage(string.format("GAIN:%s,%s,%s,%.2f", playerName, spellInfo[id], name, timeLeft))
+			local stack = GetPlayerBuffApplications(buffID) or 0
+			
+			if( not lastDebuffs[id] or lastStack[id] ~= stack or ( lastDebuffs[id] and timeLeft > lastDebuffs[id] ) ) then
+				self:SendMessage(string.format("GAIN:%s,%s,%s,%.2f,%d", playerName, spellID, name, timeLeft, stack))
 			end
 
 			currentDebuffs[id] = timeLeft
+			currentStack[id] = stack
 		end
 	end
 	
 	for id in pairs(lastDebuffs) do
 		if( not currentDebuffs[id] ) then
 			self:SendMessage(string.format("FADE:%s,%d,%s", playerName, spellInfo[id], (string.split(":", id))))
+
 			lastDebuffs[id] = nil
+			lastStack[id] = nil
 		end
 	end
 	
 	-- Copy 
-	for k, v in pairs(currentDebuffs) do lastDebuffs[k] = v; currentDebuffs[k] = nil; end
+	for k, v in pairs(currentDebuffs) do lastDebuffs[k] = v; currentDebuffs[k] = nil end
+	for k, v in pairs(currentStack) do lastStack[k] = v; currentStack[k] = nil end
 end
 
 -- Figure out the unitid so we can 
@@ -150,12 +168,13 @@ function Trackery:GetUnitID(name)
 end
 
 -- Actual things happened!
-function Trackery:AuraGained(name, spellID, spellName, timeLeft)
+function Trackery:AuraGained(name, spellID, spellName, timeLeft, stack)
 	spellID = tonumber(spellID)
 	timeLeft = tonumber(timeLeft)
+	stack = tonumber(stack) or 0
 	
 	-- Make sure it's a valid sync
-	if( not spellID or not timeLeft or not UnitInParty(name) ) then
+	if( not spellID or not timeLeft or self.db.profile.spellList[spellName] == false ) then
 		return
 	end
 	
@@ -168,12 +187,16 @@ function Trackery:AuraGained(name, spellID, spellName, timeLeft)
 	end
 		
 	local icon = select(3, GetSpellInfo(spellID))
-	self.visual:CreateTimer(unitID, spellID, spellName, icon, timeLeft, guid)
+	self.visual:RemoveTimer(unitID, spellID, guid)
+	self.visual:CreateTimer(unitID, spellID, spellName, icon, timeLeft, stack, guid)
+
+	if( self.db.profile.spellList[spellName] == nil ) then
+		self.db.profile.spellList[spellName] = spellID
+	end
 end
 
 function Trackery:AuraFaded(name, spellID, spellName)
 	spellID = tonumber(spellID)
-	
 
 	-- Make sure it's a valid sync
 	if( not spellID or not UnitInParty(name) ) then
@@ -193,7 +216,7 @@ end
 
 -- Handle syncs
 function Trackery:CHAT_MSG_ADDON(event, prefix, msg, type, author)
-	if( type ~= "PARTY" or prefix ~= "TRCKY" --[[or author == playerName]] ) then
+	if( type ~= "PARTY" or prefix ~= "TRCKY" or author == playerName ) then
 		return
 	end
 	
