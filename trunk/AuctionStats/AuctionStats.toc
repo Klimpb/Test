@@ -1,0 +1,17 @@
+## Interface: 23000
+## Title: Auction Stats
+## Notes: Plugin to BeanCounter that shows you more statistical information on your auctions
+## SavedVariables: AuctionStatsDB
+## Version: $Revision: 322 $
+## Author: Mayen
+
+libs\LibStub-1.0\LibStub-1.0.xml
+libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
+libs\AceAddon-3.0\AceAddon-3.0.xml
+libs\AceEvent-3.0\AceEvent-3.0.xml
+
+localization.enUS.lua
+localization.deDE.lua
+localization.frFR.lua
+
+AuctionStats.lua
