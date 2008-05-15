@@ -469,7 +469,6 @@ end
 function Flag:UPDATE_BINDINGS()
 	if( InCombatLockdown() ) then
 		SSPVP:RegisterOOCUpdate(self, "UPDATE_BINDINGS")
-
 		return
 	end
 	

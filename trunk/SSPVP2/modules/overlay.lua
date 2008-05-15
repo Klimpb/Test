@@ -394,12 +394,10 @@ function SSOverlay:RegisterOnClick(id, handler, func, ...)
 	local row
 	for _, data in pairs(rows) do
 		if( data.id == id ) then
-
 			row = data
 			break
 		end
 	end
-	
 
 	if( not row ) then
 		return
@@ -514,8 +512,9 @@ function SSOverlay:CreateRow()
 
 	-- Reposition it if we're growing up
 	if( growUp ) then
+		local scale = self.frame:GetEffectiveScale()
 		self.frame:ClearAllPoints()
-		self.frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", self.db.profile.x, self.db.profile.y)
+		self.frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", self.db.profile.x / scale, self.db.profile.y / scale)
 	end
 
 	self.rows[CREATED_ROWS] = row

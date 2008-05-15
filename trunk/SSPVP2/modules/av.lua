@@ -73,10 +73,8 @@ end
 function AV:PrintTimer(node, captureTime, faction)
 	if( not node or not captureTime or not faction ) then
 		return
-
 	end
 	
-
 	SSPVP:ChannelMessage(string.format(L["[%s] %s: %s"], faction, node, SecondsToTime(captureTime - GetTime())))
 end
 

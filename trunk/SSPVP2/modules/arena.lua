@@ -95,7 +95,7 @@ local function getPoints(rating, teamSize)
 		points = ((0.22 * rating ) + 14) * penalty
 	end
 	
-	if( points < 0 ) then
+	if( points < 0 or points ~= points ) then
 		points = 0
 	end
 	
@@ -115,7 +115,7 @@ local function getRating(points, teamSize)
 	
 	rating = math.floor(rating + 0.5)
 	
-	if( type(rating) ~= "number" or rating < 0 ) then
+	if( rating ~= rating or rating < 0 ) then
 		rating = 0
 	end
 	
@@ -128,8 +128,9 @@ function Arena:UPDATE_BATTLEFIELD_STATUS()
 	if( GetBattlefieldWinner() and select(2, IsActiveBattlefieldArena()) ) then
 		-- Check if we had a bugged game and thus no rating change
 		for i=0, 1 do
-			if( select(2, GetBattlefieldTeamInfo(i)) == 0 ) then
-				SSPVP:Print(L["Bugged game, no rating has been changed."])
+			local oldRating, newRating = select(2, GetBattlefieldTeamInfo(1))
+			if( oldRating == newRating ) then
+				SSPVP:Print(L["Bugged or drawn game, no rating changed."])
 				return
 			end
 		end
@@ -148,8 +149,6 @@ function Arena:UPDATE_BATTLEFIELD_STATUS()
 		if( not bracket ) then
 			return
 		end
-		
-		local firstInfo, secondInfo, playerWon, playerPersonal, enemyRating
 
 		-- Grab player team info, watching the event seems to have issues so we do it this way instead
 		for i=1, MAX_ARENA_TEAMS do
@@ -168,6 +167,7 @@ function Arena:UPDATE_BATTLEFIELD_STATUS()
 		end
 
 		-- Ensure that the players team is shown first
+		local firstInfo, secondInfo, playerWon, playerPersonal, enemyRating
 		for i=0, 1 do
 			local teamName, oldRating, newRating = GetBattlefieldTeamInfo(i)
 			if( arenaTeams[teamName .. bracket] ) then
@@ -199,6 +199,196 @@ function Arena:UPDATE_BATTLEFIELD_STATUS()
 	end
 end
 
+local function convertPointsRating(self)
+	local points = self:GetNumber()
+	
+
+	Arena.frame.pointText2:SetFormattedText(L["[%d vs %d] %d points = %d rating"], 2, 2, points, getRating(points, 2))
+	Arena.frame.pointText3:SetFormattedText(L["[%d vs %d] %d points = %d rating"], 3, 3, points, getRating(points, 3))
+	Arena.frame.pointText5:SetFormattedText(L["[%d vs %d] %d points = %d rating"], 5, 5, points, getRating(points, 5))
+end
+
+local function convertRatingsPoint(self)
+	local rating = self:GetNumber()
+	
+	
+	Arena.frame.ratingText2:SetFormattedText(L["[%d vs %d] %d rating = %d points"], 5, 5, rating, getPoints(rating, 5))
+	Arena.frame.ratingText3:SetFormattedText(L["[%d vs %d] %d rating = %d points"], 3, 3, rating, getPoints(rating, 3))
+	Arena.frame.ratingText5:SetFormattedText(L["[%d vs %d] %d rating = %d points"], 2, 2, rating, getPoints(rating, 2))
+end
+
+local function getArenaChange(self)
+	local teamA = Arena.frame.teamA:GetNumber()
+	local teamB = Arena.frame.teamB:GetNumber()
+	
+	local aNew, aDiff, bNew, bDiff = getChange(teamA, teamB, true)
+	Arena.frame.teamAText:SetFormattedText(L["Won: %d rating (%d points gained)"], aNew, aDiff)
+	Arena.frame.teamBText:SetFormattedText(L["Lost: %d rating (%d points lost)"], bNew, bDiff)
+end
+
+function Arena:CreateUI()
+	if( self.frame ) then
+		return
+
+	end
+	
+
+	self.frame = CreateFrame("Frame", "SSArenaGUI", UIParent)
+	self.frame:SetWidth(225)
+	self.frame:SetHeight(265)
+	self.frame:SetMovable(true)
+	self.frame:EnableMouse(true)
+	self.frame:SetClampedToScreen(true)
+	self.frame:SetPoint("CENTER")
+	self.frame:SetBackdrop({
+		bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+		edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+		edgeSize = 26,
+		insets = {left = 9, right = 9, top = 9, bottom = 9},
+	})
+	
+	table.insert(UISpecialFrames, "SSArenaGUI")
+
+	-- Create the title/movy thing
+	local texture = self.frame:CreateTexture(nil, "ARTWORK")
+	texture:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Header")
+	texture:SetPoint("TOP", 0, 12)
+	texture:SetWidth(175)
+	texture:SetHeight(60)
+	
+	local title = CreateFrame("Button", nil, self.frame)
+	title:SetPoint("TOP", 0, 4)
+	title:SetText("SSPVP")
+	title:SetPushedTextOffset(0, 0)
+
+	title:SetTextFontObject(GameFontNormal)
+	title:SetHeight(20)
+	title:SetWidth(200)
+	title:RegisterForDrag("LeftButton")
+	title:SetScript("OnDragStart", function(self)
+		self.isMoving = true
+		Arena.frame:StartMoving()
+	end)
+	
+	title:SetScript("OnDragStop", function(self)
+		if( self.isMoving ) then
+			self.isMoving = nil
+			Arena.frame:StopMovingOrSizing()
+		end
+	end)
+	
+	-- Close the panel
+	local button = CreateFrame("Button", nil, self.frame, "UIPanelCloseButton")
+	button:SetPoint("TOPRIGHT", -1, -1)
+	button:SetScript("OnClick", function()
+		HideUIPanel(Auction.frame)
+	end)
+
+	-- Points -> Rating
+	local points = CreateFrame("EditBox", "SSArenaPoints", self.frame, "InputBoxTemplate")
+	points:SetHeight(20)
+	points:SetWidth(60)
+	points:SetAutoFocus(false)
+	points:SetNumeric(true)
+	points:ClearAllPoints()
+	points:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 20, -30)
+	points:SetScript("OnTextChanged", convertPointsRating)
+	
+	self.frame.points = points
+	
+	-- Now the actual text
+	self.frame.pointText2 = points:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	self.frame.pointText2:SetHeight(15)
+	self.frame.pointText2:SetPoint("BOTTOMLEFT", points, "BOTTOMLEFT", -5, -20)
+
+	self.frame.pointText3 = points:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	self.frame.pointText3:SetHeight(15)
+	self.frame.pointText3:SetPoint("BOTTOMLEFT", self.frame.pointText2, "BOTTOMLEFT", 0, -15)
+
+	self.frame.pointText5 = points:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	self.frame.pointText5:SetHeight(15)
+	self.frame.pointText5:SetPoint("BOTTOMLEFT", self.frame.pointText3, "BOTTOMLEFT", 0, -15)
+	
+	-- 344 = 1500 rating in 5s
+	points:SetNumber(344)
+	points:SetMaxLetters(4)
+	
+	-- Rating -> Points
+	local rating = CreateFrame("EditBox", "SSArenaRatings", self.frame, "InputBoxTemplate")
+	rating:SetHeight(20)
+	rating:SetWidth(60)
+	rating:SetAutoFocus(false)
+	rating:SetNumeric(true)
+	rating:ClearAllPoints()
+	rating:SetPoint("BOTTOMLEFT", self.frame.pointText5, "BOTTOMLEFT", 5, -30)
+	rating:SetScript("OnTextChanged", convertRatingsPoint)
+	
+	self.frame.rating = rating
+	
+	-- Now the actual text
+	self.frame.ratingText2 = rating:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	self.frame.ratingText2:SetHeight(15)
+	self.frame.ratingText2:SetPoint("BOTTOMLEFT", rating, "BOTTOMLEFT", -5, -20)
+
+	self.frame.ratingText3 = rating:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	self.frame.ratingText3:SetHeight(15)
+	self.frame.ratingText3:SetPoint("BOTTOMLEFT", self.frame.ratingText2, "BOTTOMLEFT", 0, -15)
+
+	self.frame.ratingText5 = rating:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	self.frame.ratingText5:SetHeight(15)
+	self.frame.ratingText5:SetPoint("BOTTOMLEFT", self.frame.ratingText3, "BOTTOMLEFT", 0, -15)
+	
+	-- 344 = 1500 rating in 5s
+	rating:SetNumber(1500)
+	rating:SetMaxLetters(4)
+	
+	-- Rating change based on winning or losing
+	local teamA = CreateFrame("EditBox", "SSArenaRatingA", self.frame, "InputBoxTemplate")
+	teamA:SetHeight(20)
+	teamA:SetWidth(60)
+	teamA:SetAutoFocus(false)
+	teamA:SetNumeric(true)
+	teamA:ClearAllPoints()
+	teamA:SetPoint("BOTTOMLEFT", self.frame.ratingText5, "BOTTOMLEFT", 5, -30)
+	teamA:SetScript("OnTextChanged", getArenaChange)
+	teamA:SetScript("OnTabPressed", function() Arena.frame.teamB:SetFocus() end)
+
+	self.frame.teamA = teamA
+
+	local teamB = CreateFrame("EditBox", "SSArenaRatingB", self.frame, "InputBoxTemplate")
+	teamB:SetHeight(20)
+	teamB:SetWidth(60)
+	teamB:SetAutoFocus(false)
+	teamB:SetNumeric(true)
+	teamB:ClearAllPoints()
+	teamB:SetPoint("BOTTOMRIGHT", self.frame.ratingText5, "BOTTOMRIGHT", 5, -30)
+	teamB:SetScript("OnTextChanged", getArenaChange)
+	teamB:SetScript("OnTabPressed", function() Arena.frame.teamA:SetFocus() end)
+	
+	self.frame.teamB = teamB
+	
+	-- Display text
+	self.frame.teamAText = rating:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	self.frame.teamAText:SetHeight(15)
+	self.frame.teamAText:SetPoint("BOTTOMLEFT", teamA, "BOTTOMLEFT", -5, -20)
+
+	self.frame.teamBText = rating:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	self.frame.teamBText:SetHeight(15)
+	self.frame.teamBText:SetPoint("BOTTOMLEFT", self.frame.teamAText, "BOTTOMLEFT", 0, -15)
+	
+	self.frame.teamVs = rating:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+	self.frame.teamVs:SetHeight(15)
+	self.frame.teamVs:SetText(L["Vs"])
+	self.frame.teamVs:SetPoint("TOPRIGHT", teamA, "TOPRIGHT", 28, -3)
+		
+	-- Defaults
+	teamA:SetMaxLetters(4)
+	teamA:SetNumber(1600)
+	
+
+	teamB:SetMaxLetters(4)
+	teamB:SetNumber(1500)
+end
 
 -- Slash commands
 function Arena:RegisterSlashCommands()
@@ -243,12 +433,18 @@ function Arena:RegisterSlashCommands()
 				local gamesNeeded = math.ceil(((0.3 - percent) / 0.70) * teamPlayed)
 				SSPVP:Print(string.format(L["%d more games have to be played (%d total) to reach 30%%."], gamesNeeded, teamPlayed + gamesNeeded))
 			end
+		
+		-- GUI
+		elseif( input == "ui" ) then
+			Arena:CreateUI()
+			Arena.frame:Show()
 		else
 			DEFAULT_CHAT_FRAME:AddMessage(L["SSPVP Arena slash commands"])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - rating <rating> - Calculates points given from the passed rating."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - points <points> - Calculates rating required to reach the passed points."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - attend <played> <team> - Calculates games required to reach 30% using the passed games <played> out of the <team> games played."])
 			DEFAULT_CHAT_FRAME:AddMessage(L[" - change <winner rating> <loser rating> - Calculates points gained/lost assuming the <winner rating> beats <loser rating>."])
+			DEFAULT_CHAT_FRAME:AddMessage(L[" - ui - Shows a small UI for entering rating/point/attendance/change info."])
 		end
 	end)
 end
@@ -383,6 +579,7 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 	getglobal(name .. "Wins"):SetText(weekWins)
 	getglobal(name .. "Loss"):SetText(weekPlayed - weekWins)		
 	
+	-- Played for this week
 	local percent = playerPlayed / weekPlayed
 	if( weekPlayed == 0 or playerPlayed == 0 ) then
 		percent = 0
@@ -397,6 +594,7 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 	parentFrame.weekPlayedPercent:SetFormattedText("[%s%d%%%s]", color, percent * 100, FONT_COLOR_CODE_CLOSE)
 	parentFrame.weekPlayedPercent:SetVertexColor(1.0, 1.0, 1.0)
 	
+	-- Win percent for the week
 	local percent = weekWins / weekPlayed
 	if( weekWins == 0 or weekPlayed == 0 ) then
 		percent = 0	
