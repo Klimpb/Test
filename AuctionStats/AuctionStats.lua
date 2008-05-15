@@ -74,6 +74,7 @@ end
 
 function AuctionStats:ParseData()
 	for k in pairs(auctionData) do auctionData[k] = nil end
+	for k in pairs(auctionDisplay) do auctionDisplay[k] = nil end
 	
 	for charID in pairs(self.db.profile.gatherData) do
 		local server, name = string.split(":", charID)
@@ -269,8 +270,6 @@ end
 
 local function sortItemData(a, b)
 	local sortBy = AuctionStats.frame.sortType
-	
-	
 	if( AuctionStats.frame.sortOrder ) then
 		return a[sortBy] < b[sortBy]
 	else
@@ -281,7 +280,7 @@ end
 
 function AuctionStats:ViewBreakdown()
 	local self = AuctionStats
-	FauxScrollFrame_Update(self.middleFrame.scroll, #(auctionData[self.frame.dataKey].items), MAX_DATA_ROWS, 22)
+	FauxScrollFrame_Update(self.middleFrame.scroll, #(auctionData[self.frame.dataKey].items), MAX_DATA_ROWS - 1, 22)
 	
 	if( self.frame.resortList ) then
 		table.sort(auctionData[self.frame.dataKey].items, sortItemData)
@@ -299,7 +298,7 @@ function AuctionStats:ViewBreakdown()
 	-- List!
 	local usedRows = 0
 	for id, data in pairs(auctionData[self.frame.dataKey].items) do
-		if( data.day == self.frame.currentDay and id >= FauxScrollFrame_GetOffset(self.middleFrame.scroll) and usedRows < MAX_DATA_ROWS ) then
+		if( id >= FauxScrollFrame_GetOffset(self.middleFrame.scroll) and usedRows < MAX_DATA_ROWS ) then
 			usedRows = usedRows + 1
 
 			local row = self.rows[usedRows]
@@ -342,6 +341,12 @@ end
 
 -- GUI Creation
 function AuctionStats:CreateGUI()
+	if( self.frame ) then
+		return
+
+	end
+
+	
 	self.frame = CreateFrame("Frame", "AuctionStatsGUI", UIParent)
 	self.frame:SetWidth(550)
 	self.frame:SetHeight(400)
