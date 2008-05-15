@@ -49,6 +49,14 @@ end
 
 function Window:PopupWindow(statusID, instanceID, map, teamSize)
 	local name
+	if( map == L["All Arenas"] or map == L["Eastern Kingdoms"] ) then
+		if( isRegistered ) then
+			map = L["Rated Arena"]
+		else
+			map = L["Skirmish Arena"]
+		end
+	end
+
 	if( teamSize > 0 ) then
 		name = string.format(L["%s (%dvs%d)"], map, teamSize, teamSize)
 	else
@@ -70,7 +78,7 @@ function Window:UPDATE_BATTLEFIELD_STATUS()
 		if( status ~= lastStatus[i] ) then
 			-- Fresh confirmation, show it up
 			if( status == "confirm" ) then
-				self:PopupWindow(i, instanceID, map, teamSize)
+				self:PopupWindow(i, instanceID, map, teamSize, isRegistered)
 			
 			-- Used to be a confirm, no longer is
 			elseif( lastStatus[i] == "confirm" ) then

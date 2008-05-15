@@ -63,7 +63,7 @@ SSPVPLocals = {
 	
 	["%d personal rating in %s (%dvs%d)"] = "%d personal rating in %s (%dvs%d)",
 	["%s is ready to join, auto leave disabled."] = "%s is ready to join, auto leave disabled.",
-	["Bugged game, no rating has been changed."] = "Bugged game, no rating has been changed.",
+	["Bugged or drawn game, no rating changed."] = "Bugged or drawn game, no rating changed.",
 	
 	-- Modified queue window
 	["You are now eligible to enter %s. %s left to join."] = "You are now eligible to enter %s. %s left to join.",
@@ -205,6 +205,7 @@ SSPVPLocals = {
 	[" - points <points> - Calculates rating required to reach the passed points."] = " - points <points> - Calculates rating required to reach the passed points.",
 	[" - attend <played> <team> - Calculates games required to reach 30% using the passed games <played> out of the <team> games played."] = " - attend <played> <team> - Calculates games required to reach 30% using the passed games <played> out of the <team> games played.",
 	[" - change <winner rating> <loser rating> - Calculates points gained/lost assuming the <winner rating> beats <loser rating>."] = " - change <winner rating> <loser rating> - Calculates points gained/lost assuming the <winner rating> beats <loser rating>.",
+	[" - ui - Shows a small UI for entering rating/point/attendance/change info."] = " - ui - Shows a small UI for entering rating/point/attendance/change info.",
 		
 	["SSPVP slash commands"] = "SSPVP slash commands",
 	[" - suspend - Suspends auto join and leave for 5 minutes, or until you log off."] = " - suspend - Suspends auto join and leave for 5 minutes, or until you log off.",
@@ -225,6 +226,11 @@ SSPVPLocals = {
 	["%d more games have to be played (%d total) to reach 30%%."] = "%d more games have to be played (%d total) to reach 30%%.",
 	
 	["+%d points (%d rating) / %d points (%d rating)"] = "+%d points (%d rating) / %d points (%d rating)",
+	
+	["Won: %d rating (%d points gained)"] = "Won: %d rating (%d points gained)",
+	["Lost: %d rating (%d points lost)"] = "Lost: %d rating (%d points lost)",
+	
+	["Vs"] = "Vs",
 
 	-- Overlay categories
 	["Faction Balance"] = "Faction Balance",

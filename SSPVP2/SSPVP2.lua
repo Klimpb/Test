@@ -130,7 +130,6 @@ function SSPVP:BATTLEFIELDS_SHOW()
 	
 
 	local queued = 0
-	
 	for i=1, MAX_BATTLEFIELD_QUEUES do
 		local status, map, _, _, _, isRegistered = GetBattlefieldStatus(i)
 		
@@ -196,6 +195,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 	for i=1, MAX_BATTLEFIELD_QUEUES do
 		local status, map, instanceID, _, _, teamSize, isRegistered = GetBattlefieldStatus(i)
 		if( statusInfo[i] ~= status ) then
+			-- Confirm to join
 			if( status == "confirm" ) then
 				local delay = 0
 				local abbrev = self:GetAbbrev(map)
@@ -244,6 +244,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 					end
 				end
 				
+			-- Active match but we haven't set it up yet
 			elseif( status == "active" and activeID ~= i ) then
 				local abbrev = self:GetAbbrev(map)
 				for name, module in pairs(self.modules) do
@@ -272,6 +273,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				activeBF = map
 				activeID = i
 			
+			-- This used to be an active match but isn't anymore
 			elseif( status ~= "active" and activeID == i ) then
 				activeID = nil
 				activeBF = nil
@@ -286,6 +288,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 					end
 				end
 				
+			-- Been queued for less then 2 seconds so show stat data
 			elseif( status == "queued" and GetBattlefieldTimeWaited(i) <= 2000 ) then
 				-- Blizzards queued doesn't cover all battlefields, just arenas
 				if( teamSize > 0 ) then
@@ -305,8 +308,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			end
 		end
 
-		-- We no longer have this battlefield as confirmation
-		-- likely time ran out, we left queue or we joined it manually
+		-- We no longer have this battlefield as confirmation likely time ran out, we left queue or we joined it manually
 		if( status ~= "confirm" and joinID == i ) then
 			joinID = nil
 			joinAt = nil
@@ -355,7 +357,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			if( teamSize > 0 ) then
 				-- Before arenas start you're queued for all arena maps
 				-- once queues ready, they tell us specifically what map we're going into
-				if( map == L["All Arenas"] ) then
+				if( map == L["All Arenas"] or map == L["Eastern Kingdoms"] ) then
 					if( isRegistered ) then
 						map = L["Rated Arena"]
 					else
@@ -363,11 +365,12 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 					end
 				end
 				
-				map = string.format(L["%s (%dvs%d)"], map or L["Unknown"], teamSize, teamSize)
+				map = string.format(L["%s (%dvs%d)"], map, teamSize, teamSize)
 			end
 
 			if( status == "active" and instanceID > 0 ) then
 				SSOverlay:RegisterText("queue" .. i, "queue", map .. ": #" .. instanceID)
+			
 			elseif( status == "confirm" ) then
 				if( not self.db.profile.join.enabled ) then
 					SSOverlay:RegisterTimer("queue" .. i, "queue", map .. ": %s (" .. L["Disabled"] .. ")", GetBattlefieldPortExpiration(i) / 1000)
@@ -378,6 +381,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 				else
 					SSOverlay:RegisterTimer("queue" .. i, "queue", map .. ": %s", GetBattlefieldPortExpiration(i) / 1000)
 				end
+			
 			elseif( status == "queued" ) then
 				local etaTime = GetBattlefieldEstimatedWaitTime(i) / 1000
 				if( etaTime > 0 ) then
@@ -399,8 +403,7 @@ end
 
 -- Actually leave the battlefield (if we can)
 function SSPVP:LeaveBattlefield()
-	-- We've had issues in the past if we don't specifically check this again
-	-- can lead to deserter when switching battlefields
+	-- We've had issues in the past if we don't specifically check this again can lead to deserter when switching battlefields
 	if( not GetBattlefieldWinner() ) then
 		return
 	end
@@ -424,11 +427,9 @@ function SSPVP:LeaveBattlefield()
 		end
 	end
 	
-	-- Theres a delay before the call to arms quest completes, sometimes it's
-	-- within 0.5 seconds, sometimes it's within 1-3 seconds. If you have auto leave set to 0
-	-- then you'll likely leave before you get credit, so delay the actual leave (if need be)
-	-- until the quest is credited to us
-	if( select(2, IsInInstance()) == "pvp" ) then
+	-- Theres a delay before the call to arms quest completes, sometimes it's within 0.5 seconds, sometimes it's within 1-3 seconds. If you have auto leave set to 0
+	-- then you'll likely leave before you get credit, so delay the actual leave (if need be) until the quest is credited to us
+	if( select(2, IsInInstance()) == "pvp" and activeBF ) then
 		local playerFaction = 1
 		if( UnitFactionGroup("player") == "Horde" ) then
 			playerFaction = 0
@@ -626,7 +627,6 @@ function SSPVP:Echo(msg, color)
 	end
 end
 
--- Ace3 doesn't provide this with the colors like Dongle does, so do it ourself
 function SSPVP:Print(msg)
 	DEFAULT_CHAT_FRAME:AddMessage("|cFF33FF99SSPVP|r: " .. msg)
 end

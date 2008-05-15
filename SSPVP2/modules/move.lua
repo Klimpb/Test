@@ -71,8 +71,7 @@ function Move:UpdateCapturePosition()
 		return
 	end
 
-	local y = Move.db.profile.position.capture.y
-	if( NUM_EXTENDED_UI_FRAMES ) then
+	if( NUM_EXTENDED_UI_FRAMES > 0 ) then
 		if( not originalPosition.capture ) then
 			originalPosition.capture = {WorldStateCaptureBar1:GetPoint()}
 		end
@@ -81,11 +80,13 @@ function Move:UpdateCapturePosition()
 			Move.captureFrame = Move:CreateAnchor("capture", L["Capture bar anchor"], WorldStateCaptureBar1)
 		end
 		
+		local scale = WorldStateCaptureBar1:GetEffectiveScale()
+		local y = Move.db.profile.position.capture.y / scale
 		for i=1, NUM_EXTENDED_UI_FRAMES do
 			local captureBar = getglobal("WorldStateCaptureBar" .. i)
 			if( captureBar and captureBar:IsShown() ) then
 				captureBar:ClearAllPoints()
-				captureBar:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", Move.db.profile.position.capture.x, y)
+				captureBar:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", Move.db.profile.position.capture.x / scale, y)
 				y = y - captureBar:GetHeight()
 			end
 		end	
