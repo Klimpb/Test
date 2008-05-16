@@ -97,7 +97,7 @@ function AuctionStats:ParseData()
 					end
 
 					if( not auctionData[time].temp[itemid] ) then
-						auctionData[time].temp[itemid] = { totalSold = 0, totalMade = 0, totalDeposit = 0, totalFee = 0, totalSpent = 0, totalBought = 0 }
+						auctionData[time].temp[itemid] = { totalSold = 0, totalProfit = 0, totalMade = 0, totalDeposit = 0, totalFee = 0, totalSpent = 0, totalBought = 0 }
 					end
 
 					auctionData[time].temp[itemid].time = time
@@ -123,11 +123,11 @@ function AuctionStats:ParseData()
 					local itemName, _, money, deposit, fee, buyout, bid, buyer, arrivedAt = string.split(";", line)
 					local time = getTime(arrivedAt, nil, 10)
 					if( not auctionData[time] ) then
-						auctionData[time] = {type = "day", time = time, temp = {}}
+						auctionData[time] = {type = "day", totalProfit = 0, time = time, temp = {}}
 					end
 
 					if( not auctionData[time].temp[itemid] ) then
-						auctionData[time].temp[itemid] = { totalSold = 0, totalMade = 0, totalDeposit = 0, totalFee = 0, totalSpent = 0, totalBought = 0 }
+						auctionData[time].temp[itemid] = { totalSold = 0, totalProfit = 0, totalMade = 0, totalDeposit = 0, totalFee = 0, totalSpent = 0, totalBought = 0 }
 					end
 					
 					
@@ -158,14 +158,11 @@ function AuctionStats:ParseData()
 			
 			-- Merge the items total stats, this months total stats, and this days total stats
 			mergeDataTables(auctionData[month].temp[itemid], data)
-			mergeDataTables(auctionData[month], data)
-			mergeDataTables(auctionData[time], data)
 		end
 	end
 	
 	-- Now we have to take our item tables, and turn them into indexed ones
 	for time, row in pairs(auctionData) do
-
 		row.items = {}
 		for itemid, data in pairs(row.temp) do
 			data.time = time
@@ -174,10 +171,14 @@ function AuctionStats:ParseData()
 			data.itemName = select(1, GetItemInfo(itemid)) or itemid
 			
 			table.insert(row.items, data)
+			mergeDataTables(auctionData[time], data)
 		end
 		
 		-- Remove our temp table for gathering the data
 		row.temp = nil
+		
+		-- Temp fix, I need to look into this more to figure out whats going on
+		row.totalProfit = row.totalMade - row.totalSpent
 	end
 	
 	-- Add in the time formats so we can actually do our display things
@@ -194,9 +195,7 @@ function AuctionStats:FormatNumber(number, decimal)
 	if( decimal and math.floor(number) ~= number ) then
 		number = string.format("%.1f", number)
 	else
-
 		number = math.floor(number + 0.5)
-
 	end
 
 	while( true ) do
@@ -229,6 +228,11 @@ function AuctionStats:UpdateBrowserRow(data, id)
 	else
 		row:SetText(date("%b %Y", data.time))
 	end
+end
+
+-- debug
+function AuctionStats:Dump()
+	TestLog = auctionData
 end
 
 function AuctionStats:UpdateBrowseGUI()
