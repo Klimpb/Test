@@ -4,6 +4,7 @@
 ## SavedVariables: AuctionStatsDB
 ## Version: $Revision: 322 $
 ## Author: Mayen
+## RequiredDeps: BeanCounter
 
 libs\LibStub-1.0\LibStub-1.0.xml
 libs\CallbackHandler-1.0\CallbackHandler-1.0.xml

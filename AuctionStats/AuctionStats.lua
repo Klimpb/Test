@@ -61,19 +61,23 @@ end
 local function showDisplayGUI(self)
 	AuctionStats.frame.dataKey = self.dataKey
 	AuctionStats.frame.resortList = true
+	AuctionStats:UpdateBrowseGUI()
 	AuctionStats:ViewBreakdown()
 end
 
 -- Quick merge function to add the data from one table to the main one
-local mergeKeys = {"totalSold", "totalMade", "totalDeposit", "totalFee", "totalSpent", "totalBought", "totalProfit"}
+local mergeKeys = {"totalSold", "totalMade", "totalDeposit", "totalFee", "totalSpent", "totalBought"}
 local function mergeDataTables(to, from)
 	for _, key in pairs(mergeKeys) do
-		to[key] = (to[key] or 0) + from[key]
+		if( from[key] ) then
+			to[key] = (to[key] or 0) + from[key]
+		end
+
 	end
 end
 
 function AuctionStats:ParseData()
-	for k in pairs(auctionData) do auctionData[k] = nil end
+	auctionData = {}
 	for k in pairs(auctionDisplay) do auctionDisplay[k] = nil end
 	
 	for charID in pairs(self.db.profile.gatherData) do
@@ -84,59 +88,61 @@ function AuctionStats:ParseData()
 			local auctionDB = BeanCounterDB[server][name]
 			
 			-- Loop through items we've succesfully bought out, or bid and won
-			for itemid, itemData in pairs(auctionDB["completedBids/Buyouts"]) do
+			for itemid, rows in pairs(auctionDB["completedBids/Buyouts"]) do
 				itemid = tonumber(itemid)
-				
-				-- Annd loop through each transaction for this item
-				for _, line in pairs(itemData) do
-					local itemName, _, _, _, _, buyout, bid, buyer, arrivedAt = string.split(";", line)
-					local time = getTime(arrivedAt, nil, 10)
-					
-					if( not auctionData[time] ) then
-						auctionData[time] = {type = "day", time = time, temp = {}}
-					end
+				for uniqueID, itemData in pairs(rows) do
+					-- Annd loop through each transaction for this item
+					for _, line in pairs(itemData) do
+						local quantity, _, _, buyout, bid, buyer, arrivedAt = string.split(";", line)
+						local time = getTime(arrivedAt, nil, 10)
 
-					if( not auctionData[time].temp[itemid] ) then
-						auctionData[time].temp[itemid] = { totalSold = 0, totalProfit = 0, totalMade = 0, totalDeposit = 0, totalFee = 0, totalSpent = 0, totalBought = 0 }
-					end
+						if( not auctionData[time] ) then
+							auctionData[time] = {type = "day", time = time, temp = {}}
+						end
 
-					auctionData[time].temp[itemid].time = time
-					auctionData[time].temp[itemid].itemid = itemid
-					auctionData[time].temp[itemid].totalBought = auctionData[time].temp[itemid].totalBought + 1
-					
-					-- If the buyout is 0 then we won it off of bid
-					buyout = tonumber(buyout)
-					if( buyout > 0 ) then
-						auctionData[time].temp[itemid].totalSpent = auctionData[time].temp[itemid].totalSpent + buyout
-					else
-						auctionData[time].temp[itemid].totalSpent = auctionData[time].temp[itemid].totalSpent + bid
+						if( not auctionData[time].temp[itemid] ) then
+							auctionData[time].temp[itemid] = { totalSold = 0, totalProfit = 0, totalMade = 0, totalDeposit = 0, totalFee = 0, totalSpent = 0, totalBought = 0 }
+						end
+
+						auctionData[time].temp[itemid].time = time
+						auctionData[time].temp[itemid].itemid = itemid
+						auctionData[time].temp[itemid].totalBought = auctionData[time].temp[itemid].totalBought + 1
+
+						-- If the buyout is 0 then we won it off of bid
+						buyout = tonumber(buyout)
+						if( buyout > 0 ) then
+							auctionData[time].temp[itemid].totalSpent = auctionData[time].temp[itemid].totalSpent + buyout
+						else
+							auctionData[time].temp[itemid].totalSpent = auctionData[time].temp[itemid].totalSpent + bid
+						end
 					end
 				end
 			end
 			
 			-- Loop through items we've succesfully sold
-			for itemid, itemData in pairs(auctionDB["completedAuctions"]) do
+			for itemid, rows in pairs(auctionDB["completedAuctions"]) do
 				itemid = tonumber(itemid)
+				for uniqueID, itemData in pairs(rows) do
+					-- Loop through each item transaction
+					for _, line in pairs(itemData) do
+						local quantity, money, deposit, fee, buyout, bid, buyer, arrivedAt = string.split(";", line)
+						local time = getTime(arrivedAt, nil, 10)
+						if( not auctionData[time] ) then
+							auctionData[time] = {type = "day", time = time, temp = {}}
+						end
 
-				-- Loop through each item transaction
-				for _, line in pairs(itemData) do
-					local itemName, _, money, deposit, fee, buyout, bid, buyer, arrivedAt = string.split(";", line)
-					local time = getTime(arrivedAt, nil, 10)
-					if( not auctionData[time] ) then
-						auctionData[time] = {type = "day", totalProfit = 0, time = time, temp = {}}
-					end
+						if( not auctionData[time].temp[itemid] ) then
+							auctionData[time].temp[itemid] = { totalSold = 0, totalProfit = 0, totalMade = 0, totalDeposit = 0, totalFee = 0, totalSpent = 0, totalBought = 0 }
+						end
 
-					if( not auctionData[time].temp[itemid] ) then
-						auctionData[time].temp[itemid] = { totalSold = 0, totalProfit = 0, totalMade = 0, totalDeposit = 0, totalFee = 0, totalSpent = 0, totalBought = 0 }
+
+						auctionData[time].temp[itemid].time = time
+						auctionData[time].temp[itemid].itemid = itemid
+						auctionData[time].temp[itemid].totalSold = auctionData[time].temp[itemid].totalSold + 1
+						auctionData[time].temp[itemid].totalMade = auctionData[time].temp[itemid].totalMade + money
+						auctionData[time].temp[itemid].totalDeposit = auctionData[time].temp[itemid].totalDeposit + deposit
+						auctionData[time].temp[itemid].totalFee = auctionData[time].temp[itemid].totalFee + fee
 					end
-					
-					
-					auctionData[time].temp[itemid].time = time
-					auctionData[time].temp[itemid].itemid = itemid
-					auctionData[time].temp[itemid].totalSold = auctionData[time].temp[itemid].totalSold + 1
-					auctionData[time].temp[itemid].totalMade = auctionData[time].temp[itemid].totalMade + money
-					auctionData[time].temp[itemid].totalDeposit = auctionData[time].temp[itemid].totalDeposit + deposit
-					auctionData[time].temp[itemid].totalFee = auctionData[time].temp[itemid].totalFee + fee
 				end
 			end
 		end
@@ -144,31 +150,37 @@ function AuctionStats:ParseData()
 	
 	-- Now make a summary based on month
 	for time, row in pairs(auctionData) do
-		local month = getTime(time, 1, 0)
-		if( not auctionData[month] ) then
-			auctionData[month] = {type = "month", time = month, temp = {}}
-		end
-		
-		for itemid, data in pairs(row.temp) do
-			if( not auctionData[month].temp[itemid] ) then
-				auctionData[month].temp[itemid] = {}
+		if( row.type ~= "month" ) then
+			local month = getTime(time, 1, 0)
+			if( not auctionData[month] ) then
+				auctionData[month] = {type = "month", time = month, temp = {}}
 			end
-			
-			data.totalProfit = data.totalMade - data.totalSpent
-			
-			-- Merge the items total stats, this months total stats, and this days total stats
-			mergeDataTables(auctionData[month].temp[itemid], data)
+
+			for itemid, data in pairs(row.temp) do
+				if( not auctionData[month].temp[itemid] ) then
+					auctionData[month].temp[itemid] = {}
+				end
+
+				-- Merge the items total stats, this months total stats, and this days total stats
+				mergeDataTables(auctionData[month].temp[itemid], data)
+			end
 		end
 	end
 	
 	-- Now we have to take our item tables, and turn them into indexed ones
 	for time, row in pairs(auctionData) do
+		row.totalProfit = 0
 		row.items = {}
+		
+		-- Add some final info, and add it into an indexed table
 		for itemid, data in pairs(row.temp) do
 			data.time = time
 			data.itemid = itemid
 			data.itemLink = select(2, GetItemInfo(itemid)) or itemid
 			data.itemName = select(1, GetItemInfo(itemid)) or itemid
+			data.totalProfit = data.totalMade - data.totalSpent
+			
+			row.totalProfit = row.totalProfit + data.totalProfit
 			
 			table.insert(row.items, data)
 			mergeDataTables(auctionData[time], data)
@@ -176,11 +188,8 @@ function AuctionStats:ParseData()
 		
 		-- Remove our temp table for gathering the data
 		row.temp = nil
-		
-		-- Temp fix, I need to look into this more to figure out whats going on
-		row.totalProfit = row.totalMade - row.totalSpent
 	end
-	
+
 	-- Add in the time formats so we can actually do our display things
 	for time in pairs(auctionData) do
 		table.insert(auctionDisplay, time)
@@ -207,37 +216,9 @@ function AuctionStats:FormatNumber(number, decimal)
 	return number
 end
 
-function AuctionStats:UpdateBrowserRow(data, id)
-	local color
-	if( data.totalProfit < 0 ) then
-		color = RED_FONT_COLOR_CODE
-	elseif( data.totalProfit > 0 ) then
-		color = GREEN_FONT_COLOR_CODE
-	else
-		color = "|cffffffff"
-	end
-
-	local row = self.dateRows[id]
-	row.profit:SetFormattedText("[%s%s%sg]", color, self:FormatNumber(data.totalProfit / 10000), FONT_COLOR_CODE_CLOSE)
-	row.tooltip = string.format(L["Spent: |cffffffff%s|rg\nMade: |cffffffff%s|r\nProfit: |cffffffff%s|rg"], self:FormatNumber(data.totalSpent / 10000), self:FormatNumber(data.totalMade / 10000), self:FormatNumber(data.totalProfit / 10000))
-	row.dataKey = data.time
-	row:Show()
-	
-	if( data.type == "day" ) then
-		row:SetText(date("%A, %d", data.time))
-	else
-		row:SetText(date("%b %Y", data.time))
-	end
-end
-
--- debug
-function AuctionStats:Dump()
-	TestLog = auctionData
-end
-
 function AuctionStats:UpdateBrowseGUI()
 	local self = AuctionStats
-	FauxScrollFrame_Update(self.leftFrame.scroll, #(auctionDisplay), MAX_DATE_ROWS, 22)
+	FauxScrollFrame_Update(self.leftFrame.scroll, #(auctionDisplay), MAX_DATE_ROWS - 1, 22)
 	
 	-- Hide everything to reset it
 	for i=1, MAX_DATE_ROWS do
@@ -249,7 +230,34 @@ function AuctionStats:UpdateBrowseGUI()
 	for id, key in pairs(auctionDisplay) do
 		if( id >= FauxScrollFrame_GetOffset(self.leftFrame.scroll) and usedRows < MAX_DATE_ROWS ) then
 			usedRows = usedRows + 1
-			self:UpdateBrowserRow(auctionData[key], usedRows)
+
+			local color
+			local data = auctionData[key]
+			if( data.totalProfit < 0 ) then
+				color = RED_FONT_COLOR_CODE
+			elseif( data.totalProfit > 0 ) then
+				color = GREEN_FONT_COLOR_CODE
+			else
+				color = "|cffffffff"
+			end
+
+			local row = self.dateRows[usedRows]
+			row.profit:SetFormattedText("[%s%s%sg]", color, self:FormatNumber(data.totalProfit / 10000), FONT_COLOR_CODE_CLOSE)
+			row.tooltip = string.format(L["Spent: |cffffffff%s|rg\nMade: |cffffffff%s|r\nProfit: |cffffffff%s|rg"], self:FormatNumber(data.totalSpent / 10000), self:FormatNumber(data.totalMade / 10000), self:FormatNumber(data.totalProfit / 10000))
+			row.dataKey = data.time
+			row:Show()
+
+			if( data.type == "day" ) then
+				row:SetText(date("%A, %d", data.time))
+			else
+				row:SetText(date("%b %Y", data.time))
+			end
+
+			if( self.frame.dataKey == data.time ) then
+				row:SetTextColor(1, 0.81, 0)
+			else
+				row:SetTextColor(1, 1, 1)
+			end
 			
 			if( #(auctionDisplay) < MAX_DATE_ROWS ) then
 				self.dateRows[usedRows]:SetWidth(168)
@@ -365,13 +373,14 @@ function AuctionStats:CreateGUI()
 	})
 	self.frame:SetScript("OnShow", function(self)
 		AuctionStats:ParseData()
-		AuctionStats:UpdateBrowseGUI()
 		
 		-- Show the last days info if we have nothing selected
 		if( not self.dataKey ) then
 			self.dataKey = auctionDisplay[#(auctionDisplay)]
 			AuctionStats:ViewBreakdown()
 		end
+
+		AuctionStats:UpdateBrowseGUI()
 	end)
 	
 	self.frame.sortOrder = false
