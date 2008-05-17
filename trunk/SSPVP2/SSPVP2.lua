@@ -659,13 +659,23 @@ function SSPVP:ChatMessage(msg, faction)
 	end
 end
 
-
 function SSPVP:ChannelMessage(msg)
 	if( GetNumRaidMembers() == 0 and GetNumPartyMembers() == 0 ) then
 		return
 	end
+
+	-- Limit it to 10 "to be safe"
+	for i=1, 10 do
+		local num = string.match(msg, "(%d) |4")
+		if( not num ) then break end
+		if( tonumber(num) <= 1 ) then
+			msg = string.gsub(msg, "|4(.-):.-;", "%1")
+		else
+			msg = string.gsub(msg, "|4.-:(.-);", "%1")
+		end
+	end
 	
-	SendChatMessage("[SS] " .. msg, self.db.profile.general.channel)
+	SendChatMessage(msg, self.db.profile.general.channel)
 end
 
 -- Quick access to whatever combat text mod is being used
