@@ -666,7 +666,7 @@ function SSPVP:ChannelMessage(msg)
 
 	-- Limit it to 10 "to be safe"
 	for i=1, 10 do
-		local num = string.match(msg, "(%d) |4")
+		local num = string.match(msg, "(%d+) |4")
 		if( not num ) then break end
 		if( tonumber(num) <= 1 ) then
 			msg = string.gsub(msg, "|4(.-):.-;", "%1")
