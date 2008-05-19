@@ -53,14 +53,48 @@ end
 
 local function showTooltip(self)
 	if( self.tooltip ) then
-		GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT")
+		if( not self.button or not self.button:IsVisible() ) then
+			GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT")
+		else
+			GameTooltip:SetOwner(self.button, "ANCHOR_TOPLEFT")
+		end
+		
 		GameTooltip:SetText(self.tooltip, nil, nil, nil, nil, 1)
 	end
 end
 
+local function monthToggle(self)
+	AuctionStats.frame.dateKey = nil
+	
+
+	if( AuctionStats.frame.monthKey == self.monthKey ) then
+		AuctionStats.frame.monthKey = nil
+	else
+		AuctionStats.frame.dateKey = self.monthKey
+		AuctionStats.frame.monthKey = self.monthKey
+	end
+		
+	AuctionStats:UpdateBrowseGUI()
+	AuctionStats:ViewBreakdown()
+end
+
 local function showDisplayGUI(self)
-	AuctionStats.frame.dataKey = self.dataKey
-	AuctionStats.frame.resortList = true
+	local month = getTime(self.dateKey, 1, 0)
+	if( AuctionStats.frame.dateKey == self.dateKey ) then
+		if( self.dateKey ~= month ) then
+			AuctionStats.frame.dateKey = month	
+			AuctionStats.frame.monthKey = month
+		else
+			AuctionStats.frame.dateKey = nil
+			AuctionStats.frame.monthKey = nil
+		end
+
+	else
+		AuctionStats.frame.dateKey = self.dateKey
+		AuctionStats.frame.monthKey = month
+		AuctionStats.frame.resortList = true
+	end
+
 	AuctionStats:UpdateBrowseGUI()
 	AuctionStats:ViewBreakdown()
 end
@@ -218,17 +252,27 @@ end
 
 function AuctionStats:UpdateBrowseGUI()
 	local self = AuctionStats
-	FauxScrollFrame_Update(self.leftFrame.scroll, #(auctionDisplay), MAX_DATE_ROWS - 1, 22)
+	local totalRows = 0
+	for id, key in pairs(auctionDisplay) do
+		local month = getTime(key, 1, 0)
+		if( self.frame.monthKey == month or month == key ) then
+			totalRows = totalRows + 1			
+		end
+	end
+	
+	FauxScrollFrame_Update(self.leftFrame.scroll, totalRows, MAX_DATE_ROWS - 1, 22)
 	
 	-- Hide everything to reset it
 	for i=1, MAX_DATE_ROWS do
+		self.dateRows[i].button:Hide()
 		self.dateRows[i]:Hide()
 	end
 	
 	-- List!
 	local usedRows = 0
 	for id, key in pairs(auctionDisplay) do
-		if( id >= FauxScrollFrame_GetOffset(self.leftFrame.scroll) and usedRows < MAX_DATE_ROWS ) then
+		local month = getTime(key, 1, 0)
+		if( ( self.frame.monthKey == month or month == key ) and id >= FauxScrollFrame_GetOffset(self.leftFrame.scroll) and usedRows < MAX_DATE_ROWS ) then
 			usedRows = usedRows + 1
 
 			local color
@@ -243,22 +287,61 @@ function AuctionStats:UpdateBrowseGUI()
 
 			local row = self.dateRows[usedRows]
 			row.profit:SetFormattedText("[%s%s%sg]", color, self:FormatNumber(data.totalProfit / 10000), FONT_COLOR_CODE_CLOSE)
-			row.tooltip = string.format(L["Spent: |cffffffff%s|rg\nMade: |cffffffff%s|r\nProfit: |cffffffff%s|rg"], self:FormatNumber(data.totalSpent / 10000), self:FormatNumber(data.totalMade / 10000), self:FormatNumber(data.totalProfit / 10000))
-			row.dataKey = data.time
+			row.tooltip = string.format(L["Made: |cffffffff%s|rg\nSpent: |cffffffff%s|rg\nProfit: |cffffffff%s|rg"], self:FormatNumber(data.totalMade / 10000), self:FormatNumber(data.totalSpent / 10000), self:FormatNumber(data.totalProfit / 10000))
+			row.dateKey = data.time
+				row.type = data.type
 			row:Show()
 
+			-- If it's a day, show day, # if it isn't show month, year
 			if( data.type == "day" ) then
 				row:SetText(date("%A, %d", data.time))
 			else
 				row:SetText(date("%b %Y", data.time))
 			end
-
-			if( self.frame.dataKey == data.time ) then
+			
+			-- Highlight
+			if( self.frame.dateKey == data.time ) then
 				row:SetTextColor(1, 0.81, 0)
 			else
 				row:SetTextColor(1, 1, 1)
 			end
 			
+			-- Pushy
+			if( data.type == "month" ) then
+				row.button.monthKey = getTime(row.dateKey, 1, 0)
+		
+				if( self.frame.monthKey == data.time ) then
+					row.button:SetNormalTexture("Interface\\Buttons\\UI-MinusButton-UP")
+					row.button:SetPushedTexture("Interface\\Buttons\\UI-MinusButton-DOWN")
+					row.button:SetHighlightTexture("Interface\\Buttons\\UI-MinusButton-Hilight", "ADD")
+				else
+					row.button:SetNormalTexture("Interface\\Buttons\\UI-PlusButton-UP")
+					row.button:SetPushedTexture("Interface\\Buttons\\UI-PlusButton-DOWN")
+					row.button:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
+				end
+			end	
+			
+			-- Reposition things based on the type, months have to be positioned over the button of course
+			if( data.type == "month" ) then
+				row:SetPoint("TOPLEFT", row.button, "TOPRIGHT", 0, 0)
+				row.profit:SetPoint("TOPRIGHT", row, "TOPRIGHT", -15, -1)
+				row.button:Show()
+			else
+				if( usedRows > 1 ) then
+					if( self.dateRows[usedRows - 1].type == "month" ) then
+						row:SetPoint("TOPLEFT", self.dateRows[usedRows - 1].button, "BOTTOMLEFT", 0, -1)
+					else
+						row:SetPoint("TOPLEFT", self.dateRows[usedRows - 1], "BOTTOMLEFT", 0, -1)
+					end
+				else
+					row:SetPoint("TOPLEFT", self.leftFrame.scroll, "TOPLEFT", 4, 0)
+				end
+
+				row.profit:SetPoint("TOPRIGHT", row, "TOPRIGHT", -1, -1)
+				row.button:Hide()
+			end
+			
+			-- Adjust width if no scroll
 			if( #(auctionDisplay) < MAX_DATE_ROWS ) then
 				self.dateRows[usedRows]:SetWidth(168)
 			else
@@ -292,10 +375,25 @@ end
 
 function AuctionStats:ViewBreakdown()
 	local self = AuctionStats
-	FauxScrollFrame_Update(self.middleFrame.scroll, #(auctionData[self.frame.dataKey].items), MAX_DATA_ROWS - 1, 22)
+	
+
+	-- No data, or bad data
+	if( not self.frame.dateKey or not auctionData[self.frame.dateKey] ) then
+		for i=1, MAX_DATA_ROWS do
+			for j=1, MAX_DATA_COLUMNS do
+				self.rows[i][j]:Hide()
+			end
+		end
+	
+
+		FauxScrollFrame_Update(self.middleFrame.scroll, 0, MAX_DATA_ROWS - 1, 22)
+		return
+	end
+	
+	FauxScrollFrame_Update(self.middleFrame.scroll, #(auctionData[self.frame.dateKey].items), MAX_DATA_ROWS - 1, 22)
 	
 	if( self.frame.resortList ) then
-		table.sort(auctionData[self.frame.dataKey].items, sortItemData)
+		table.sort(auctionData[self.frame.dateKey].items, sortItemData)
 		self.frame.resortList = nil
 	end
 
@@ -304,12 +402,11 @@ function AuctionStats:ViewBreakdown()
 		for j=1, MAX_DATA_COLUMNS do
 			self.rows[i][j]:Hide()
 		end
-
 	end
 
 	-- List!
 	local usedRows = 0
-	for id, data in pairs(auctionData[self.frame.dataKey].items) do
+	for id, data in pairs(auctionData[self.frame.dateKey].items) do
 		if( id >= FauxScrollFrame_GetOffset(self.middleFrame.scroll) and usedRows < MAX_DATA_ROWS ) then
 			usedRows = usedRows + 1
 
@@ -355,9 +452,7 @@ end
 function AuctionStats:CreateGUI()
 	if( self.frame ) then
 		return
-
 	end
-
 	
 	self.frame = CreateFrame("Frame", "AuctionStatsGUI", UIParent)
 	self.frame:SetWidth(550)
@@ -375,8 +470,9 @@ function AuctionStats:CreateGUI()
 		AuctionStats:ParseData()
 		
 		-- Show the last days info if we have nothing selected
-		if( not self.dataKey ) then
-			self.dataKey = auctionDisplay[#(auctionDisplay)]
+		if( not self.dateKey ) then
+			self.dateKey = auctionDisplay[#(auctionDisplay)]
+			self.monthKey = getTime(self.dateKey, 1, 0) 
 			AuctionStats:ViewBreakdown()
 		end
 
@@ -473,12 +569,20 @@ function AuctionStats:CreateGUI()
 		
 		row.profit = row:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 		row.profit:SetText("*")
-		row.profit:SetPoint("TOPRIGHT", row, "TOPRIGHT", 0, -1)
+		row.profit:SetPoint("TOPRIGHT", row, "TOPRIGHT", -1, -1)
+		
+		row.button = CreateFrame("Button", nil, self.frame)
+		row.button:SetScript("OnClick", monthToggle)
+		row.button:SetNormalTexture("Interface\\Buttons\\UI-PlusButton-UP")
+		row.button:SetPushedTexture("Interface\\Buttons\\UI-PlusButton-DOWN")
+		row.button:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
+		row.button:SetHeight(14)
+		row.button:SetWidth(14)
 		
 		if( i > 1 ) then
-			row:SetPoint("TOPLEFT", self.dateRows[i - 1], "BOTTOMLEFT", 0, -1)
+			row.button:SetPoint("TOPLEFT", self.dateRows[i - 1], "BOTTOMLEFT", 0, -1)
 		else
-			row:SetPoint("TOPLEFT", self.leftFrame.scroll, "TOPLEFT", 4, 0)
+			row.button:SetPoint("TOPLEFT", self.leftFrame.scroll, "TOPLEFT", 4, 0)
 		end
 		
 		self.dateRows[i] = row
