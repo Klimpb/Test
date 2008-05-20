@@ -46,10 +46,10 @@ function Trackery:OnInitialize()
 	end
 	
 	-- Setup a spell list, basically this lets us disable certain ones even if someone adds a custom spell to their DB
-	for id in pairs(self.spells) do
+	for id, enabled in pairs(self.spells) do
 		local name = GetSpellInfo(id)
 		if( name and self.db.profile.spellList[name] == nil ) then
-			self.db.profile.spellList[name] = id
+			self.db.profile.spellList[name] = enabled
 		end
 	end
 	
@@ -191,7 +191,7 @@ function Trackery:AuraGained(name, spellID, spellName, timeLeft, stack)
 	self.visual:CreateTimer(unitID, spellID, spellName, icon, timeLeft, stack, guid)
 
 	if( self.db.profile.spellList[spellName] == nil ) then
-		self.db.profile.spellList[spellName] = spellID
+		self.db.profile.spellList[spellName] = true
 	end
 end
 

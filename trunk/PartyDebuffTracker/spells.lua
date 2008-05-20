@@ -39,8 +39,8 @@ TrackerySpells = {
 	[18223] = true,
 	
 	-- Curse of Tongues
-	[1714] = true,
-	[11719] = true,	
+	[1714] = false,
+	[11719] = false,	
 	
 	-- Cyclone
 	[33786] = true,
@@ -55,11 +55,11 @@ TrackerySpells = {
 	[6215] = true,
 	
 	-- Frost Nova
-	[122] = true,
-	[865] = true,
-	[6131] = true,
-	[10230] = true,
-	[27088] = true,
+	[122] = false,
+	[865] = false,
+	[6131] = false,
+	[10230] = false,
+	[27088] = false,
 	
 	-- Psychic Scream
 	[8122] = true,
@@ -68,5 +68,28 @@ TrackerySpells = {
 	[10890] = true,
 	
 	-- Freeze (Water Elemental)
-	[33395] = true,
+	[33395] = false,
+	
+	-- Repentance
+	[20066] = false,
+
+	-- Hammer of Justice
+	[853] = false,
+	[5588] = false,
+	[5589] = false,
+	[10308] = false,
+	
+	-- Polymorph
+	-- Sheep
+	[118] = true,
+	[12824] = true,
+	[12825] = true,
+	[12826] = true,
+
+	-- Pig
+	[28272] = true,
+	
+
+	-- Turtle
+	[28271] = true,
 }
