@@ -2,7 +2,7 @@ AuctionStats = LibStub("AceAddon-3.0"):NewAddon("AuctionStats", "AceEvent-3.0")
 
 local L = AuctionStatLocals
 
-local MAX_DATE_ROWS = 23
+local MAX_DATE_ROWS = 22
 local MAX_DATA_ROWS = 19
 local MAX_DATA_COLUMNS = 4
 
@@ -342,7 +342,7 @@ function AuctionStats:UpdateBrowseGUI()
 			end
 			
 			-- Adjust width if no scroll
-			if( #(auctionDisplay) < MAX_DATE_ROWS ) then
+			if( totalRows < MAX_DATE_ROWS ) then
 				self.dateRows[usedRows]:SetWidth(168)
 			else
 				self.dateRows[usedRows]:SetWidth(149)
