@@ -281,7 +281,7 @@ function Arena:CreateUI()
 	local button = CreateFrame("Button", nil, self.frame, "UIPanelCloseButton")
 	button:SetPoint("TOPRIGHT", -1, -1)
 	button:SetScript("OnClick", function()
-		HideUIPanel(Auction.frame)
+		HideUIPanel(Arena.frame)
 	end)
 
 	-- Points -> Rating
@@ -355,13 +355,18 @@ function Arena:CreateUI()
 
 	self.frame.teamA = teamA
 
+	self.frame.teamVs = rating:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+	self.frame.teamVs:SetHeight(15)
+	self.frame.teamVs:SetText(L["Vs"])
+	self.frame.teamVs:SetPoint("TOPRIGHT", teamA, "TOPRIGHT", 28, -3)
+
 	local teamB = CreateFrame("EditBox", "SSArenaRatingB", self.frame, "InputBoxTemplate")
 	teamB:SetHeight(20)
 	teamB:SetWidth(60)
 	teamB:SetAutoFocus(false)
 	teamB:SetNumeric(true)
 	teamB:ClearAllPoints()
-	teamB:SetPoint("BOTTOMRIGHT", self.frame.ratingText5, "BOTTOMRIGHT", 5, -30)
+	teamB:SetPoint("TOPRIGHT", self.frame.teamVs, "TOPRIGHT", 80, 3)
 	teamB:SetScript("OnTextChanged", getArenaChange)
 	teamB:SetScript("OnTabPressed", function() Arena.frame.teamA:SetFocus() end)
 	
@@ -375,11 +380,6 @@ function Arena:CreateUI()
 	self.frame.teamBText = rating:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	self.frame.teamBText:SetHeight(15)
 	self.frame.teamBText:SetPoint("BOTTOMLEFT", self.frame.teamAText, "BOTTOMLEFT", 0, -15)
-	
-	self.frame.teamVs = rating:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-	self.frame.teamVs:SetHeight(15)
-	self.frame.teamVs:SetText(L["Vs"])
-	self.frame.teamVs:SetPoint("TOPRIGHT", teamA, "TOPRIGHT", 28, -3)
 		
 	-- Defaults
 	teamA:SetMaxLetters(4)

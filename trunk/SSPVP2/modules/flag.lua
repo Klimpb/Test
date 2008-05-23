@@ -47,6 +47,7 @@ function Flag:EnableModule(abbrev)
 		
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_HORDE", "ParseMessage")
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "ParseMessage")
+	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL", "ParseMessage")
 	self:RegisterEvent("UPDATE_BATTLEFIELD_SCORE")
 	self:RegisterEvent("UPDATE_BINDINGS")
 	
@@ -349,10 +350,15 @@ function Flag:ParseMessage(event, msg)
 	elseif( string.match(msg, L["(.+) has taken the flag!"]) ) then
 		self:PickUp(faction, string.match(msg, L["(.+) has taken the flag!"]))
 
-	-- WSG/EOTS, returned
-	elseif( string.match(msg, L["was returned to its base"]) or string.match(msg, L["flag has been reset"]) ) then
+	-- WSG, returned
+	elseif( string.match(msg, L["was returned to its base"]) ) then
 		self:Returned(faction)
 	
+	-- EOTS, returned
+	elseif( string.match(msg, L["flag has been reset"]) ) then
+		self:Returned("Horde")
+		self:Returned("Alliance")
+		
 	-- WSG/EoTS, captured
 	elseif( string.match(msg, L["captured the"]) ) then
 		self:Captured(faction)
