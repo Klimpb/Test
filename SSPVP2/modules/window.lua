@@ -47,7 +47,7 @@ function Window:Reload()
 	end
 end
 
-function Window:PopupWindow(statusID, instanceID, map, teamSize)
+function Window:PopupWindow(statusID, instanceID, map, teamSize, isRegistered)
 	local name
 	if( map == L["All Arenas"] or map == L["Eastern Kingdoms"] ) then
 		if( isRegistered ) then
