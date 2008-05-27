@@ -108,6 +108,7 @@ StaticPopupDialogs["CONFIRM_NEW_BFENTRY"] = {
 		
 		local seconds = floor(dialog.portExpiration - GetTime())
 		if( seconds <= 0 ) then
+			dialog.portExpiration = nil
 			return
 		end
 		

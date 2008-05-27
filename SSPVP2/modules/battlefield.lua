@@ -25,9 +25,7 @@ function BF:EnableModule(abbrev)
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL")
 	self.activeBF = abbrev
 	
-	--WorldMapZoneMinimapDropDown_OnClick
-	-- May not want to auto release in arenas incase a team mates going to try
-	-- and ressurect you
+	-- May not want to auto release in arenas in case a team mates going to try and ressurect you
 	if( abbrev ~= "arena" ) then
 		self:RegisterEvent("PLAYER_DEAD")
 		self:CheckMinimap()

@@ -171,7 +171,6 @@ function Flag:UpdateHealth(unit)
 		if( faction == "Alliance" ) then
 			allianceUpdate = HEALTH_TIMEOUT
 		else
-
 			hordeUpdate = HEALTH_TIMEOUT
 		end
 	end
