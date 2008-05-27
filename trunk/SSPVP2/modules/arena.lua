@@ -229,10 +229,8 @@ end
 function Arena:CreateUI()
 	if( self.frame ) then
 		return
-
 	end
 	
-
 	self.frame = CreateFrame("Frame", "SSArenaGUI", UIParent)
 	self.frame:SetWidth(225)
 	self.frame:SetHeight(265)
@@ -449,6 +447,21 @@ function Arena:RegisterSlashCommands()
 	end)
 end
 
+-- This is a quick fix so we don't have stats showing up even after you've left a team
+local function hideCustomOptions(self)
+	self.seasonWin:Hide()
+	self.seasonLoss:Hide()
+	self.seasonGames:Hide()
+	self.seasonPlayed:Hide()
+	self.seasonPlayedPercent:Hide()
+	self.seasonWinPercent:Hide()
+	self.seasonText:Hide()
+	self.dashText:Hide()
+
+	self.weekPlayed:Hide()
+	self.weekPlayedPercent:Hide()
+	self.weekWinPercent:Hide()
+end
 
 -- Inspection and players arena info uses the same base names
 function Arena:UpdateDisplay(parent, isInspect, ...)
@@ -484,6 +497,12 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 	local parentFrame = getglobal(parent)
 	if( not parentFrame.SSUpdated ) then
 		parentFrame.SSUpdated = true
+		
+		if( parentFrame:GetScript("OnHide") ) then
+			parentFrame:HookScript("OnHide", hideCustomOptions)
+		else
+			parentFrame:SetScript("OnHide", hideCustomOptions)
+		end
 		
 		-- Shift played percentage/games up
 		local label = getglobal(name .. "TypeLabel")
@@ -564,6 +583,8 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 		parentFrame.seasonPlayed = played
 		parentFrame.seasonPlayedPercent = seasonPercent
 		parentFrame.seasonWinPercent = seasonWinPercent
+		parentFrame.seasonText = season
+		parentFrame.dashText = dash
 		
 		parentFrame.weekPlayed = weekPlayed
 		parentFrame.weekPlayedPercent = weekPercent
@@ -571,6 +592,9 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 	end
 	
 	-- DISPLAY!
+	parentFrame.dashText:Show()
+	parentFrame.seasonText:Show()
+
 	-- WEEK
 	getglobal(name .. "TypeLabel"):SetText(L["Week"])
 	getglobal(name .. "Played"):Hide()
@@ -579,9 +603,10 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 	getglobal(name .. "Wins"):SetText(weekWins)
 	getglobal(name .. "Loss"):SetText(weekPlayed - weekWins)		
 	
+	
 	-- Played for this week
 	local percent = playerPlayed / weekPlayed
-	if( weekPlayed == 0 or playerPlayed == 0 ) then
+	if( percent ~= percent ) then
 		percent = 0
 	end
 	
@@ -591,12 +616,14 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 	end
 	
 	parentFrame.weekPlayed:SetFormattedText("%d", playerPlayed)
+	parentFrame.weekPlayed:Show()
 	parentFrame.weekPlayedPercent:SetFormattedText("[%s%d%%%s]", color, percent * 100, FONT_COLOR_CODE_CLOSE)
 	parentFrame.weekPlayedPercent:SetVertexColor(1.0, 1.0, 1.0)
+	parentFrame.weekPlayedPercent:Show()
 	
 	-- Win percent for the week
 	local percent = weekWins / weekPlayed
-	if( weekWins == 0 or weekPlayed == 0 ) then
+	if( percent ~= percent ) then
 		percent = 0	
 	end
 	
@@ -608,26 +635,35 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 	end
 	
 	parentFrame.weekWinPercent:SetFormattedText("[%s%d%%%s]", color, percent * 100, FONT_COLOR_CODE_CLOSE)
+	parentFrame.weekWinPercent:Show()
 	
 	-- SEASON
 	parentFrame.seasonWin:SetText(seasonWins)
-
+	parentFrame.seasonWin:Show()
 	parentFrame.seasonLoss:SetText(seasonPlayed - seasonWins)
+	parentFrame.seasonLoss:Show()
 	parentFrame.seasonGames:SetText(seasonPlayed)
+	parentFrame.seasonGames:Show()
 	
 	-- Do we want to show percent, or personal?
 	local percent = seasonPlayerPlayed / seasonPlayed
+	if( percent ~= percent ) then
+		percent = 0
+	end
+	
 	local color = "|cff20ff20"
 	if( percent < 0.30 ) then
 		color = "|cffff2020"
 	end
 
 	parentFrame.seasonPlayed:SetFormattedText("%d", playerRating)
+	parentFrame.seasonPlayed:Show()
 	parentFrame.seasonPlayedPercent:SetFormattedText("[%s%d%%%s]", color, percent * 100, FONT_COLOR_CODE_CLOSE)
 	parentFrame.seasonPlayedPercent:SetVertexColor(1.0, 1.0, 1.0)
+	parentFrame.seasonPlayedPercent:Show()
 
 	local percent = seasonWins / seasonPlayed
-	if( seasonWins == 0 or seasonPlayed == 0 ) then
+	if( percent ~= percent ) then
 		percent = 0	
 	end
 	
@@ -639,6 +675,7 @@ function Arena:UpdateDisplay(parent, isInspect, ...)
 	end
 	
 	parentFrame.seasonWinPercent:SetFormattedText("[%s%d%%%s]", color, percent * 100, FONT_COLOR_CODE_CLOSE)
+	parentFrame.seasonWinPercent:Show()
 end
 
 -- Modifies the team details page to show percentage of games played

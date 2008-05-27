@@ -117,7 +117,7 @@ function AV:UPDATE_WORLD_STATES()
 			end
 			
 		elseif( diff < 0 ) then
-			allianceGain = allianceGain + (diff * -1)
+			allianceGain = allianceGain - diff
 			
 			if( self.db.profile.mine ) then
 				SSOverlay:RegisterText("alliancemine", "mine", L["Alliance"] .. ": " .. allianceGain, SSPVP:GetFactionColor("Alliance"))
@@ -140,7 +140,7 @@ function AV:UPDATE_WORLD_STATES()
 				SSPVP:CombatText(string.format(L["-%d Reinforcements"], 100), SSPVP:GetFactionColor("Horde"))
 			end
 		elseif( diff < 0 ) then
-			hordeGain = hordeGain + (diff * -1)
+			hordeGain = hordeGain - diff
 			
 			if( self.db.profile.mine ) then
 				SSOverlay:RegisterText("hordemine", "mine", L["Horde"] .. ": " .. hordeGain, SSPVP:GetFactionColor("Horde"))

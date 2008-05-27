@@ -125,9 +125,7 @@ function SSPVP:BATTLEFIELDS_SHOW()
 	-- Disable auto join and such if shift is down
 	if( IsShiftKeyDown() ) then
 		return
-
 	end
-	
 
 	local queued = 0
 	for i=1, MAX_BATTLEFIELD_QUEUES do
@@ -322,8 +320,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 	if( self.db.profile.leave.enabled and GetBattlefieldWinner() ) then
 		if( self.db.profile.leave.screen ) then
 			if( not screenTaken ) then
-				-- It's possible to have for the battlefield ends and we take
-				-- a screenshot before the score frame is shown
+				-- It's possible to have for the battlefield ends and we take a screenshot before the score frame is shown
 				if( not WorldStateScoreFrame:IsVisible() ) then
 					ShowUIPanel(WorldStateScoreFrame)
 				end
@@ -357,6 +354,7 @@ function SSPVP:UPDATE_BATTLEFIELD_STATUS()
 			if( teamSize > 0 ) then
 				-- Before arenas start you're queued for all arena maps
 				-- once queues ready, they tell us specifically what map we're going into
+				-- This is no longer the case as of 2.4.0, it'll always return Eastern Kingdoms
 				if( map == L["All Arenas"] or map == L["Eastern Kingdoms"] ) then
 					if( isRegistered ) then
 						map = L["Rated Arena"]
@@ -567,8 +565,7 @@ function SSPVP:PlaySound()
 end
 
 function SSPVP:StopSound()
-	-- Things played as music can be stopped using StopMusic()
-	-- sound file ones can only be stopped by toggling it
+	-- Things played as music can be stopped using StopMusic() sound file ones can only be stopped by toggling it
 	if( string.match(self.db.profile.general.sound, "mp3$") ) then
 		StopMusic()
 	else
@@ -588,7 +585,7 @@ function SSPVP:GetAbbrev(map)
 		return "av"
 	elseif( map == L["Eye of the Storm"] ) then
 		return "eots"
-	elseif( map == L["Blade's Edge Arena"] or map == L["Nagrand Arena"] or map == L["Ruins of Lordaeron"] or map == L["Eastern Kingdoms"] ) then
+	elseif( map == L["Eastern Kingdoms"] or map == L["Blade's Edge Arena"] or map == L["Nagrand Arena"] or map == L["Ruins of Lordaeron"] ) then
 		return "arena"
 	end
 	
