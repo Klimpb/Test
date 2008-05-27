@@ -1,5 +1,5 @@
 local major = "TalentGuess-1.0"
-local minor = tonumber(string.match("$Revision: 701$", "(%d+)") or 1)
+local minor = tonumber(string.match("$Revision: 702$", "(%d+)") or 1)
 
 assert(LibStub, string.format("%s requires LibStub.", major))
 
@@ -22,12 +22,12 @@ local enemySpellRecords = Talents.enemySpellRecords
 local registeredObjs = Talents.registeredObjs
 local talentPoints = {}
 local checkBuffs = {}
-local methods = {"EnableCollection", "DisableCollection"}
+local methods = {"EnableCollection", "DisableCollection", "GetTalents"}
 
 -- Validation for passed arguments
-local function assert(level,condition,message)
+local function assert(level, condition, message)
 	if( not condition ) then
-		error(message,level)
+		error(message, level)
 	end
 end
 
@@ -47,18 +47,18 @@ end
 
 -- PUBLIC METHODS
 function Talents:Register()
-	Talents.totalRegistered = Talents.totalRegistered
+	Talents.totalRegistered = Talents.totalRegistered + 1
+	local id = Talents.totalRegistered
 	
-	local obj = {}
-	obj.id = Talents.totalRegistered
-	obj.collecting = false
+	registeredObjs[id] = {}
+	registeredObjs[id].id = id
+	registeredObjs[id].collecting = false
 	
 	for _, func in pairs(methods) do
-		obj[func] = Talents[func]
+		registeredObjs[id][func] = Talents[func]
 	end
 	
-	registeredObjs[obj.id] = obj
-	return obj
+	return registeredObjs[id]
 end
 
 function Talents.EnableCollection(self)
@@ -79,7 +79,7 @@ end
 function Talents:GetTalents(name)
 	argcheck(name, 1, "string")
 	
-	if( enemySpellRecords[name] ) then
+	if( not enemySpellRecords[name] ) then
 		return nil
 	end
 	
@@ -113,21 +113,19 @@ local function addSpell(spellID, guid, name)
 	if( not enemySpellRecords[name] ) then
 		enemySpellRecords[name] = {}
 	end
-	
+
 	enemySpellRecords[name][spellID] = true
 end
 
 -- Buff scan for figuring out talents if we need to
 local function PLAYER_TARGET_CHANGED()
 	-- Make sure it's a valid unit
-	if( not UnitExists("target") or not UnitIsEnemy("player", unit) or UnitIsCharmed(unit) or UnitIsCharmed("player") ) then
+	if( not UnitExists("target") or not UnitIsPlayer("target") or not UnitIsEnemy("player", "target") or UnitIsCharmed("target") or UnitIsCharmed("player") ) then
 		return
 	end
-	
 
 	local fullName, server = UnitName("target")
 	if( server and server ~= "" ) then
-
 		fullName = string.format("%s-%s", fullName, server)
 	end
 	
@@ -135,7 +133,7 @@ local function PLAYER_TARGET_CHANGED()
 
 	while( true ) do
 		id = id + 1
-		local name, rank = UnitDebuff(unit, id)
+		local name, rank = UnitBuff("target", id)
 		if( not name ) then break end
 		
 		local spellID = checkBuffs[name .. (rank or "")]
@@ -159,30 +157,29 @@ local function COMBAT_LOG_EVENT_UNFILTERED(timestamp, eventType, sourceGUID, sou
 	-- Enemy gained a debuff
 	if( eventType == "SPELL_AURA_APPLIED" and bit.band(destFlags, ENEMY_AFFILIATION) == ENEMY_AFFILIATION ) then
 		local spellID, spellName, spellSchool, auraType = ...
-		if( self.spells[spellID] and auraType == "BUFF" ) then
+		if( Talents.spells[spellID] and auraType == "BUFF" ) then
 			addSpell(spellID, destGUID, destName)
 		end
 	
 	-- Spell started to cast
 	elseif( eventType == "SPELL_CAST_START"  and bit.band(sourceFlags, ENEMY_AFFILIATION) == ENEMY_AFFILIATION ) then
 		local spellID, spellName, spellSchool, auraType = ...
-		if( self.spells[spellID] or self.castSpells[spellID] ) then
+		if( Talents.spells[spellID] or Talents.castSpells[spellID] ) then
 			addSpell(spellID, sourceGUID, sourceName)
 		end
 
 	-- Spell casted succesfully
 	elseif( eventType == "SPELL_CAST_SUCCESS" and bit.band(sourceFlags, ENEMY_AFFILIATION) == ENEMY_AFFILIATION ) then
 		local spellID, spellName, spellSchool, auraType = ...
-		if( self.spells[spellID] or self.castSpells[spellID] ) then
+		if( Talents.spells[spellID] or Talents.castSpells[spellID] ) then
 			addSpell(spellID, sourceGUID, sourceName)
 		end
 	end
 end
 
-local OnEvent(self, event, ...)
+local function OnEvent(self, event, ...)
 	if( event == "COMBAT_LOG_EVENT_UNFILTERED" ) then
 		COMBAT_LOG_EVENT_UNFILTERED(...)
-
 	elseif( event == "PLAYER_TARGET_CHANGED" ) then
 		PLAYER_TARGET_CHANGED(...)
 	end
@@ -197,11 +194,11 @@ function Talents:CheckCollecting()
 			return
 		end
 	end
-
+	
 	Talents.frame:UnregisterAllEvents()
 end
 
-Talents.frame:SetScript("OnEvent", Talents.OnEvent)
+Talents.frame:SetScript("OnEvent", OnEvent)
 Talents:CheckCollecting()
 
 -- Cache our list of buffs that we should scan when targeting
