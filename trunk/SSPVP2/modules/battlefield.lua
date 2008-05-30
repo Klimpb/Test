@@ -2,6 +2,9 @@ local BF = SSPVP:NewModule("Battlefield", "AceEvent-3.0")
 BF.activeIn = "bf"
 
 local L = SSPVPLocals
+local joinedMatch, leftMatch
+
+local joinedQueue = {}
 
 function BF:OnInitialize()
 	self.defaults = {
@@ -17,8 +20,6 @@ function BF:OnInitialize()
 	}
 	
 	self.db = SSPVP.db:RegisterNamespace("battlefield", self.defaults)
-	
-	hooksecurefunc("WorldMapZoneMinimapDropDown_OnClick", self.CheckMinimap)
 end
 
 function BF:EnableModule(abbrev)
@@ -28,33 +29,32 @@ function BF:EnableModule(abbrev)
 	-- May not want to auto release in arenas in case a team mates going to try and ressurect you
 	if( abbrev ~= "arena" ) then
 		self:RegisterEvent("PLAYER_DEAD")
-		self:CheckMinimap()
 	end
+	ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", self.FilterSystemMessages)
 end
+
 function BF:DisableModule()
+	ChatFrame_RemoveMessageEventFilter("CHAT_MSG_SYSTEM", self.FilterSystemMessages)
 	SSOverlay:RemoveRow("start")
 	
 	self:UnregisterAllEvents()
 	self.activeBF = nil
-
-	-- Hide minimap if it shouldn't be hidden in all zones
-	if( SHOW_BATTLEFIELD_MINIMAP ~= "2" and BattlefieldMinimap and BattlefieldMinimap:IsShown() ) then
+	
+	-- Blizzards code doesn't seem to hide it correctly, so will do it ourselves
+	if( SHOW_BATTLEFIELD_MINIMAP == "1" and BattlefieldMinimap and BattlefieldMinimap:IsVisible() ) then
 		BattlefieldMinimap:Hide()
 	end
 end
 
--- Should we be showing the minimap?
-function BF:CheckMinimap()
-	if( SHOW_BATTLEFIELD_MINIMAP == "1" or SHOW_BATTLEFIELD_MINIMAP == "2" ) then
-		if( not BattlefieldMinimap ) then
-			BattlefieldMinimap_LoadUI()
-		end
-		BattlefieldMinimap:Show()
-
-	elseif( BattlefieldMinimap ) then
-		BattlefieldMinimap:Hide()
+-- Filter spam
+function BF.FilterSystemMessages(msg)
+	if( string.match(msg, L["the raid group.$"]) ) then
+		return true
 	end
+	
+	return false
 end
+
 
 -- Start timers
 function BF:CHAT_MSG_BG_SYSTEM_NEUTRAL(event, msg)
@@ -94,16 +94,6 @@ function BF:PLAYER_DEAD()
 	end
 end
 
--- Block annoying raid join/leaves inside battlegrounds
-local Orig_ChatFrame_SystemEventHandler = ChatFrame_SystemEventHandler
-function ChatFrame_SystemEventHandler(event, ...)
-	if( BF.isActive and arg1 and string.match(arg1, L["the raid group.$"]) ) then
-		return true
-	end
-	
-	return Orig_ChatFrame_SystemEventHandler(event, ...)
-end
-
 -- Auto append server name
 local Orig_SendChatMessage = SendChatMessage
 function SendChatMessage(text, type, language, target, ...)
@@ -130,15 +120,4 @@ function SendChatMessage(text, type, language, target, ...)
 	end
 	
 	return Orig_SendChatMessage(text, type, language, target, ...)
-end
-
--- Blizzards code for hiding while inside of a PvP instance doesn't work very well, so override it with our own
-local Orig_WorldStateFrame_CanShowBattlefieldMinimap = WorldStateFrame_CanShowBattlefieldMinimap
-function WorldStateFrame_CanShowBattlefieldMinimap(...)
-	-- Never show it in PvP, because we override it ourself
-	if( select(2, IsInInstance()) == "pvp" ) then
-		return false
-	end
-	
-	return Orig_WorldStateFrame_CanShowBattlefieldMinimap(...)
 end

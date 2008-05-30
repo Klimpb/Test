@@ -42,7 +42,11 @@ SSPVPLocals = {
 	
 	["Starting: %s"] = "Starting: %s",
 	
+	["Preparation"] = "Preparation",
+	
 	["the raid group.$"] = "the raid group.$",
+	["|Hplayer:(.+)|h(.+)|h has joined the battle"] = "|Hplayer:(.+)|h(.+)|h has joined the battle",
+	
 	["Eastern Kingdoms"] = "Eastern Kingdoms",
 	
 	["The"] = "The",
