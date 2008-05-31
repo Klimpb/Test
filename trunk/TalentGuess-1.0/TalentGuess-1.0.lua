@@ -89,10 +89,10 @@ function Talents:GetTalents(name)
 	
 	for spellID in pairs(enemySpellRecords[name]) do
 		local treeNum, points, isBuff
-		if( self.spells[spellID] ) then
-			treeNum, points, isBuff = string.split(":", self.spells[spellID])
-		elseif( self.castSpells[spellID] ) then
-			treeNum, points, isBuff = string.split(":", self.castSpells[spellID])
+		if( Talents.spells[spellID] ) then
+			treeNum, points, isBuff = string.split(":", Talents.spells[spellID])
+		elseif( Talents.castSpells[spellID] ) then
+			treeNum, points, isBuff = string.split(":", Talents.castSpells[spellID])
 		end
 		
 		treeNum = tonumber(treeNum)
