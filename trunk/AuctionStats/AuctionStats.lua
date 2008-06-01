@@ -2,8 +2,8 @@ AuctionStats = LibStub("AceAddon-3.0"):NewAddon("AuctionStats", "AceEvent-3.0")
 
 local L = AuctionStatLocals
 
-local MAX_DATE_ROWS = 22
-local MAX_DATA_ROWS = 19
+local MAX_DATE_ROWS = 32
+local MAX_DATA_ROWS = 26
 local MAX_DATA_COLUMNS = 4
 
 local monthTable = {day = 1, hour = 0}
@@ -149,6 +149,12 @@ function AuctionStats:ParseData()
 						else
 							auctionData[time].temp[itemid].totalSpent = auctionData[time].temp[itemid].totalSpent + bid
 						end
+						
+						-- Setup month
+						local month = getTime(arrivedAt, 1, 0)
+						if( not auctionData[month] ) then
+							auctionData[month] = {type = "month", totalDays = 0, averageMade = 0, averageSpent = 0, time = month, temp = {}}
+						end
 					end
 				end
 			end
@@ -176,6 +182,12 @@ function AuctionStats:ParseData()
 						auctionData[time].temp[itemid].totalMade = auctionData[time].temp[itemid].totalMade + money
 						auctionData[time].temp[itemid].totalDeposit = auctionData[time].temp[itemid].totalDeposit + deposit
 						auctionData[time].temp[itemid].totalFee = auctionData[time].temp[itemid].totalFee + fee
+					
+						-- Setup month
+						local month = getTime(arrivedAt, 1, 0)
+						if( not auctionData[month] ) then
+							auctionData[month] = {type = "month", totalDays = 0, averageMade = 0, averageSpent = 0, time = month, temp = {}}
+						end
 					end
 				end
 			end
@@ -186,10 +198,6 @@ function AuctionStats:ParseData()
 	for time, row in pairs(auctionData) do
 		if( row.type ~= "month" ) then
 			local month = getTime(time, 1, 0)
-			if( not auctionData[month] ) then
-				auctionData[month] = {type = "month", time = month, temp = {}}
-			end
-
 			for itemid, data in pairs(row.temp) do
 				if( not auctionData[month].temp[itemid] ) then
 					auctionData[month].temp[itemid] = {}
@@ -198,9 +206,11 @@ function AuctionStats:ParseData()
 				-- Merge the items total stats, this months total stats, and this days total stats
 				mergeDataTables(auctionData[month].temp[itemid], data)
 			end
+			
+			auctionData[month].totalDays = auctionData[month].totalDays + 1
 		end
 	end
-	
+		
 	-- Now we have to take our item tables, and turn them into indexed ones
 	for time, row in pairs(auctionData) do
 		row.totalProfit = 0
@@ -220,10 +230,23 @@ function AuctionStats:ParseData()
 			mergeDataTables(auctionData[time], data)
 		end
 		
+		-- Figure out the average made/spent
+		if( row.type == "month" ) then
+			if( row.totalMade > 0 ) then
+				row.averageMade = row.totalMade / row.totalDays
+			end
+			
+			if( row.totalSpent > 0 ) then
+				row.averageSpent = row.totalSpent / row.totalDays
+			end
+			
+			row.averageProfit = row.averageMade - row.averageSpent
+		end
+		
 		-- Remove our temp table for gathering the data
 		row.temp = nil
 	end
-
+	
 	-- Add in the time formats so we can actually do our display things
 	for time in pairs(auctionData) do
 		table.insert(auctionDisplay, time)
@@ -250,6 +273,7 @@ function AuctionStats:FormatNumber(number, decimal)
 	return number
 end
 
+-- DATE BROWSER
 function AuctionStats:UpdateBrowseGUI()
 	local self = AuctionStats
 	local totalRows = 0
@@ -270,6 +294,7 @@ function AuctionStats:UpdateBrowseGUI()
 	
 	-- List!
 	local usedRows = 0
+	local lastType = ""
 	for id, key in pairs(auctionDisplay) do
 		local month = getTime(key, 1, 0)
 		if( ( self.frame.monthKey == month or month == key ) and id >= FauxScrollFrame_GetOffset(self.leftFrame.scroll) and usedRows < MAX_DATE_ROWS ) then
@@ -287,9 +312,8 @@ function AuctionStats:UpdateBrowseGUI()
 
 			local row = self.dateRows[usedRows]
 			row.profit:SetFormattedText("[%s%s%sg]", color, self:FormatNumber(data.totalProfit / 10000), FONT_COLOR_CODE_CLOSE)
-			row.tooltip = string.format(L["Made: |cffffffff%s|rg\nSpent: |cffffffff%s|rg\nProfit: |cffffffff%s|rg"], self:FormatNumber(data.totalMade / 10000), self:FormatNumber(data.totalSpent / 10000), self:FormatNumber(data.totalProfit / 10000))
 			row.dateKey = data.time
-				row.type = data.type
+			row.type = data.type
 			row:Show()
 
 			-- If it's a day, show day, # if it isn't show month, year
@@ -305,8 +329,9 @@ function AuctionStats:UpdateBrowseGUI()
 			else
 				row:SetTextColor(1, 1, 1)
 			end
-			
-			-- Pushy
+				
+			-- Specific per month/per day config
+			-- Reposition things based on the type, months have to be positioned over the button of course
 			if( data.type == "month" ) then
 				row.button.monthKey = getTime(row.dateKey, 1, 0)
 		
@@ -319,11 +344,21 @@ function AuctionStats:UpdateBrowseGUI()
 					row.button:SetPushedTexture("Interface\\Buttons\\UI-PlusButton-DOWN")
 					row.button:SetHighlightTexture("Interface\\Buttons\\UI-PlusButton-Hilight", "ADD")
 				end
-			end	
-			
-			-- Reposition things based on the type, months have to be positioned over the button of course
-			if( data.type == "month" ) then
+				
+				-- Have to reposition it so they all appear in a nice line
+				if( usedRows > 1 ) then
+					local offset = 0
+					if( lastType == "month" ) then
+						offset = -14
+					end
+				
+					row.button:SetPoint("TOPLEFT", self.dateRows[usedRows - 1], "BOTTOMLEFT", offset, -1)
+				elseif( usedRows == 1 ) then
+					row.button:SetPoint("TOPLEFT", self.leftFrame.scroll, "TOPLEFT", 4, 0)
+				end
+						
 				row:SetPoint("TOPLEFT", row.button, "TOPRIGHT", 0, 0)
+				row.tooltip = string.format(L["|cffffffffMonth|r\nMade: |cffffffff%s|rg\nSpent: |cffffffff%s|rg\nProfit: |cffffffff%s|rg\n\n|cffffffffPer Day|r\nMade: |cffffffff%s|rg\nSpent: |cffffffff%s|rg\nProfit: |cffffffff%s|rg"], self:FormatNumber(data.totalMade / 10000), self:FormatNumber(data.totalSpent / 10000), self:FormatNumber(data.totalProfit / 10000), self:FormatNumber(data.averageMade / 10000), self:FormatNumber(data.averageSpent / 10000), self:FormatNumber(data.averageProfit / 10000))
 				row.profit:SetPoint("TOPRIGHT", row, "TOPRIGHT", -15, -1)
 				row.button:Show()
 			else
@@ -338,6 +373,7 @@ function AuctionStats:UpdateBrowseGUI()
 				end
 
 				row.profit:SetPoint("TOPRIGHT", row, "TOPRIGHT", -1, -1)
+				row.tooltip = string.format(L["|cffffffffToday|r\nMade: |cffffffff%s|rg\nSpent: |cffffffff%s|rg\nProfit: |cffffffff%s|rg\n\n|cffffffffAuctions|r\nCompleted: |cffffffff%s|r\nWon: |cffffffff%s|r"], self:FormatNumber(data.totalMade / 10000), self:FormatNumber(data.totalSpent / 10000), self:FormatNumber(data.totalProfit / 10000), self:FormatNumber(data.totalSold), self:FormatNumber(data.totalBought))
 				row.button:Hide()
 			end
 			
@@ -347,10 +383,13 @@ function AuctionStats:UpdateBrowseGUI()
 			else
 				self.dateRows[usedRows]:SetWidth(149)
 			end
+			
+			lastType = data.type
 		end
 	end
 end
 
+-- DATA BROWSING
 local function sortBreakdownData(self)
 	if( self.sortType ~= AuctionStats.frame.sortType ) then
 		AuctionStats.frame.sortOrder = false
@@ -456,7 +495,7 @@ function AuctionStats:CreateGUI()
 	
 	self.frame = CreateFrame("Frame", "AuctionStatsGUI", UIParent)
 	self.frame:SetWidth(550)
-	self.frame:SetHeight(400)
+	self.frame:SetHeight(550)
 	self.frame:SetMovable(true)
 	self.frame:EnableMouse(true)
 	self.frame:SetClampedToScreen(true)
@@ -541,7 +580,7 @@ function AuctionStats:CreateGUI()
 	-- Left 30%ish width panel
 	self.leftFrame = CreateFrame("Frame", nil, self.frame)
 	self.leftFrame:SetWidth(175)
-	self.leftFrame:SetHeight(368)
+	self.leftFrame:SetHeight(518)
 	self.leftFrame:SetBackdrop(backdrop)
 	self.leftFrame:SetBackdropColor(0, 0, 0, 0.65)
 	self.leftFrame:SetBackdropBorderColor(0.75, 0.75, 0.75, 0.90)
@@ -586,6 +625,7 @@ function AuctionStats:CreateGUI()
 		end
 		
 		self.dateRows[i] = row
+		row:Show()
 	end
 
 	-- Check data
@@ -603,7 +643,7 @@ function AuctionStats:CreateGUI()
 	-- Top frame, around 70% width panel
 	self.topFrame = CreateFrame("Frame", nil, self.frame)
 	self.topFrame:SetWidth(352)
-	self.topFrame:SetHeight(40)
+	self.topFrame:SetHeight(60)
 	self.topFrame:SetBackdrop(backdrop)
 	self.topFrame:SetBackdropColor(0, 0, 0, 0.65)
 	self.topFrame:SetBackdropBorderColor(0.75, 0.75, 0.75, 0.90)
@@ -612,7 +652,7 @@ function AuctionStats:CreateGUI()
 	-- Middle-ish frame, remaining space
 	self.middleFrame = CreateFrame("Frame", nil, self.frame)
 	self.middleFrame:SetWidth(352)
-	self.middleFrame:SetHeight(328)
+	self.middleFrame:SetHeight(458)
 	self.middleFrame:SetBackdrop(backdrop)
 	self.middleFrame:SetBackdropColor(0, 0, 0, 0.65)
 	self.middleFrame:SetBackdropBorderColor(0.75, 0.75, 0.75, 0.90)
@@ -708,11 +748,12 @@ end
 function AuctionStats:InitGatherDropdown()
 	for server, charData in pairs(BeanCounterDB) do
 		if( server ~= "settings" ) then
-			for charName in pairs(charData) do
-				local charID = string.format("%s:%s", server, charName)
-				UIDropDownMenu_AddButton({ value = charID, text = string.format("%s - %s", charName, server), checked = AuctionStats.db.profile.gatherData[charID], keepShownOnClick = true, func = AuctionStats.DropdownClicked })
+			for charName, charData in pairs(charData) do
+				if( type(charName) == "string" and type(charData) == "table" and charData.completedAuctions and charData["completedBids/Buyouts"] ) then
+					local charID = string.format("%s:%s", server, charName)
+					UIDropDownMenu_AddButton({ value = charID, text = string.format("%s - %s", charName, server), checked = AuctionStats.db.profile.gatherData[charID], keepShownOnClick = true, func = AuctionStats.DropdownClicked })
+				end
 			end
-
 		end
 	end
 
