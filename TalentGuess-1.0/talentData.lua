@@ -1,9 +1,18 @@
+local major = "TalentGuessData-1.0"
+local minor = tonumber(string.match("$Revision: 703$", "(%d+)") or 1)
+
+assert(LibStub, string.format("%s requires LibStub.", major))
+
+local Data = LibStub:NewLibrary(major, minor)
+if( not Data ) then return end
+
 -- The format is pretty simple
--- [spellID] = "tree #:points required:checkBuffs"
-TalentGuess10Spells = {
+-- [spellID] = "tree #:points required:checkBuffs:isCastOnly"
+Data.Spells = {
 	-- ROGUES
 
 	--[[ Assassination ]]--
+	[14181] = "1:11",
 	[14177] = "1:21",
 	[1329] = "1:41",
 	[34411] = "1:41",
@@ -105,6 +114,12 @@ TalentGuess10Spells = {
 	-- MAGES
 	
 	--[[ Arcane ]]--
+	[12536] = "1:6", -- Mages usually get 5/5, maybe I should make this 10?
+	[29441] = "1:6",
+	[29444] = "1:7",
+	[29445] = "1:8",
+	[29446] = "1:9",
+	[29447] = "1:10",
 	[12043] = "1:21",
 	[12042] = "1:31",
 	[31589] = "1:41",
@@ -148,6 +163,8 @@ TalentGuess10Spells = {
 	[31842] = "1:41",
 	
 	--[[ Protection ]]--
+	[20217] = "2:11:nil:true",
+	[25898] = "2:11:nil:true",
 	[20177] = "2:21",
 	[20179] = "2:22",
 	[20181] = "2:23",
@@ -175,10 +192,11 @@ TalentGuess10Spells = {
 	
 	--[[ Disc ]]--
 	[14751] = "1:11",
+	[10060] = "1:31:nil:true",
 	[45237] = "1:32:true",
 	[45241] = "1:33:true",
 	[45242] = "1:34:true",
-	
+	[33206] = "1:41:nil:true",
 	
 	--[[ Holy ]]--
 	[15237] = "2:11",
@@ -225,6 +243,7 @@ TalentGuess10Spells = {
 	[16246] = "1:11",
 	[29063] = "1:18",
 	[16166] = "1:31",
+	[39805] = "1:40",
 	
 	--[[ Enhancement ]]--
 	[43339] = "2:11",
@@ -237,6 +256,10 @@ TalentGuess10Spells = {
 	
 	--[[ Resto ]]--
 	[16188] = "3:21",
+	[31616] = "3:40",
+	[974] = "3:41:nil:true",
+	[32593] = "3:41:nil:true",
+	[32594]	= "3:41:nil:true",
 	
 	-- WARRIOR
 	
@@ -331,17 +354,4 @@ TalentGuess10Spells = {
 	[30283] = "3:41",
 	[30413] = "3:41",
 	[30414] = "3:41",
-}
-
-TalentGuess10CastOnly = {
-	-- Priest
-	--[[ Disc ]]--
-	[10060] = "1:31",
-	[33206] = "1:41",
-
-	-- Shaman
-	--[[ Restoration ]]--
-	[974] = "3:41",
-	[32593] = "3:41",
-	[32594]	= "3:41",
 }
