@@ -11,6 +11,7 @@ local L = {
 	["MUST_CALL"] = "You must call '%s' from a registered %s object.",
 	["NO_DATA"] = "%s requires TalentGuessData-1.0, make sure you installed the library correctly.",
 	["BAD_FUNCTION"] = "Bad function passed to '%s', doesn't seem to exist.",
+	["BAD_CLASS"] = "No class '%s' found in '%s'.",
 }
 
 -- Load the latest data
@@ -18,6 +19,7 @@ local Data = LibStub:GetLibrary("TalentGuessData-1.0", true)
 assert(Data, string.format(L["NO_DATA"], major))
 
 Talents.spells = Data.Spells
+Talents.fotmTalents = Data.FoTM
 Talents.callbacks = Talents.callbacks or {}
 Talents.enemySpellRecords = Talents.enemySpellRecords or {}
 Talents.totalRegistered = Talents.totalRegistered or 0
@@ -28,7 +30,7 @@ local enemySpellRecords = Talents.enemySpellRecords
 local registeredObjs = Talents.registeredObjs
 local callbacks = Talents.callbacks
 local talentPoints, checkBuffs, castOnly = {}, {}, {}
-local methods = {"EnableCollection", "DisableCollection", "GetTalents", "GetUsed", "RegisterCallback", "UnregisterCallback"}
+local methods = {"EnableCollection", "DisableCollection", "GetTalents", "GetUsed", "GetFullGuess", "RegisterCallback", "UnregisterCallback"}
 
 -- Validation for passed arguments
 local function assert(level, condition, message)
@@ -159,6 +161,25 @@ function Talents.GetUsed(self, name)
 	end
 	
 	return spellsUsed[1], spellsUsed[2], spellsUsed[3]
+end
+
+-- Returns our guess at the full talent tree
+function Talents.GetFullGuess(self, one, two, three, class)
+	argcheck(one, 2, "number")
+	argcheck(two, 2, "number")
+	argcheck(three, 2, "number")
+	argcheck(class, 5, "string")
+	assert(3, self.id and registeredObjs[self.id], string.format(L["MUST_CALL"], "GetUsed", major))
+	assert(3, Talents.fotmTalents[class], string.format(L["BAD_CLASS"], class, "GetFullGuess"))
+	
+	local results = Talents.fotmTalents[class][string.format("%d:%d:%d", one, two, three)]
+	if( not results ) then
+		return nil
+	end
+	
+	one, two, three = string.split(":", results)
+	
+	return tonumber(one) or 0, tonumber(two) or 0, tonumber(three) or 0
 end
 
 -- PRIVATE METHODS
