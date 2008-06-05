@@ -301,7 +301,7 @@ function GTB:RegisterGroup(name, texture)
 	argcheck(texture, 2, "string")
 	assert(3, not groups[name], string.format(L["GROUP_EXISTS"], name))
 
-	local obj = {name = name, frame = CreateFrame("Frame", nil, UIParent), texture = texture, scale = 1.0, fontSize = 11, height = 16, obj = obj, bars = {}, usedBars = {}}
+	local obj = {name = name, frame = CreateFrame("Frame", nil, UIParent), fontSize = 11, height = 16, obj = obj, bars = {}, usedBars = {}}
 	
 	-- Inject our methods
 	for _, func in pairs(methods) do
@@ -342,6 +342,7 @@ function GTB:RegisterGroup(name, texture)
 	obj:SetAnchorVisible(true)
 	obj:SetBarGrowth("DOWN")
 	obj:SetIconPosition("LEFT")
+	obj:SetTexture(texture)
 	obj:SetBaseColor(0.0, 1.0, 0.0)
 	obj:SetTextColor(1.0, 1.0, 1.0)
 	obj:SetTimerColor(1.0, 1.0, 1.0)
@@ -568,6 +569,16 @@ function GTB.SetDisplayGroup(group, name)
 	argcheck(name, 2, "string", "nil")
 	assert(3, group.name and groups[group.name], string.format(L["MUST_CALL"], "SetDisplayGroup"))
 	
+	-- Don't allow setting the group to redirect to itself
+	if( name == "" or name == group.name ) then
+		name = nil
+	end
+	
+	-- Reset the bars if the display group changed
+	if( group.redirectTo ~= name ) then
+		group:UnregisterAllBars()
+	end
+	
 	group.redirectTo = name
 end
 
@@ -671,6 +682,8 @@ function GTB.RegisterBar(group, id, text, seconds, startSeconds, icon, r, g, b)
 	frame.startSeconds = startSeconds or seconds
 	frame.gradients = group.gradients
 	frame.groupName = group.name
+	frame.iconPath = icon
+	frame.barText = text
 	frame.barID = id
 		
 	-- Setup background
@@ -678,7 +691,7 @@ function GTB.RegisterBar(group, id, text, seconds, startSeconds, icon, r, g, b)
 	frame.bg:SetStatusBarColor(0.0, 0.5, 0.5, 0.5)
 	frame.bg:SetWidth(group.width)
 	frame.bg:SetHeight(group.height)
-
+	
 	-- Start it up
 	frame:SetStatusBarTexture(group.texture)
 	frame:SetStatusBarColor(frame.r, frame.g, frame.b)
