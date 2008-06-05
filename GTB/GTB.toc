@@ -1,9 +1,8 @@
 ## Interface: 20300
 ## Title: GTB
 ## Notes: Graphical timer bars libray
-## Version: $Revision: 322 $
 ## Author: Mayen
 ## OptionalDeps: LibStub
 
 LibStub.lua
-GTB.lua
+GTB.xml
