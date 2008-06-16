@@ -1,5 +1,5 @@
 -- Change this to "true" (without qoutes) to only announce spells in arenas globally
-local ARENAS_ONLY = false
+local ARENAS_ONLY = true
 -- Change this to "RAID", "PARTY", "BATTLEGROUND", "SAY", "YELL" depending on the channel you want, include the quotes
 local CHANNEL = "PARTY"
 local failMessage = "%s FAILED (%s)"
@@ -33,26 +33,26 @@ cast:SetScript("OnEvent", function(self, event, ...)
 		local timestamp, eventType, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, spellID, spellName, spellSchool, missType = ...
 		if( bit.band(sourceFlags, COMBATLOG_OBJECT_AFFILIATION_MINE) == COMBATLOG_OBJECT_AFFILIATION_MINE and spells[spellName] ) then
 			
-			--if( GetNumPartyMembers() > 0 ) then
+			if( GetNumPartyMembers() > 0 ) then
 				local spell = spells[spellName]
 				if( spell.fail and ( not spell.arenas or ( spell.arenas and select(2, IsInInstance()) == "arena" ) ) ) then
-					--SendChatMessage(string.format(spell.fail, spellName, string.upper(getglobal("ACTION_SPELL_MISSED_" .. missType))), spell.channel)
-					ChatFrame1:AddMessage(string.format("[%s] [%s]", spell.channel, string.format(spell.fail, spellName, string.upper(getglobal("ACTION_SPELL_MISSED_" .. missType)))))
+					SendChatMessage(string.format(spell.fail, spellName, string.upper(getglobal("ACTION_SPELL_MISSED_" .. missType))), spell.channel)
+					--ChatFrame1:AddMessage(string.format("[%s] [%s]", spell.channel, string.format(spell.fail, spellName, string.upper(getglobal("ACTION_SPELL_MISSED_" .. missType)))))
 				end
-			--end
+			end
 		end
 	
 	-- Check if the spel lwas cast
 	elseif( event == "COMBAT_LOG_EVENT_UNFILTERED" and select(2, ...) == "SPELL_CAST_SUCCESS" ) then
 		local timestamp, eventType, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, spellID, spellName, spellSchool, missType = ...
 		if( bit.band(sourceFlags, COMBATLOG_OBJECT_AFFILIATION_MINE) == COMBATLOG_OBJECT_AFFILIATION_MINE and spells[spellName] ) then
-			--if( GetNumPartyMembers() > 0 ) then
+			if( GetNumPartyMembers() > 0 ) then
 				local spell = spells[spellName]
 				if( not spell.arenas or ( spell.arenas and select(2, IsInInstance()) == "arena" ) ) then
-					--SendChatMessage(string.format(spell.msg, destName), spell.channel)
-					ChatFrame1:AddMessage(string.format("[%s] [%s]", spell.channel, string.format(spell.msg, destName or "")))
+					SendChatMessage(string.format(spell.msg, destName), spell.channel)
+					--ChatFrame1:AddMessage(string.format("[%s] [%s]", spell.channel, string.format(spell.msg, destName or "")))
 				end
-			--end
+			end
 		end
 	end
 end)
