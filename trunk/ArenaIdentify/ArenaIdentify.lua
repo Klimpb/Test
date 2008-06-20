@@ -72,7 +72,7 @@ function ArenaIdentify:ScanUnits()
 					SendAddonMessage("SSAF", msg, "BATTLEGROUND")
 
 				elseif( Proximo ) then
-					Proximo:AddToList(data.name, data.server, data.classToken, data.race, data.sex, 100, 100, "")						
+					Proximo:ReceiveSync(UnitName("player"), data.name, data.server, data.classToken, data.race, data.sex, 100, 100, "")
 
 					local msg = string.format("ReceiveSync:%s,%s,%s,%s,%s,%s,%s,%s", data.name, data.server, data.classToken, data.race or "", data.sex or "", "100", "100", "")
 					SendAddonMessage("Proximo", msg, "PARTY")
