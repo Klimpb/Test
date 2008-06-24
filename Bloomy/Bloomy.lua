@@ -5,32 +5,29 @@
 Bloomy = LibStub("AceAddon-3.0"):NewAddon("Bloomy", "AceEvent-3.0")
 
 local L = BloomyLocals
-local activeMacros, activeSpells, activeUnits = {}, {}, {}
+local activeMacros, activeSpells, activeUnits, spellList = {}, {}, {}, {}
 local partyMap, raidMap = {}, {}
 local unitBuffs = {}
 
+local usedIDs = {}
+
 local totalTracked = 0
-local instanceType
+local instanceType, updateQueued
 
 function Bloomy:OnInitialize()
 	-- Defaults
 	self.defaults = {
 		profile = {
 			scale = 1.0,
+			showName = true,
 			
-			inside = {["raid"] = true}
+			inside = {["raid"] = true},
+			macros = {},
 		}
 	}
 	-- Init DB
 	self.db = LibStub:GetLibrary("AceDB-3.0"):New("BloomyDB", self.defaults)
 	self.revision = tonumber(string.match("$Revision: 628 $", "(%d+)")) or 1
-	
-	-- Macro stuffs
-	if( not BloomyMacros ) then
-		BloomyMacros = {}
-	end
-	
-	self.data = BloomyMacros
 
 	-- Store a mapping of unitids so we don't have to do a lot of concats
 	for i=1, MAX_RAID_MEMBERS do
@@ -40,19 +37,39 @@ function Bloomy:OnInitialize()
 	for i=1, MAX_PARTY_MEMBERS do
 		partyMap[i] = string.format("party%d", i)
 	end
-
-	unitBuffs["player"] = {}
-	activeUnits["player"] = true
 end
 
 function Bloomy:OnEnable()
-	-- Monitor for zone change
 	self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 	self:RegisterEvent("PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA")
-
+	self:RegisterEvent("RAID_ROSTER_UPDATE")
+	self:RegisterEvent("PLAYER_REGEN_ENABLED")
+	
 	-- Store the macro info initially
 	self:RegisterEvent("ADDON_LOADED")
 	self:UpdateMacros()
+end
+
+-- If an active unit is changed, then update the macros
+function Bloomy:RAID_ROSTER_UPDATE()
+	local rescan
+	for unitid, name in pairs(activeUnits) do
+		if( name ~= UnitName(unitid) ) then
+			rescan = true
+		end
+	end
+	
+	if( rescan ) then
+		self:UpdateMacros()
+	end
+end
+
+-- Check if we need to update everything
+function Bloomy:PLAYER_REGEN_ENABLED()
+	if( updateQueued ) then
+		updateQueued = nil
+		self:UpdateMacros()
+	end
 end
 
 -- Lets us know to update the macro cache
@@ -60,6 +77,10 @@ function Bloomy:ADDON_LOADED(event, addon)
 	if( IsAddOnLoaded("Blizzard_MacroUI") ) then
 		MacroFrame:HookScript("OnHide", function()
 			Bloomy:UpdateMacros()
+			
+			if( self.frame ) then
+				self:UpdateFrame()
+			end
 		end)
 				
 		self:UnregisterEvent("ADDON_LOADED")
@@ -133,7 +154,7 @@ end
 
 
 function Bloomy:ScanMacros()
-	for _, data in pairs(activeMacros) do data.enabled = nil end
+	for _, data in pairs(activeMacros) do data.enabled = nil; for k in pairs(data.spells) do data.spells[k] = nil end; end
 	
 	local maxMacros = (MAX_MACROS or 18) * 2
 	local globalNum, charNum = GetNumMacros()
@@ -148,8 +169,9 @@ function Bloomy:ScanMacros()
 				end
 				
 				activeMacros[i].enabled = true
+				activeMacros[i].macroID = i
 				activeMacros[i].id = bloomyID
-				activeMacros[i].perChar = i > 18	
+				activeMacros[i].perChar = i > 18 and 1 or 0	
 				activeMacros[i].name = name
 				activeMacros[i].icon = icon
 				activeMacros[i].spellText = spells
@@ -168,6 +190,8 @@ function Bloomy:GetUnit(list)
 	for _, name in pairs(list) do
 		if( UnitIsUnit(name, "player") ) then
 			return "player"
+		elseif( string.match(name, "party[1-4]") or string.match(name, "raid[1-40]") ) then
+			return name
 		end
 		
 		for i=1, GetNumRaidMembers() do
@@ -186,35 +210,73 @@ function Bloomy:GetUnit(list)
 	return nil
 end
 
+	--[[
+function Bloomy:FindBloomyMacro(findID)
+	local maxMacros = (MAX_MACROS or 18) * 2
+	local globalNum, charNum = GetNumMacros()
+	
+	for i=1, maxMacros do
+		local name, icon, text = GetMacroInfo(i)
+		if( text and text ~= "" ) then
+			local bloomyID, spells = self:CheckMacro(string.split("\n", text))
+			if( bloomyID and spells and bloomyID == findID ) then
+				return i
+			end
+		end
+	end
+end
+]]
+
 function Bloomy:UpdateMacros()
+	if( InCombatLockdown() ) then
+		updateQueued = true
+		return
+	end
+	
 	self:ScanMacros()
 	
 	for k in pairs(activeUnits) do activeUnits[k] = nil end
 	for _, guids in pairs(activeSpells) do for k in pairs(guids) do guids[k] = nil end end
+	for k in pairs(spellList) do spellList[k] = nil end
+
+	totalTracked = 0
 	
+	
+	-- Find the macro ids
 	for id, macro in pairs(activeMacros) do
 		if( macro.enabled ) then
 			local text = string.format("#bloomy %s %s", macro.id, macro.spellText)
 			
-			local target = self:GetUnit(self.data[macro.id])
+			local target = self:GetUnit(self.db.profile.macros[macro.id])
 			if( target ) then
 				text = string.format("%s\n#showtooltip %s\n/cast [target=%s] %s", text, macro.spell, target, macro.spell)
 				macro.target = target
 				
-				activeUnits[target] = true
+				activeUnits[target] = UnitName(target)
 				unitBuffs[target] = unitBuffs[target] or {}
 				
 				for spellName in pairs(macro.spells) do
-					if( not activeSpells[spellName] ) then totalTracked = totalTracked + 1 end
+					if( not spellList[spellName] ) then totalTracked = totalTracked + 1 end
 					
 					activeSpells[spellName] = activeSpells[spellName] or {}
 					activeSpells[spellName][target] = macro.id
+					
+					spellList[spellName] = true
 				end
 			else
 				macro.target = nil
 			end
 
-			EditMacro(id, macro.name, macro.icon, text, true, macro.perChar)
+			local name = ""
+			if( self.db.profile.showName and macro.target ) then
+				name = UnitName(macro.target)
+			elseif( self.db.profile.showName and not macro.target ) then
+				name = ""
+			else
+				name = macro.name
+			end
+			
+			EditMacro(macro.macroID, name == "" and " " or name, macro.icon, text, 1, macro.perChar)
 		end
 	end
 end
@@ -223,76 +285,10 @@ function Bloomy:Print(msg)
 	DEFAULT_CHAT_FRAME:AddMessage("|cff33ff99Bloomy|r: " .. msg)
 end
 
-SLASH_BLOOMY1 = "/bloomy"
-SlashCmdList["BLOOMY"] = function(msg)
-	local cmd, id, name = string.split(" ", msg or "")
-	cmd = string.lower(cmd or "")
-	
-	local self = Bloomy
-	if( cmd == "add" and id and name ) then
-		if( not self.data[id] ) then
-			self.data[id] = {}
-		end
-		
-		table.insert(self.data[id], name)
-		self:UpdateMacros()
-		self:UpdateFrame()
-		self:Print(string.format(L["Added \"%s\" to Bloomy ID \"%s\""], name, id))
-	
-	elseif( cmd == "remove" and id and name ) then
-		if( not self.data[id] ) then
-			Bloomy:Print(string.format(L["Cannot remove \"%s\" from id \"%s\", no Bloomy macro exists with that ID yet."], name, id))
-			return
-		end
-		
-		for i=#(self.data[id]), 1, -1 do
-			table.remove(self.data[id], i)
-		end
-		
-		self:UpdateMacros()
-		self:UpdateFrame()
-		self:Print(string.format(L["Removed \"%s\" from Bloomy ID \"%s\""], name, id))
-	
-	elseif( cmd == "reset" ) then
-		for _, info in pairs(self.data) do
-			for k in pairs(info) do
-				info[k] = nil
-			end
-		end
-		
-		self:UpdateMacros()
-		self:UpdateFrame()
-		self:Print(L["Reset all Bloomy macros."])
-	
-	elseif( cmd == "toggle" ) then
-		self:UpdateMacros()
-		self:CreateFrame()
-		self:UpdateFrame()
-		
-		if( self.frame:IsVisible() ) then
-			self.frame:Hide()
-		elseif( self.frame.rows[1].unit ) then
-			self.frame:Show()
-		end
-	
-	elseif( cmd == "help" ) then
-		DEFAULT_CHAT_FRAME:AddMessage(L["In order for a macro to be recognized by Bloomy, it has to have an identifier in it."])
-		DEFAULT_CHAT_FRAME:AddMessage(L["Add #bloomy <id> <spell name> to the macro and it'll automatically be edited with the person to cast the passed spell on."])
-	else
-		
-		DEFAULT_CHAT_FRAME:AddMessage(L["Bloomy slash commands"])
-		DEFAULT_CHAT_FRAME:AddMessage(L["/bloomy toggle - Toggles the Bloomy timer frame"])
-		DEFAULT_CHAT_FRAME:AddMessage(L["/bloomy add <id> <name> - Adds a group member to the passed id which will have the duration of the HoT left shown in the action button."])
-		DEFAULT_CHAT_FRAME:AddMessage(L["/bloomy remove <id> <name> - Removes the given group member from the passed id and hots will no longer be shown for them in the action button."])
-		DEFAULT_CHAT_FRAME:AddMessage(L["/bloomy reset - Removed all assigned group members from Bloomy macros."])
-		DEFAULT_CHAT_FRAME:AddMessage(L["/bloomy help - Shows information on how to create a Bloomy macro."])
-	end
-end
-
 -- Timer updating
 local colors = {
-	[(GetSpellInfo(774))] = "|cffbc64aa", -- Regrowth
-	[(GetSpellInfo(8936))] = "|cff00ff10", -- Rejuv
+	[(GetSpellInfo(8936))] = "|cffaaaaff", -- Regrowth
+	[(GetSpellInfo(774))] = "|cffbc64aa", -- Rejuv
 	[(GetSpellInfo(33763))] = "|cff50fe37", -- LB
 }
 
@@ -436,6 +432,14 @@ function Bloomy:CreateFrame()
 	self.frame = frame
 end
 
+function Bloomy:Reload()
+	if( self.frame ) then
+		self.frame:SetScale(self.db.profile.scale)
+
+		OnShow(self.frame)
+	end
+end
+
 function Bloomy:UpdateFrame()
 	if( not self.frame ) then
 		return
@@ -474,6 +478,6 @@ function Bloomy:UpdateFrame()
 		return
 	end
 	
-	self.frame:SetWidth(100 + ((totalTracked - 1) * 28))
+	self.frame:SetWidth(110 + ((totalTracked - 1) * 28))
 	self.frame:SetHeight((12 * id) + 3)
 end
