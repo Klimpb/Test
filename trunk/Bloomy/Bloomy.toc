@@ -1,9 +1,9 @@
 ## Interface: 20300
 ## Title: Bloomy
 ## Author: Mayen
-## Notes: Rated arena records
-## SavedVariables: BloomyDB, BloomyMacros
-## OptionalDeps: LibStub, Ace3
+## Notes: Helps make rolling Lifebloom easier
+## SavedVariables: BloomyDB
+## OptionalDeps: LibStub, Ace3, TestCode
 
 libs\LibStub-1.0\LibStub-1.0.xml
 libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
@@ -19,3 +19,4 @@ localization.deDE.lua
 localization.frFR.lua
 
 Bloomy.lua
+config.lua
