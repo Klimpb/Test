@@ -8,6 +8,10 @@ BloomyLocals = {
 	["In order for a macro to be recognized by Bloomy, it has to have an identifier in it."] = "In order for a macro to be recognized by Bloomy, it has to have an identifier in it.",
 	["Add #bloomy <id> <spell name> to the macro and it'll automatically be edited with the person to cast the passed spell on."] = "Add #bloomy <id> <spell name> to the macro and it'll automatically be edited with the person to cast the passed spell on.",
 	
+	["You can only add names to macros, not unitids."] = "You can only add names to macros, not unitids.",
+	
+	["The player \"%s\" is already added to id \"%s\"."] = "The player \"%s\" is already added to id \"%s\".",
+	
 	["Slash commands"] = "Slash commands",
 	["/bloomy ui - Toggles the configuration"] = "/bloomy ui - Toggles the configuration",
 	["/bloomy toggle - Toggles the Bloomy timer frame"] = "/bloomy toggle - Toggles the Bloomy timer frame",
@@ -29,7 +33,9 @@ BloomyLocals = {
 	["Show target names in macros"] = "Show target names in macros",
 	["Edits the macros name to reflect the current target that hots will be casted on."] = "Edits the macros name to reflect the current target that hots will be casted on.",
 	
-	
+	["Use unitids to cast on instead of player names"] = "Use unitids to cast on instead of player names",
+	["Sometimes you can run into issues with casting by player name instead of unitid, like Hunter pets with the same name. If you're noticing problems enable this."] = "Sometimes you can run into issues with casting by player name instead of unitid, like Hunter pets with the same name. If you're noticing problems enable this.",
+
 	["Everywhere else"] = "Everywhere else",
 	["Battlegrounds"] = "Battlegrounds",
 	["Arenas"] = "Arenas",
