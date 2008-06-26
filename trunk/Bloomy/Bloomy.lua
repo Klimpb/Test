@@ -5,11 +5,10 @@
 Bloomy = LibStub("AceAddon-3.0"):NewAddon("Bloomy", "AceEvent-3.0")
 
 local L = BloomyLocals
-local activeMacros, activeSpells, activeUnits, spellList = {}, {}, {}, {}
+local bloomyMacros, activeSpells, activeTracks, spellList = {}, {}, {}, {}, {}
 local partyMap, raidMap = {}, {}
 local unitBuffs = {}
-
-local usedIDs = {}
+local usedNames = {}
 
 local totalTracked = 0
 local instanceType, updateQueued
@@ -20,6 +19,7 @@ function Bloomy:OnInitialize()
 		profile = {
 			scale = 1.0,
 			showName = true,
+			useUnits = false,
 			
 			inside = {["raid"] = true},
 			macros = {},
@@ -37,6 +37,12 @@ function Bloomy:OnInitialize()
 	for i=1, MAX_PARTY_MEMBERS do
 		partyMap[i] = string.format("party%d", i)
 	end
+	
+	-- Disable this mod, not a Druid
+	if( select(2, UnitClass("player")) ~= "DRUID" ) then
+		Bloomy.disabled = true
+		self:UnregisterAllEvents()
+	end
 end
 
 function Bloomy:OnEnable()
@@ -47,20 +53,18 @@ function Bloomy:OnEnable()
 	
 	-- Store the macro info initially
 	self:RegisterEvent("ADDON_LOADED")
+
+	self:ScanMacros()
 	self:UpdateMacros()
 end
 
--- If an active unit is changed, then update the macros
 function Bloomy:RAID_ROSTER_UPDATE()
-	local rescan
-	for unitid, name in pairs(activeUnits) do
-		if( name ~= UnitName(unitid) ) then
-			rescan = true
+	-- No longer exists, so delete them
+	for name in pairs(activeTracks) do
+		if( not UnitExists(name) ) then
+			activeTracks[name] = nil
+			self:UpdateMacros()
 		end
-	end
-	
-	if( rescan ) then
-		self:UpdateMacros()
 	end
 end
 
@@ -76,6 +80,7 @@ end
 function Bloomy:ADDON_LOADED(event, addon)
 	if( IsAddOnLoaded("Blizzard_MacroUI") ) then
 		MacroFrame:HookScript("OnHide", function()
+			Bloomy:ScanMacros()
 			Bloomy:UpdateMacros()
 			
 			if( self.frame ) then
@@ -96,7 +101,10 @@ function Bloomy:ZONE_CHANGED_NEW_AREA(event)
 			self:CreateFrame()
 			self:UpdateFrame()
 			self:UpdateMacros()
-			self.frame:Show()
+			
+			if( self.frame.rows[1].target ) then
+				self.frame:Show()
+			end
 		
 		elseif( self.frame ) then
 			self.frame:Hide()
@@ -108,16 +116,24 @@ end
 
 -- BUFF TRACKING
 function Bloomy:UNIT_AURA(event, unit)
-	if( activeUnits[unit] ) then
-		for k in pairs(unitBuffs[unit]) do unitBuffs[unit][k] = nil end
-		local updated
+	-- Don't let this be used on pets for sanity reasons basically
+	if( not UnitIsPlayer(unit) ) then
+		return
+	end
+	
+	local playerName = UnitName(unit)
+	if( activeTracks[playerName] ) then
+		-- Reset them, really we could do something fancy and see what faded specifically
+		-- but we really don't need that, and it's more complicated then just doing this
+		for k in pairs(unitBuffs[playerName]) do unitBuffs[playerName][k] = nil end
 		
 		for i=1, 40 do
 			local name, rank, _, stack, duration, timeLeft = UnitBuff(unit, i)
 			if( not name ) then break end
 			
-			if( timeLeft and activeSpells[name] and activeSpells[name][unit] ) then
-				unitBuffs[unit][name] = GetTime() + timeLeft
+			-- It's one of ours, and we're actively tracking it
+			if( timeLeft and activeSpells[name] and activeSpells[name][playerName] ) then
+				unitBuffs[playerName][name] = GetTime() + timeLeft
 			end
 		end
 	end
@@ -131,7 +147,7 @@ function Bloomy:CheckMacro(...)
 	end
 	
 	for i=1, select("#", ...) do
-		local key, id, spells = string.split(" ", select(i, ...), 3)
+		local key, id, spells = string.split(" ", (select(i, ...)), 3)
 		if( key == "#bloomy" and id and spells ) then
 			return id, spells
 		end
@@ -145,138 +161,124 @@ function Bloomy:AddSpells(id, ...)
 		return
 	end
 	
-	activeMacros[id].spell = string.trim(select(1, ...))
-	
+	bloomyMacros[id].spell = string.trim(select(1, ...))
 	for i=1, select("#", ...) do
-		activeMacros[id].spells[string.trim((select(i, ...)))] = true
+		bloomyMacros[id].spells[string.trim((select(i, ...)))] = true
 	end
 end
 
-
+-- Find new macros
 function Bloomy:ScanMacros()
-	for _, data in pairs(activeMacros) do data.enabled = nil; for k in pairs(data.spells) do data.spells[k] = nil end; end
-	
-	local maxMacros = (MAX_MACROS or 18) * 2
-	local globalNum, charNum = GetNumMacros()
-	
-	for i=1, maxMacros do
+	for _, data in pairs(bloomyMacros) do data.enabled = nil; for k in pairs(data.spells) do data.spells[k] = nil end; end
+
+	for i=1, 36 do
 		local name, icon, text = GetMacroInfo(i)
 		if( text and text ~= "" ) then
-			local bloomyID, spells = self:CheckMacro(string.split("\n", text))
-			if( bloomyID and spells ) then
-				if( not activeMacros[i] ) then
-					activeMacros[i] = {spells = {}}
+			local id, spells = self:CheckMacro(string.split("\n", text))
+			if( id and spells ) then
+				if( not bloomyMacros[id] ) then
+					bloomyMacros[id] = {spells = {}}
 				end
 				
-				activeMacros[i].enabled = true
-				activeMacros[i].macroID = i
-				activeMacros[i].id = bloomyID
-				activeMacros[i].perChar = i > 18 and 1 or 0	
-				activeMacros[i].name = name
-				activeMacros[i].icon = icon
-				activeMacros[i].spellText = spells
+				bloomyMacros[id].enabled = true
+				bloomyMacros[id].macroID = i
+				bloomyMacros[id].id = id
+				bloomyMacros[id].name = name
+				bloomyMacros[id].icon = icon
+				bloomyMacros[id].spellText = spells
 				
-				self:AddSpells(i, string.split(",", spells))
+				self:AddSpells(id, string.split(",", spells))
 			end
 		end
 	end
 end
 
+-- Find a valid person to use
 function Bloomy:GetUnit(list)
 	if( not list ) then
 		return nil
 	end
 	
 	for _, name in pairs(list) do
-		if( UnitIsUnit(name, "player") ) then
-			return "player"
-		elseif( string.match(name, "party[1-4]") or string.match(name, "raid[1-40]") ) then
+		if( name == "player" ) then
+			return UnitName(name)
+		elseif( UnitExists(name) ) then
 			return name
-		end
-		
-		for i=1, GetNumRaidMembers() do
-			if( UnitName(raidMap[i]) == name ) then
-				return raidMap[i]
-			end
-		end
-
-		for i=1, GetNumPartyMembers() do
-			if( UnitName(partyMap[i]) == name ) then
-				return partyMap[i]
-			end
 		end
 	end
 	
 	return nil
 end
 
-	--[[
-function Bloomy:FindBloomyMacro(findID)
-	local maxMacros = (MAX_MACROS or 18) * 2
-	local globalNum, charNum = GetNumMacros()
-	
-	for i=1, maxMacros do
-		local name, icon, text = GetMacroInfo(i)
-		if( text and text ~= "" ) then
-			local bloomyID, spells = self:CheckMacro(string.split("\n", text))
-			if( bloomyID and spells and bloomyID == findID ) then
-				return i
-			end
-		end
-	end
-end
-]]
-
+-- Update all the table stuff
 function Bloomy:UpdateMacros()
 	if( InCombatLockdown() ) then
 		updateQueued = true
 		return
 	end
-	
-	self:ScanMacros()
-	
-	for k in pairs(activeUnits) do activeUnits[k] = nil end
-	for _, guids in pairs(activeSpells) do for k in pairs(guids) do guids[k] = nil end end
-	for k in pairs(spellList) do spellList[k] = nil end
 
+	-- Reset fun stuff
+	for _, guids in pairs(activeSpells) do for k in pairs(guids) do guids[k] = nil end end
+	for k in pairs(activeTracks) do activeTracks[k] = nil end
+	for k in pairs(spellList) do spellList[k] = nil end
+	
 	totalTracked = 0
 	
-	
 	-- Find the macro ids
-	for id, macro in pairs(activeMacros) do
+	local scanned = {}
+	for _, macro in pairs(bloomyMacros) do
 		if( macro.enabled ) then
-			local text = string.format("#bloomy %s %s", macro.id, macro.spellText)
+			macro.target = self:GetUnit(self.db.profile.macros[macro.id])
 			
-			local target = self:GetUnit(self.db.profile.macros[macro.id])
-			if( target ) then
-				text = string.format("%s\n#showtooltip %s\n/cast [target=%s] %s", text, macro.spell, target, macro.spell)
-				macro.target = target
+			if( macro.target ) then
+				-- Setup tables
+				activeTracks[macro.target] = UnitName(macro.target)
+				unitBuffs[macro.target] = unitBuffs[macro.target] or {}
 				
-				activeUnits[target] = UnitName(target)
-				unitBuffs[target] = unitBuffs[target] or {}
-				
+				-- Set spells as actively being used
 				for spellName in pairs(macro.spells) do
 					if( not spellList[spellName] ) then totalTracked = totalTracked + 1 end
 					
 					activeSpells[spellName] = activeSpells[spellName] or {}
-					activeSpells[spellName][target] = macro.id
+					activeSpells[spellName][macro.target] = macro.id
 					
 					spellList[spellName] = true
 				end
-			else
-				macro.target = nil
 			end
+		end
+	end
 
-			local name = ""
-			if( self.db.profile.showName and macro.target ) then
-				name = UnitName(macro.target)
-			elseif( self.db.profile.showName and not macro.target ) then
-				name = ""
-			else
-				name = macro.name
+	-- Actually update all the macros
+	self:WriteMacros()
+	self:UpdateFrame()
+end
+
+-- Write all the macros
+-- This isn't the cleanest solution sadly, but the previous method was causing odd issues with the wrong Bloomy macro
+-- being written so moving to this until I can actually fix it
+function Bloomy:WriteMacros()
+	for i=1, 36 do
+		local name, icon, text = GetMacroInfo(i)
+		if( text and text ~= "" ) then
+			local id, spells = self:CheckMacro(string.split("\n", text))
+			if( id and spells and bloomyMacros[id] ) then
+				local text = string.format("#bloomy %s %s", id, spells)
+				local macro = bloomyMacros[id]
+				
+				if( macro.target ) then
+					text = string.format("%s\n#showtooltip %s\n/cast [target=%s] %s", text, macro.spell, macro.target, macro.spell)
+				end
+				
+				-- Set macro name
+				local name = " "
+				if( self.db.profile.showName and macro.target ) then
+					name = UnitName(macro.target)
+				elseif( not self.db.profile.showName ) then
+					name = macro.name
+				end
+
+				EditMacro(i, name == "" and " " or name, macro.icon, text)
 			end
-			
-			EditMacro(macro.macroID, name == "" and " " or name, macro.icon, text, 1, macro.perChar)
 		end
 	end
 end
@@ -292,11 +294,11 @@ local colors = {
 	[(GetSpellInfo(33763))] = "|cff50fe37", -- LB
 }
 
-function Bloomy:GetTimeText(unit)
+function Bloomy:GetTimeText(target)
 	local text = ""
 	local i = 0
 	local time = GetTime()
-	for name, endTime in pairs(unitBuffs[unit]) do
+	for name, endTime in pairs(unitBuffs[target]) do
 		local timeLeft = endTime - time
 		
 		if( timeLeft > 0 ) then
@@ -317,10 +319,10 @@ local timeElapsed = 0
 local function OnUpdate(self, elapsed)
 	timeElapsed = timeElapsed + elapsed
 	
-	if( timeElapsed >= 0.20 ) then
+	if( timeElapsed >= 0.10 ) then
 		for _, row in pairs(Bloomy.frame.rows) do
-			if( row.unit ) then
-				row.timeLeft:SetText(Bloomy:GetTimeText(row.unit))
+			if( row.target ) then
+				row.timeLeft:SetText(Bloomy:GetTimeText(row.target))
 			end
 		end
 	end
@@ -432,52 +434,76 @@ function Bloomy:CreateFrame()
 	self.frame = frame
 end
 
-function Bloomy:Reload()
-	if( self.frame ) then
-		self.frame:SetScale(self.db.profile.scale)
 
-		OnShow(self.frame)
-	end
+local function sortMacros(a, b)
+	return a < b
 end
 
+local temp = {}
 function Bloomy:UpdateFrame()
 	if( not self.frame ) then
 		return
 	end
 	
+	-- Hide everything
 	for _, row in pairs(self.frame.rows) do
 		row.unit = nil
 		row.timeLeft:Hide()
 		row.name:Hide()
 	end
 	
+	-- Sort table thing
+	for i=#(temp), 1, -1 do table.remove(temp, i) end
 	
-	local id = 0
-	for unit in pairs(activeUnits) do
-		id = id + 1
-		
-		local row = self.frame.rows[id]
-
-		local colors = RAID_CLASS_COLORS[select(2, UnitClass(unit))]
-		row.name:SetText(UnitName(unit))
-		row.name:SetTextColor(colors.r, colors.g, colors.b)
-		row.name:Show()
-		
-		row.timeLeft:SetText(self:GetTimeText(unit))
-		row.timeLeft:Show()
-		
-		row.unit = unit
-		
-		if( id >= 10 ) then
-			break
+	for _, macro in pairs(bloomyMacros) do
+		if( macro.enabled and macro.target ) then
+			table.insert(temp, macro.id)
 		end
 	end
 	
-	if( id == 0 ) then
+	-- Nothing to show, so hide
+	if( #(temp) == 0 ) then
 		self.frame:Hide()
 		return
 	end
 	
+	table.sort(temp, sortMacros)
+	
+	-- Update the display now
+	local total = 0
+	for i, id in pairs(temp) do
+		total = total + 1
+		
+		local macroData = bloomyMacros[id]
+		local row = self.frame.rows[total]
+
+		local colors = RAID_CLASS_COLORS[select(2, UnitClass(macroData.target))]
+		row.name:SetText(UnitName(macroData.target))
+		row.name:SetTextColor(colors.r, colors.g, colors.b)
+		row.name:Show()
+
+		row.timeLeft:SetText(self:GetTimeText(macroData.target))
+		row.timeLeft:Show()
+
+		row.target = macroData.target
+
+		if( i >= 10 ) then
+			break
+		end
+	end
+	
 	self.frame:SetWidth(110 + ((totalTracked - 1) * 28))
-	self.frame:SetHeight((12 * id) + 3)
+	self.frame:SetHeight((12 * #(temp)) + 3)
+end
+
+-- Configuration changed
+function Bloomy:Reload()
+	if( self.frame ) then
+		self.frame:SetScale(self.db.profile.scale)
+		OnShow(self.frame)
+	end
+	
+	-- Show frame if needed
+	instanceType = nil
+	self:ZONE_CHANGED_NEW_AREA()
 end

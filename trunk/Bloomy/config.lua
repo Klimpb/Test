@@ -1,4 +1,4 @@
-if( not Bloomy ) then return end
+if( not Bloomy or Bloomy.disabled ) then return end
 
 local Config = Bloomy:NewModule("Config")
 local L = BloomyLocals
@@ -96,6 +96,16 @@ local function loadOptions()
 				width = "full",
 				arg = "showName"
 			},
+			--[[
+			unitid = {
+				order = 1,
+				type = "toggle",
+				name = L["Use unitids to cast on instead of player names"],
+				desc = L["Sometimes you can run into issues with casting by player name instead of unitid, like Hunter pets with the same name. If you're noticing problems enable this."],
+				width = "full",
+				arg = "useUnits"
+			},
+			]]
 			scale = {
 				order = 2,
 				type = "range",
@@ -124,6 +134,16 @@ local function loadOptions()
 	options.args.profile.order = 2
 end
 
+--[[
+function test()
+	SlashCmdList["BLOOMY"]("add 1 Mayen")
+	SlashCmdList["BLOOMY"]("add 2 Akelda")
+	SlashCmdList["BLOOMY"]("add 1 Akelda")
+	SlashCmdList["BLOOMY"]("remove 1 Mayen")
+	SlashCmdList["BLOOMY"]("remove 2 Akelda")
+end
+]]
+
 -- Slash commands
 SLASH_BLOOMY1 = "/bloomy"
 SlashCmdList["BLOOMY"] = function(msg)
@@ -136,7 +156,15 @@ SlashCmdList["BLOOMY"] = function(msg)
 			self.db.profile.macros[id] = {}
 		end
 		
+		for _, playerName in pairs(self.db.profile.macros[id]) do
+			if( string.lower(playerName) == string.lower(name) ) then
+				self:Print(string.format(L["The player \"%s\" is already added to id \"%s\"."], name, id))
+				return
+			end
+		end
+		
 		table.insert(self.db.profile.macros[id], name)
+		
 		self:UpdateMacros()
 		self:UpdateFrame()
 		self:Print(string.format(L["Added \"%s\" to Bloomy ID \"%s\" order #%d."], name, id, #(self.db.profile.macros[id])))
@@ -148,7 +176,9 @@ SlashCmdList["BLOOMY"] = function(msg)
 		end
 		
 		for i=#(self.db.profile.macros[id]), 1, -1 do
-			table.remove(self.db.profile.macros[id], i)
+			if( string.lower(self.db.profile.macros[id][i]) == string.lower(name) ) then
+				table.remove(self.db.profile.macros[id], i)
+			end
 		end
 		
 		self:UpdateMacros()
@@ -181,7 +211,7 @@ SlashCmdList["BLOOMY"] = function(msg)
 		
 		if( self.frame:IsVisible() ) then
 			self.frame:Hide()
-		elseif( self.frame.rows[1].unit ) then
+		elseif( self.frame.rows[1].target ) then
 			self.frame:Show()
 		end
 	
