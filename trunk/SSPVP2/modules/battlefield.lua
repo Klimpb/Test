@@ -61,11 +61,11 @@ function BF:CHAT_MSG_BG_SYSTEM_NEUTRAL(event, msg)
 	if( string.match(msg, L["2 minute"]) ) then
 		SSOverlay:RegisterTimer("start", "timer", L["Starting: %s"], 120)
 	elseif( string.match(msg, L["1 minute"]) or string.match(msg, L["One minute"]) ) then
-		SSOverlay:RegisterTimer("start", "timer", L["Starting: %s"], 61)
+		SSOverlay:RegisterTimer("start", "timer", L["Starting: %s"], 60)
 	elseif( string.match(msg, L["30 seconds"]) or string.match(msg, L["Thirty seconds"]) ) then
-		SSOverlay:RegisterTimer("start", "timer", L["Starting: %s"], 31)
+		SSOverlay:RegisterTimer("start", "timer", L["Starting: %s"], 30)
 	elseif( string.match(msg, L["Fifteen seconds"]) ) then
-		SSOverlay:RegisterTimer("start", "timer", L["Starting: %s"], 16)
+		SSOverlay:RegisterTimer("start", "timer", L["Starting: %s"], 15)
 	end
 end
 
