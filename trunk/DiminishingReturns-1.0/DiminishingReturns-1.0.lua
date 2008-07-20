@@ -14,6 +14,11 @@ DR.trackedPlayers = DR.trackedPlayers or {}
 local DR_RESET_SECONDS = 18
 local trackedPlayers = DR.trackedPlayers
 
+-- Public APIs
+function DR:GetCategoryName(cat)
+	return cat and Data.TypeNames[cat] or nil
+end
+
 -- Track DR
 local function nextDR(diminished)
 	if( diminished == 1.0 ) then

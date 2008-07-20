@@ -187,3 +187,21 @@ Data.Spells = {
 	[18657] = "hibernate",
 	[18658] = "hibernate",
 }
+
+-- DR Category names
+Data.TypeNames = {
+	["disorient"] = "Disorients",
+	["fear"] = "Fears",
+	["ctrlstun"] = "Control Stuns",
+	["rndstun"] = "Random Stuns",
+	["cyclone"] = "Cyclone/Blind",
+	["ks"] = "Kidney Shot",
+	["imphs"] = "Imp Hamstring",
+	["chastise"] = "Chastise",
+	["scatters"] = "Scatter Shot",
+	["freezetrap"] = "Freeze Trap",
+	["dc"] = "Death Coil",
+	["entroots"] = "Entangling Roots",
+	["hibernate"] = "Hibernate",
+	["poly"] = "Polymorph",
+}
