@@ -7,7 +7,7 @@
 	2     Release: November 18th 2007
 ]]
 
-SSPVP = LibStub("AceAddon-3.0"):NewAddon("SSPVP", "AceEvent-3.0", "AceTimer-3.0")
+SSPVP = LibStub("AceAddon-3.0"):NewAddon("SSPVP", "AceConsole-3.0", "AceEvent-3.0", "AceTimer-3.0")
 
 local L = SSPVPLocals
 
@@ -65,9 +65,35 @@ function SSPVP:OnInitialize()
 	
 	self.db = LibStub:GetLibrary("AceDB-3.0"):New("SSPVPDB", self.defaults)
 		
+	self.OptionHouse = LibStub("OptionHouse-1.1")
 	self.revision = tonumber(string.match("$Revision$", "(%d+)")) or 0
 	self.revision = max(self.revision, SSPVPRevision)
 	
+	-- SSPVP slash commands
+	self:RegisterChatCommand("sspvp", function(input)
+		if( input == "suspend" ) then
+			if( suspendMod ) then
+				self:DisableSuspense()
+				self:CancelTimer("DisableSuspense", true)
+			else
+				suspendMod = true
+				self:Print(L["Auto join and leave has been suspended for the next 5 minutes, or until you log off."])
+				self:ScheduleTimer("DisableSuspense", 300)
+			end
+			
+			-- Update queue overlay if required
+			SSPVP:UPDATE_BATTLEFIELD_STATUS()
+		elseif( input == "ui" ) then
+			SSPVP.OptionHouse:Open("SSPVP2")
+		else
+			DEFAULT_CHAT_FRAME:AddMessage(L["SSPVP slash commands"])
+			DEFAULT_CHAT_FRAME:AddMessage(L[" - suspend - Suspends auto join and leave for 5 minutes, or until you log off."])
+			DEFAULT_CHAT_FRAME:AddMessage(L[" - ui - Opens the OptionHouse configuration for SSPVP."])
+			DEFAULT_CHAT_FRAME:AddMessage(L[" - Other slash commands"])
+			DEFAULT_CHAT_FRAME:AddMessage(L[" - /arena - Easy Arena calculations and conversions"])
+		end
+	end)
+
 	-- Not the funnest method, but Blizzard requires us to call this to get arena team info
 	for i=1, MAX_ARENA_TEAMS do
 		ArenaTeamRoster(i)
@@ -89,8 +115,8 @@ function SSPVP:Reload()
 end
 
 function SSPVP:DisableSuspense()
-	if( self.suspended ) then
-		self.suspended = nil
+	if( suspendMod ) then
+		suspendMod = nil
 		self:Print(L["Suspension has been removed, you will now auto join and leave again."])
 	end
 end
