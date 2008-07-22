@@ -87,30 +87,28 @@ local function onClick(self)
 	end
 end
 
-local function formatShortTime(totalTime)
-	local hour = ""
+local function formatShortTime(seconds)
+	local hours = 0
 	local minutes = 0
-	local seconds = 0
-	
+	if( seconds >= 3600 ) then
+		hours = floor(seconds / 3600)
+		seconds = mod(seconds, 3600)
+	end
 
-	-- Hours
-	if( totalTime >= 3600 ) then
-		hour = floor(totalTime / 3600) .. ":"
-		totalTime = mod(totalTime, 3600)
+	if( seconds >= 60 ) then
+		minutes = floor(seconds / 60)
+		seconds = mod(seconds, 60)
 	end
 	
-	-- Minutes
-	if( totalTime >= 60 ) then
-		minutes = floor(totalTime / 60)
-		totalTime = mod(totalTime, 60)
+	if( seconds < 0 ) then
+		seconds = 0
 	end
-	
-	-- Seconds
-	if( totalTime > 0 ) then
-		seconds = totalTime
+
+	if( hours > 0 ) then
+		return string.format("%d:%02d:%02d", hours, minutes, seconds)
+	else
+		return string.format("%02d:%02d", minutes, seconds)
 	end
-	
-	return string.format("%s%02d:%02d", hour, minutes, seconds)
 end
 
 local function formatTime(seconds)
@@ -212,7 +210,6 @@ function SSOverlay:UpdateOverlay()
 		resortRows = nil
 	end
 	
-	
 	for id, data in pairs(rows) do
 		if( id > MAX_ROWS ) then
 			break
@@ -223,8 +220,7 @@ function SSOverlay:UpdateOverlay()
 			row = self:CreateRow()
 		end
 		
-		-- Text rows just need static text no fancy stuff
-		-- timers and elapsed rows actually need an OnUpdate
+		-- Text rows just need static text no fancy stuff timers and elapsed rows actually need an OnUpdate
 		if( data.type == "text" or data.type == "catText" ) then
 			row.text:SetText(data.text)
 			row:SetScript("OnUpdate", nil)
