@@ -1,0 +1,8 @@
+## Interface: 20400
+## Title: Damn Chat Tabs
+## Notes: Lets you disable chat tabs showing up
+## Version: $Revision$
+## Author: Mayen
+## SavedVariables: DamnChatTabsDB
+
+DamnChatTabs.lua
