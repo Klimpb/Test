@@ -1,0 +1,23 @@
+## Interface: 20300
+## Title: Afflicted (Talents)
+## Version: $Revision: 747 $
+## Author: Mayen
+## Notes: Attempts to improve the accuracy of timers using talent information from TalentGuess-1.0
+## SavedVariables: AfflictedTalentsDB
+## OptionalDeps: LibStub, Ace3, TalentGuess-1.0
+## RequiredDeps: Afflicted
+
+lib\LibStub-1.0\LibStub-1.0.xml
+lib\CallbackHandler-1.0\CallbackHandler-1.0.xml
+lib\AceAddon-3.0\AceAddon-3.0.xml
+lib\AceDB-3.0\AceDB-3.0.xml
+lib\AceEvent-3.0\AceEvent-3.0.xml
+lib\AceHook-3.0\AceHook-3.0.xml
+lib\TalentGuess-1.0\TalentGuess-1.0.xml
+
+localization.enUS.lua
+localization.deDE.lua
+localization.frFR.lua
+
+spells.lua
+AfflictedTalents.lua
