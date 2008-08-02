@@ -37,6 +37,8 @@ SSPVPLocals = {
 	["(L) %s"] = "(L) %s",
 	["Rating"] = "Rating",
 	
+	["Unknown"] = "Unknown",
+	
 	["Releasing..."] = "Releasing...",
 	["Using %s..."] = "Using %s...",
 	
