@@ -5,4 +5,4 @@
 ## OptionalDeps: LibStub
 
 LibStub.lua
-GTB.xml
+GTB-1.0.xml
