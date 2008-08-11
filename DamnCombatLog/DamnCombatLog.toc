@@ -1,9 +1,0 @@
-## Interface: 20400
-## Title: Damn combat log
-## Notes: Cleans up the combat log a bit
-## Author: Mayen
-## Version: $Revision: 599 $
-## LoadWith: Blizzard_CombatLog
-## SavedVariables: DCL_Config
-
-DamnCombatLog.lua

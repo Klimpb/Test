@@ -1,7 +1,0 @@
-## Interface: 20300
-## Title: Damn Target Buffs
-## Notes: Small addon that makes the buff and debuff resizing a bit more sane
-## Version: $Revision$
-## Author: Mayen
-
-DamnTargetBuffs.lua
