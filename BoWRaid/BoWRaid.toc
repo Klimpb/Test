@@ -1,8 +1,0 @@
-## Interface: 20003
-## Title: BoWRaid
-## Notes: Raid mod
-## DefaultState: enabled
-## SavedVariables: BWRaid_Config
-## OptionalDeps: Clique
-## X-SSUI: bwr
-BoWRaid.xml

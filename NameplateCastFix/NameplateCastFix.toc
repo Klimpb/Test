@@ -1,7 +1,0 @@
-## Interface: 20300
-## Title: Nameplate cast fix
-## Notes: Fix the nameplate casting bar
-## Version: $Revision: 322 $
-## Author: Mayen
-
-NameplateCastFix.lua
