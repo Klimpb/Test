@@ -663,7 +663,7 @@ function SimpleBB:UpdateAuras(type, func)
 		buff.icon = texture
 		buff.buffType = debuffType
 		buff.stack = count or 0
-		buff.startSeconds = duration or self:GetStartTime(type, name, rank, timeLeft - GetTime())
+		buff.startSeconds = duration or timeLeft and self:GetStartTime(type, name, rank, timeLeft - GetTime()) or 0
 		buff.endTime = timeLeft
 		buff.name = name
 		buff.rank = tonumber(string.match(rank, "(%d+)"))
