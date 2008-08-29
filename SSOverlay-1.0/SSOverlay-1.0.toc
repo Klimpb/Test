@@ -1,0 +1,7 @@
+## Interface: 20400
+## Title: Lib: SSOverlay-1.0
+## Notes: Overlays that display timers and static data as text instead of bars
+## Author: Mayen
+
+LibStub.lua
+SSOverlay-1.0.xml
