@@ -8,6 +8,7 @@ local L = SimpleBBLocals
 
 local SML, MAINHAND_SLOT, OFFHAND_SLOT
 local mainEnabled, offEnabled
+
 local frame = CreateFrame("Frame")
 
 
@@ -19,6 +20,8 @@ function SimpleBB:OnInitialize()
 			showTemp = true,
 			showExample = false,
 			
+			buffTimes = {["buffs"] = {}, ["tempBuffs"] = {}, ["debuffs"] = {}},
+
 			groups = {
 				buffs = {
 					tempColor = {r = 0.5, g = 0.0, b = 0.5},
@@ -75,7 +78,7 @@ function SimpleBB:OnInitialize()
 	-- Player buff/debuff rows
 	self.buffs = {}
 	self.debuffs = {}
-	self.activeTrack = {untilCanceled = true, type = "tracking"}
+	self.activeTrack = {untilCancelled = true, sortID = "z", type = "tracking"}
 	self.tempBuffs = {[1] = {}, [2] = {}}
 	
 	self.groups = {}
@@ -194,7 +197,7 @@ function SimpleBB:CreateGroup(name)
 end
 
 -- Updates the actual positioning of things
-local function updateBar(row, group, config)
+local function updateBar(id, row, display, config)
 	local texture = SML:Fetch(SML.MediaType.STATUSBAR, config.texture)
 	row:SetWidth(config.width)
 	row:SetHeight(config.height)
@@ -208,7 +211,7 @@ local function updateBar(row, group, config)
 		row.bg:SetStatusBarColor(config.color.r, config.color.g, config.color.b, 0.30)
 	end
 	
-	row.icon:SetPoint("TOPLEFT", row, "TOP" .. config.iconPosition, group.iconPad, 0)
+	row.icon:SetPoint("TOPLEFT", row, "TOP" .. config.iconPosition, display.iconPad, 0)
 	row.icon:SetHeight(config.height)
 	row.icon:SetWidth(config.height)
 	
@@ -223,6 +226,19 @@ local function updateBar(row, group, config)
 	row.text:SetShadowColor(0, 0, 0, 1)
 	row.text:SetHeight(config.height)
 	row.text:SetWidth(config.width - 40)
+	
+	-- Position
+	if( id > 1 ) then
+		if( not config.growUp ) then
+			row:SetPoint("TOPLEFT", display.rows[id - 1], "BOTTOMLEFT", 0, -config.spacing)
+		else
+			row:SetPoint("BOTTOMLEFT", display.rows[id - 1], "TOPLEFT", 0, config.spacing)
+		end
+	elseif( config.growUp ) then
+		row:SetPoint("BOTTOMLEFT", display, "TOPLEFT", display.barOffset, 0)
+	else
+		row:SetPoint("TOPLEFT", display, "BOTTOMLEFT", display.barOffset, 0)
+	end
 end
 
 -- Reload everything in positioning and such
@@ -245,8 +261,8 @@ function SimpleBB:ReloadBars()
 		end
 		
 		-- Update bars
-		for _, row in pairs(display.rows) do
-			updateBar(row, display, config)
+		for id, row in pairs(display.rows) do
+			updateBar(id, row, display, config)
 		end
 	end
 end
@@ -285,9 +301,7 @@ local function OnClick(self, mouseButton)
 		return
 	end
 	
-	if( self.type == "buffs" or self.type == "debuffs" ) then
-		CancelPlayerBuff(self.data.buffIndex)
-	elseif( self.type == "tempBuffs" ) then
+	if( self.type == "tempBuffs" ) then
 		CancelItemTempEnchantment(self.data.slotID - 15)
 	elseif( self.type == "tracking" ) then
 		ToggleDropDownMenu(1, nil, MiniMapTrackingDropDown, self, 0, -5)
@@ -351,10 +365,10 @@ function SimpleBB:CreateBar(parent)
 	frame.text:SetJustifyV("CENTER")
 	frame.text:SetPoint("TOPLEFT", frame, "TOPLEFT", 2, 0)
 	
-	-- Update positioning
-	updateBar(frame, parent, self.db.profile.groups[parent.name])
+	table.insert(parent.rows, frame)
 	
-	return frame
+	-- Update positioning
+	updateBar(#(parent.rows), frame, parent, self.db.profile.groups[parent.name])
 end
 
 -- Update visuals
@@ -388,10 +402,14 @@ local function OnUpdate(self)
 	end
 end
 
+
 -- Update a single row
 local buffTypes = {
 	buff = {r = 0.30, g = 0.50, b = 1.0},
 }
+
+-- Setup a temporary table we can toss everything into
+local tempRows = {}
 
 local function updateRow(row, config, data)
 	-- Set name/rank
@@ -404,7 +422,7 @@ local function updateRow(row, config, data)
 	else
 		row.text:SetText(data.name)
 	end
-	
+		
 	-- Set icon
 	row.icon:SetWidth(config.height)
 	row.icon:SetHeight(config.height)
@@ -414,6 +432,7 @@ local function updateRow(row, config, data)
 	local color
 	if( data.type == "tempBuffs" ) then
 		color = config.tempColor
+		row.iconBorder:SetTexCoord(0, 0, 0, 0)
 		row.iconBorder:SetTexture("Interface\\Buttons\\UI-TempEnchant-Border")
 		row.iconBorder:Show()
 	elseif( data.type == "debuffs" or data.buffIndex == -1 ) then
@@ -446,159 +465,153 @@ local function updateRow(row, config, data)
 	row.enabled = true
 	row.type = data.type
 	row.data = data
-		
+	
 	-- Don't use an on update if it has no timer
-	if( not data.untilCanceled ) then
+	if( not data.untilCancelled ) then
 		row.endTime = data.endTime or 0
 		row.secondsLeft = row.endTime - time
 		row.lastUpdate = time
 
 		row:SetMinMaxValues(0, data.startSeconds)
 		row:SetScript("OnUpdate", OnUpdate)
+
+		row.timer:SetHeight(config.height)
+		row.text:SetWidth(config.width - 40)
 		row.timer:Show()
 	else
-		row.endTime = 0
-		
 		row:SetScript("OnUpdate", nil)
 		row:SetMinMaxValues(0, 1)
 		row:SetValue(config.fillTimeless and 1 or 0)
+		row.text:SetWidth(config.width)
 		row.timer:Hide()
 	end
 end
 
--- Sort rows
-local function sortRows(a, b)
-	if( not a.enabled ) then
-		return false
-	elseif( not b.enabled ) then
-		return true
-	end
-	
-	if( a.data.type == "tracking" ) then
-		return true
-	elseif( b.data.type == "tracking" ) then
-		return false
-	end
-	
-	if( a.data.untilCanceled and b.data.untilCanceled ) then
-		return a.data.name < b.data.name
-	end
-	
-	return a.sortID > b.sortID
-end
+-- This is fairly ugly, I'm not exactly sure how I want to clean it up yet.
+-- I think I'll go with some sort of single index I can sort by, and manipulate that based on setting
+-- In fact, maybe I should turn this into a loadstring so I don't have to repeat the code, that also means
+-- I don't have to load the functions when you probably won't need them 
+local sorting = {
+	["timeleft"] = function(a, b)
+		if( not b or not a.enabled ) then
+			return false
+		elseif( not b.enabled ) then
+			return true
+		end
+		
+		if( a.type == "tracking" ) then
+			return true
+		elseif( b.type == "tracking" ) then
+			return false
+		end
+		
+		if( a.untilCancelled and b.untilCancelled ) then
+			return a.name < b.name
+		elseif( a.untilCancelled ) then
+			return true
+		elseif( b.untilCancelled ) then
+			return false
+		end
+
+		if( a.type == "tempBuffs" and b.type == "tempBuffs" ) then
+			return a.slotID < b.slotID
+		elseif( a.type == "tempBuffs" ) then
+			return true
+		elseif( b.type == "tempBuffs" ) then
+			return false
+		end
+		
+		return a.endTime > b.endTime
+
+	end,
+	["index"] = function(a, b)
+		if( not b or not a.enabled ) then
+			return false
+		elseif( not b.enabled ) then
+			return true
+		end
+		
+		if( a.type == "tracking" ) then
+			return true
+		elseif( b.type == "tracking" ) then
+			return false
+		end
+		
+		if( a.type == "tempBuffs" and b.type == "tempBuffs" ) then
+			return a.slotID < b.slotID
+		elseif( a.type == "tempBuffs" ) then
+			return true
+		elseif( b.type == "tempBuffs" ) then
+			return false
+		end
+		
+		return a.buffIndex < b.buffIndex
+	end,
+}
+
 
 -- Update display for the passed time
 function SimpleBB:UpdateDisplay(displayID)
 	local display = self.groups[displayID]
 	local buffs = self[displayID]
 	local config = self.db.profile.groups[displayID]
-	
-	-- If we're in the process of moving the frame, stop updating until it's done to prevent any issues
-	if( display.isMoving ) then
-		display.queueUpdate = true
-		return
-	end
-	
-	-- Reset all rows quickly
-	for _, row in pairs(display.rows) do
-		row.enabled = nil
-		row.data = nil
 		
-		row:ClearAllPoints()
-		row:Hide()
+	-- Clear table
+	for i=#(tempRows), 1, -1 do
+		table.remove(tempRows, i)
 	end
 	
 	-- Create buffs
-	local buffID = 1
 	for id, data in pairs(self[displayID]) do
 		if( data.enabled ) then
-			if( not display.rows[buffID] ) then
-				display.rows[buffID] = self:CreateBar(display)
-			end
-
-			local row = display.rows[buffID]
-			updateRow(row, config, data)
-
-			if( data.untilCanceled ) then
-				row.sortID = string.format("8%s", data.name)
-			else
-				row.sortID = string.format("6%s", row.endTime)
-			end
-
-			buffID = buffID + 1
+			data.type = displayID
+			table.insert(tempRows, data)
 		end
 	end
 	
 	-- Merge temp weapon enchants and tracking into buffs
 	if( displayID == "buffs") then
 		-- Tracking
-		if( self.activeTrack.name ) then
-			if( not display.rows[buffID] ) then
-				display.rows[buffID] = self:CreateBar(display)
-			end
-
-			local row = display.rows[buffID]
-			updateRow(row, config, self.activeTrack)
-			buffID = buffID + 1
+		if( self.activeTrack.enabled ) then
+			table.insert(tempRows, self.activeTrack)
 		end
 
 		-- Temp weapon enchants
 		for id, data in pairs(self.tempBuffs) do
 			if( data.enabled ) then
-				if( not display.rows[buffID] ) then
-					display.rows[buffID] = self:CreateBar(display)
-				end
-
-				local row = display.rows[buffID]
-				updateRow(row, config, data)
-
-				row.sortID = string.format("7%s", row.endTime)
-				buffID = buffID + 1
+				data.type = "tempBuffs"
+				table.insert(tempRows, data)
 			end
 		end
 	end
 	
-	-- Example for congiration
+	-- Example for configuration
 	if( self.db.profile.showExample ) then
-		if( not display.rows[buffID] ) then
-			display.rows[buffID] = self:CreateBar(display)
-		end
-
-		local row = display.rows[buffID]
-		updateRow(row, config, self.example[displayID])
-		
-		row.sortID = string.format("%s", self.example[displayID].endTime)
-		buffID = buffID + 1
+		table.insert(tempRows, self.example[displayID])
 	end
-	
+		
 	-- Nothing to show
-	if( buffID == 1 ) then
+	if( #(tempRows) == 0 ) then
 		display:Hide()
 		return
+	elseif( #(tempRows) > #(display.rows) ) then
+		for id in pairs(tempRows) do
+			if( not display.rows[id] ) then
+				self:CreateBar(display)
+			end
+		end
 	end
-	
+
 	display:Show()
-	
-	-- Sort
-	table.sort(display.rows, sortRows)
+
+	table.sort(tempRows, sorting[config.sortBy])
 	
 	-- Position
 	local lastRow = 0
 	for id, row in pairs(display.rows) do
-		if( row.enabled and id <= config.maxRows ) then
-			-- Position
-			if( id > 1 ) then
-				if( not config.growUp ) then
-					row:SetPoint("TOPLEFT", display.rows[id - 1], "BOTTOMLEFT", 0, -config.spacing)
-				else
-					row:SetPoint("BOTTOMLEFT", display.rows[id - 1], "TOPLEFT", 0, config.spacing)
-				end
-			elseif( config.growUp ) then
-				row:SetPoint("BOTTOMLEFT", display, "TOPLEFT", display.barOffset, 0)
-			else
-				row:SetPoint("TOPLEFT", display, "BOTTOMLEFT", display.barOffset, 0)
-			end
-			
+		local buff = tempRows[id]
+		if( buff and buff.enabled and id <= config.maxRows ) then
+			updateRow(row, config, buff)
 			lastRow = id
 			row:Show()
 		else
@@ -622,21 +635,20 @@ function SimpleBB:UpdateDisplay(displayID)
 end
 
 -- Get the start seconds of this buff/debuff/ect
-local buffTimes = {buffs = {}, debuffs = {}, tempBuffs = {}}
 function SimpleBB:GetStartTime(type, name, rank, timeLeft)
 	if( not name ) then
 		return timeLeft
 	end
 	
 	local bID = name .. (rank or "")
-	if( buffTimes[type][bID] ) then
-		if( timeLeft < buffTimes[type][bID] ) then
-			timeLeft = buffTimes[type][bID]
+	if( self.db.profile.buffTimes[type][bID] ) then
+		if( timeLeft < self.db.profile.buffTimes[type][bID] ) then
+			timeLeft = self.db.profile.buffTimes[type][bID]
 		else
-			buffTimes[type][bID] = timeLeft
+			self.db.profile.buffTimes[type][bID] = timeLeft
 		end
 	else
-		buffTimes[type][bID] = timeLeft
+		self.db.profile.buffTimes[type][bID] = timeLeft
 	end
 		
 	return timeLeft
@@ -644,11 +656,12 @@ end
 
 -- Update auras
 function SimpleBB:UpdateAuras(type, func)
-	for _, data in pairs(self[type]) do data.enabled = nil; data.untilCanceled = nil; end
+	for _, data in pairs(self[type]) do data.enabled = nil; data.untilCancelled = nil; end
 		
+	local time = GetTime()
 	local buffID = 1
 	while( true ) do
-		local name, rank, texture, count, debuffType, duration, timeLeft, untilCanceled = func("player", buffID)
+		local name, rank, texture, count, debuffType, duration, endTime, isMine, isStealable = func("player", buffID)
 		if( not name ) then break end
 		
 		if( not self[type][buffID] ) then
@@ -659,12 +672,13 @@ function SimpleBB:UpdateAuras(type, func)
 		buff.enabled = true
 		buff.type = type
 		buff.buffIndex = buffID
-		buff.untilCanceled = untilCanceled
+		buff.untilCancelled = duration == 0 and endTime == 0
 		buff.icon = texture
 		buff.buffType = debuffType
 		buff.stack = count or 0
-		buff.startSeconds = duration or timeLeft and self:GetStartTime(type, name, rank, timeLeft - GetTime()) or 0
-		buff.endTime = timeLeft
+		--buff.startSeconds = duration or endTime and self:GetStartTime(type, name, rank, endTime - time) or 0
+		buff.startSeconds = duration
+		buff.endTime = endTime
 		buff.name = name
 		buff.rank = tonumber(string.match(rank, "(%d+)"))
 		
@@ -677,7 +691,7 @@ function SimpleBB:UpdateTracking()
 		return
 	end
 	
-	self.activeTrack.name = nil
+	self.activeTrack.enabled = nil
 	
 	for i=1, GetNumTrackingTypes() do
 		local name, texture, active, type = GetTrackingInfo(i)
@@ -685,13 +699,15 @@ function SimpleBB:UpdateTracking()
 			self.activeTrack.name = name
 			self.activeTrack.icon = texture
 			self.activeTrack.trackingType = type
+			self.activeTrack.enabled = true
 		end
 	end
 	
-	if( not self.activeTrack.name ) then
+	if( not self.activeTrack.enabled ) then
 		self.activeTrack.name = L["None"]
 		self.activeTrack.icon = GetTrackingTexture()
 		self.activeTrack.trackingType = nil
+		self.activeTrack.enabled = true
 	end
 	
 	self:UpdateDisplay("buffs")
@@ -724,14 +740,15 @@ end
 
 -- Update temp weapon enchants
 function SimpleBB:UpdateTempEnchant(id, slotID, hasEnchant, timeLeft, charges)
+	local tempBuff = self.tempBuffs[id]
 	if( not hasEnchant ) then
-		self.tempBuffs[id].enabled = nil
-		self.tempBuffs[id].untilCanceled = nil
+		tempBuff.enabled = nil
+		tempBuff.untilCancelled = nil
 		return
 	end
 	
 	local name, rank = self:ParseName(slotID)
-	local tempBuff = self.tempBuffs[id]
+	
 	-- When the players entering/leaving the world, we get a bad return on the name/rank
 	-- So we only update it if we found one, and thus fixes it!
 	if( name ) then
@@ -745,6 +762,7 @@ function SimpleBB:UpdateTempEnchant(id, slotID, hasEnchant, timeLeft, charges)
 	tempBuff.type = "tempBuffs"
 	tempBuff.slotID = slotID
 
+	tempBuff.timeLeft = timeLeft
 	tempBuff.endTime = GetTime() + timeLeft
 	tempBuff.startSeconds = self:GetStartTime("tempBuffs", name, rank, timeLeft)
 
@@ -754,7 +772,9 @@ end
 
 -- Update player buff/debuffs
 function SimpleBB:UNIT_AURA(event, unit)
-	if( unit ~= "player" ) then return end
+	if( unit ~= "player" ) then
+		return
+	end
 	
 	self:UpdateAuras("buffs", UnitBuff)
 	self:UpdateAuras("debuffs", UnitDebuff)
