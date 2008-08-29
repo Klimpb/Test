@@ -7,10 +7,13 @@ SSFlagsLocals = {
 	
 	["Held Time: %s"] = "Held Time: %s",
 	["Capture Time: %s"] = "Capture Time: %s",
+	["Flag Respawn: %s"] = "Flag Respawn: %s",
 	
 	["Cannot target %s, in combat"] = "Cannot target %s, in combat",
 	["Targetting %s"] = "Targetting %s",
 	["%s is out of range"] = "%s is out of range",
+	
+	["Timers"] = "Timers",
 	
 	-- Flag matches
 	["was picked up by (.+)!"] = "was picked up by (.+)!",
@@ -24,13 +27,21 @@ SSFlagsLocals = {
 
 	-- GUI
 	["Flags"] = "Flags",
+	["Overlay"] = "Overlay",
 	
 	["Show flag carrier"] = "Show flag carrier",
 	["Show carrier health when available"] = "Show carrier health when available",
 	["Color carrier name by class"] = "Color carrier name by class",
 	["Text to execute when clicking the carrier button"] = "Text to execute when clicking the carrier button",
 
+	["Show flag capture times on overlay"] = "Show flag capture times on overlay",
+	["Show flag respawn time on overlay"] = "Show flag respawn time on overlay",
+
 	-- Slash commands
 	["SSPVP3 module slash commands"] = "SSPVP3 module slash commands",
 	["/ssflags - Flag configuration for battlegrounds like WSG and EoTS."] = "/ssflags - Flag configuration for battlegrounds like WSG and EoTS.",
 }
+
+BINDING_HEADER_SSFLAGS = "SSFlags";
+BINDING_NAME_ETARFLAG = "Target enemy flag carrier";
+BINDING_NAME_FTARFLAG = "Target friendly flag carrier";

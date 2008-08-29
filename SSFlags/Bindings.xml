@@ -1,0 +1,8 @@
+<Bindings>
+	<Binding name="ETARFLAG" header="SSFLAGS">
+	-- FooBar
+	</Binding>
+	<Binding name="FTARFLAG">
+	-- FooBar
+	</Binding>
+</Bindings>
