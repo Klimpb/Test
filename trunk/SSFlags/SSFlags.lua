@@ -6,8 +6,10 @@ local carriers = {["Alliance"] = {}, ["Horde"] = {}}
 local buttons = {}
 
 local raidUnits, raidTargetUnits, partyUnits, partyTargetUnits = {}, {}, {}, {}
-
 local instanceType, queueReposition, queueUpdate, queueStatus, queueBindings
+local Overlay
+
+local respawnTimes = {["wsg"] = 21, ["eots"] = 10}
 
 function SSFlags:OnInitialize()
 	self.defaults = {
@@ -16,16 +18,16 @@ function SSFlags:OnInitialize()
 				enabled = true,
 				color = true,
 				health = true,
-				--respawn = true,
-				--capture = true,
+				respawn = true,
+				capture = true,
 				macro = "/targetexact *name",
 			},
 			eots = {
 				enabled = true,
 				color = true,
 				health = true,
-				--respawn = true,
-				--capture = true,
+				respawn = true,
+				capture = true,
 				macro = "/targetexact *name",
 			},
 		},
@@ -39,6 +41,11 @@ function SSFlags:OnInitialize()
 	SSPVP3.Flags = SSFlags
 	
 	table.insert(SSPVP3.Slash, L["/ssflags - Flag configuration for battlegrounds like WSG and EoTS."])
+	
+	-- Load overlay
+	Overlay = LibStub("SSOverlay-1.0")
+	Overlay:RegisterCategory("timer", L["Timers"], 20)
+	Overlay:RegisterDB(self)
 	
 	-- Store these so we don't have to keep concating 500 times
 	for i=1, MAX_RAID_MEMBERS do
@@ -60,30 +67,19 @@ end
 
 -- Check if we're in WSG or EoTS
 function SSFlags:ZONE_CHANGED_NEW_AREA()
-	local type = select(2, IsInInstance())
+	local zone = GetRealZoneText() or ""
+	local abbrev
+	if( zone == L["Warsong Gulch"] ) then
+		abbrev = "wsg"
+	elseif( zone == L["Eye of the Storm"] ) then
+		abbrev = "eots"
+	end
 
-	if( type == "pvp" and type ~= instanceType ) then
-		local zone = GetRealZoneText() or ""
-		
-		local abbrev
-		if( zone == L["Warsong Gulch"] ) then
-			abbrev = "wsg"
-		elseif( zone == L["Eye of the Storm"] ) then
-			abbrev = "eots"
-		end
-		
-		if( abbrev ) then
-			instanceType = type
-			self:Enable(abbrev)
-		end
-		return
-	
-	-- Left a pvp zone
-	elseif( instanceType == "pvp" and type ~= instanceType and self.activeBF ) then
+	if( not self.activeBF and abbrev ) then
+		self:Enable(abbrev)
+	elseif( self.activeBF and not abbrev ) then
 		self:Disable()
 	end
-	
-	instanceType = type
 end
 
 -- Joined a battlefield that uses flags
@@ -113,7 +109,8 @@ function SSFlags:Enable(abbrev)
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_ALLIANCE", "ParseMessage")
 	self:RegisterEvent("CHAT_MSG_BG_SYSTEM_NEUTRAL", "ParseMessage")
 	self:RegisterEvent("UPDATE_BATTLEFIELD_SCORE")
-	--self:RegisterEvent("UPDATE_BINDINGS")
+	self:RegisterEvent("UPDATE_BINDINGS")
+	self:UPDATE_BINDINGS()
 	
 	if( self.db.profile[abbrev].health ) then
 		self:RegisterEvent("UNIT_HEALTH")
@@ -140,7 +137,7 @@ function SSFlags:Disable()
 	self.frame:Hide()
 	
 	-- Clear overlay
-	SSOverlay:RemoveCategory("timer")
+	Overlay:RemoveCategory("timer")
 	
 	self:UnregisterAllEvents()
 	self:OnEnable()
@@ -227,6 +224,17 @@ function SSFlags:StripServer(text)
 	return name
 end
 
+function SSFlags:GetFactionColor(faction)
+	if( faction == "Alliance" ) then
+		return ChatTypeInfo["BG_SYSTEM_ALLIANCE"]
+	elseif( faction == "Horde" ) then
+		return ChatTypeInfo["BG_SYSTEM_HORDE"]
+	end
+	
+	return ChatTypeInfo["BG_SYSTEM_NEUTRAL"]
+end
+
+
 -- Parse event for changes
 function SSFlags:ParseMessage(event, msg)
 	-- More sane for us to do it here
@@ -274,6 +282,15 @@ end
 
 -- Flag captured = time reset as well
 function SSFlags:Captured(faction)
+	if( self.db.profile[self.activeBF].respawn and respawnTimes[self.activeBF] ) then
+		Overlay:RegisterTimer("respawn", "timer", L["Flag Respawn: %s"], respawnTimes[self.activeBF], self:GetFactionColor(faction))
+	end
+	
+	Overlay:RemoveRow(faction .. "time")
+	if( carriers[faction].time ) then
+		Overlay:RegisterText(faction .. "capture", "timer", string.format(L["Capture Time: %s"], SecondsToTime(GetTime() - carriers[faction].time)), SSPVP:GetFactionColor(faction))
+	end
+
 	-- Clear out
 	carriers[faction].time = nil
 	carriers[faction].name = nil
@@ -285,7 +302,8 @@ end
 function SSFlags:Dropped(faction)
 	carriers[faction].name = nil
 	carriers[faction].health = nil
-	
+	Overlay:RemoveRow(faction .. "time")
+
 	self:Hide(faction)
 end
 
@@ -293,6 +311,7 @@ end
 function SSFlags:Returned(faction)
 	carriers[faction].time = nil
 	carriers[faction].name = nil
+	Overlay:RemoveRow(faction .. "time")
 end
 
 function SSFlags:PickUp(faction, name)
@@ -303,6 +322,7 @@ function SSFlags:PickUp(faction, name)
 		carriers[faction].time = GetTime()
 	end
 	
+	Overlay:RegisterElapsed(faction .. "time", "timer", L["Held Time: %s"], GetTime() - carriers[faction].time, SSFlags:GetFactionColor(faction))
 	self:Show(faction)
 end
 
@@ -387,12 +407,14 @@ function SSFlags:PositionButtons()
 	end
 
 	for i=1, NUM_ALWAYS_UP_UI_FRAMES do
-		local dynamicIcon = getglobal(string.format("AlwaysUpFrame%dDynamicIconButton", i))
+		local dynamicIcon = getglobal(string.format("AlwaysUpFrame%dDynamicIconButtonIcon", i))
 		if( dynamicIcon and buttons[i] ) then
-			if( dynamicIcon:IsVisible() ) then
+			if( dynamicIcon:GetTexture() ) then
+				buttons[i]:ClearAllPoints()
 				buttons[i]:SetPoint("LEFT", UIParent, "BOTTOMLEFT", dynamicIcon:GetRight() + 6, dynamicIcon:GetTop() - 13)
 			else
 				local text = getglobal(string.format("AlwaysUpFrame%dText", i))
+				buttons[i]:ClearAllPoints()
 				buttons[i]:SetPoint("LEFT", UIParent, "BOTTOMLEFT", text:GetRight() + 8, text:GetTop() - 5)
 			end
 		end
@@ -431,7 +453,40 @@ function SSFlags:PLAYER_REGEN_ENABLED()
 	
 	if( queueBindings ) then
 		queueBindings = nil
-		--SSFlags:UPDATE_BINDINGS()
+		SSFlags:UPDATE_BINDINGS()
+	end
+end
+
+-- BINDINGS
+function SSFlags:UPDATE_BINDINGS()
+	if( InCombatLockdown() ) then
+		queueBindings = true
+		return
+	end
+
+	local friendlyFaction, enemyFaction
+	if( UnitFactionGroup("player") == "Alliance" ) then
+		enemyFaction = "Horde"
+		friendlyFaction = "Alliance"
+	else
+		enemyFaction = "Alliance"
+		friendlyFaction = "Horde"
+	end
+	
+	-- Enemy carrier
+	local bindKey = GetBindingKey("ETARFLAG")
+	if( bindKey ) then
+		SetOverrideBindingClick(self[enemyFaction], false, bindKey, self[enemyFaction]:GetName())
+	else
+		ClearOverrideBindings(self[enemyFaction])
+	end
+	
+	-- Friendly carrier
+	bindKey = GetBindingKey("FTARFLAG")
+	if( bindKey ) then
+		SetOverrideBindingClick(self[friendlyFaction], false, bindKey, self[friendlyFaction]:GetName())
+	else
+		ClearOverrideBindings(self[friendlyFaction])
 	end
 end
 

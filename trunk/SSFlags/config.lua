@@ -29,20 +29,32 @@ local function createFlagOptions(text, bg)
 				name = L["Show flag carrier"],
 				width = "full",
 			},
+			respawn = {
+				order = 2,
+				type = "toggle",
+				name = L["Show flag respawn time on overlay"],
+				width = "full",
+			},
+			capture = {
+				order = 3,
+				type = "toggle",
+				name = L["Show flag capture times on overlay"],
+				width = "full",
+			},
 			color = {
-				order = 1,
+				order = 4,
 				type = "toggle",
 				name = L["Color carrier name by class"],
 				width = "full",
 			},
 			health = {
-				order = 1,
+				order = 5,
 				type = "toggle",
 				name = L["Show carrier health when available"],
 				width = "full",
 			},
 			macro = {
-				order = 1,
+				order = 6,
 				type = "input",
 				multiline = true,
 				name = L["Text to execute when clicking the carrier button"],
@@ -71,6 +83,11 @@ function Config:LoadOptions()
 				data.Config:LoadOptions()
 			end
 		end
+	end
+	
+	-- Load overlay configuration
+	if( not SSPVP3.options.args.overlay ) then
+		SSPVP3.options.args.overlay = LibStub("SSOverlay-1.0"):LoadOptions()
 	end
 	
 	-- Already loaded
