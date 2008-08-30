@@ -583,11 +583,11 @@ end)
 
 InterfaceOptions_AddCategory(progress)
 
--- DEBUG
---SLASH_OPEN1 = "/open"
---SlashCmdList["OPEN"] = function()
---	InterfaceOptionsFrame_OpenToFrame(parent)
---end
+-- Open the configuration panel
+SLASH_BAZAAR1 = "/bazaar"
+SlashCmdList["BAZAAR"] = function()
+	InterfaceOptionsFrame_OpenToFrame(parent)
+end
 
 -- INNERARDS!
 
