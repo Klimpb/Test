@@ -34,6 +34,12 @@ function Bazaar:OnInitialize()
 			Bazaar:ReceivedData(msg, sender)
 		end
 	end)
+	
+	
+	-- So the GUI can access data
+	self.registeredAddons = registeredAddons
+	self.availableAddons = availableAddons
+	self.lookup = lookup
 end
 
 function Bazaar:CompileAddons(...)
@@ -104,7 +110,7 @@ function Bazaar:CHAT_MSG_ADDON(prefix, msg, type, sender)
 		-- First message total should be set to the length of what we got
 		if( prefix == FIRST_MULTIPART ) then
 			activeSync.received = string.len(msg)
-			self.GUI:UpdateStatus(L["Receiving data..."])
+			self.GUI:UpdateStatus("receiving", L["Receiving data..."])
 			self.GUI:UpdateProgress(activeSync.received, activeSync.total)
 			
 		-- Sending data, so update total
@@ -115,6 +121,19 @@ function Bazaar:CHAT_MSG_ADDON(prefix, msg, type, sender)
 	end
 end
 
+-- Check for a failed whisper while syncing
+ChatFrame_AddMessageEventFilter("CHAT_MSG_SYSTEM", function(msg)
+	local name = string.match(msg, L["No player named '(.+)' is currently playing."])
+	if( name and activeSync.from and string.lower(activeSync.from) == string.lower(name) ) then
+		activeSync.addon = nil
+		activeSync.from = nil
+		
+		Bazaar.GUI:TriggerError(string.format(L["It appears that %s is no longer online."], name))
+		return true
+	end
+	
+	return false
+end)
 
 -- COMM HANDLING
 -- Allow us to call a function without it stopping our execution
@@ -151,9 +170,9 @@ function Bazaar:ReceivedData(data, sender)
 	
 	-- Did we manage to unpack it?
 	if( result ) then
-		self.GUI:UpdateStatus(string.format(L["Successfully unpacked configuration data for '%s'.\n%s"], activeSync.name, msg or ""))
+		self.GUI:UpdateStatus("finished", string.format(L["Successfully unpacked configuration data for '%s'.\n%s"], activeSync.name, msg or ""))
 	else
-		self.GUI:UpdateStatus(string.format(L["Failed to unpack and save data for '%s'.\n%s"], activeSync.name, msg or ""))
+		self.GUI:UpdateStatus("finished", string.format(L["Failed to unpack and save data for '%s'.\n%s"], activeSync.name, msg or ""))
 	end
 	
 	-- Done unpacking and everything
@@ -221,9 +240,9 @@ function Bazaar:SendRequest(addon, sendTo, categories)
 	self:SendCommMessage(string.format("REQUEST:%s\001%s", addon, cats), "WHISPER", sendTo)
 end
 
-function Bazaar:SendPing(addon, type, sendTo)
-	if( sendTo ~= "GUILD" ) then
-		self.GUI:UpdateStatus(string.format(L["Sent ping request to %s."], sendTo))
+function Bazaar:SendPing(addon, type, sendTo, isSync)
+	if( isSync ) then
+		activeSync.from = sendTo
 	end
 	
 	if( addon ) then
@@ -239,10 +258,10 @@ end
 -- \003 = Seperates the category key from the category name
 -- \004 = Seperates each category key/name combo from the next
 -- addonA\002general\003General\004foo\003Foo\001addonB\002apple\003Apple
-function Bazaar:SendPong(addons, type, sender)
+function Bazaar:SendPong(addons, distribution, sender)
 	local msg = ""
-	for name in pairs(registeredAddons) do
-		if( ( not addons or addons[name] ) and lookup[name].hasCategories ) then
+	for name in pairs(lookup) do
+		if( type(name) == "string" and ( not addons or addons[name] ) and lookup[name].hasCategories ) then
 			if( msg == "" ) then
 				msg = name .. "\002"
 			else
@@ -262,7 +281,7 @@ function Bazaar:SendPong(addons, type, sender)
 		end
 	end
 	
-	self:SendCommMessage(string.format("PONG:%s", msg), type, sender)
+	self:SendCommMessage(string.format("PONG:%s", msg), distribution, sender)
 end
 
 -- Got a response to our ping
@@ -279,8 +298,6 @@ function Bazaar:LoadCategories(addon, ...)
 end
 
 function Bazaar:ReceivePong(sender, ...)
-	self.GUI:UpdateStatus(string.format(L["Received ping data from %s."], sender))
-	
 	availableAddons[sender] = availableAddons[sender] or {}
 	
 	for i=1, select("#", ...) do
@@ -290,6 +307,8 @@ function Bazaar:ReceivePong(sender, ...)
 		availableAddons[sender][name] = availableAddons[sender][name] or {}
 		self:LoadCategories(availableAddons[sender][name], string.split("\004", data))
 	end
+
+	self.GUI:UpdateStatus("pong", string.format(L["Received ping data from %s."], sender))
 end
 
 -- SYNC HANDLER
@@ -392,7 +411,7 @@ function Bazaar:RequestDenied(reason, sender)
 	-- Nothing going on anymore
 	activeSync.name = nil
 	activeSync.from = nil
-	
+		
 	if( reason == "manual" ) then
 		self.GUI:TriggerError(string.format(L["%s has manually denied your request for a sync."], sender))
 	elseif( reason == "noaddon" ) then
@@ -409,7 +428,7 @@ end
 
 -- Our request was accepted, get ready to start syncing
 function Bazaar:RequestAccepted(total, sender)
-	self.GUI:UpdateStatus(string.format(L["Request accepted from %s for '%s'! Waiting for data."], sender, activeSync.name))
+	self.GUI:UpdateStatus("accepted", string.format(L["Request accepted from %s for '%s'! Waiting for data."], sender, activeSync.name))
 	
 	-- Tad silly but we add an extra 5% so we can add a status for unpacking data in case it's slow
 	activeSync.total = total * 1.05
@@ -442,12 +461,12 @@ end
 -- Register an addon with Bazaar
 function Bazaar:RegisterAddOn(name)
 	argcheck(name, 1, "string")
-	assert(3, not registeredAddons[name], string.format(L["The addon '%s' is already registered to Bazaar."], name))
+	assert(3, not lookup[name], string.format(L["The addon '%s' is already registered to Bazaar."], name))
 	assert(3, IsAddOnLoaded(name) == 1, string.format(L["No addon with the name '%s' is loaded."], name))
 	
 	local obj = {categories = {}, name = name}
 	
-	registeredAddons[name] = true
+	table.insert(registeredAddons, name)
 	lookup[name] = obj
 	lookup[obj] = true
 	
@@ -530,252 +549,3 @@ end
 function Bazaar:SendCommMessage(msg, type, target, prefix)
 	Comm:SendCommMessage(prefix or "BAZR", msg, type, target)
 end
-
---[[
-if IS_WRATH_BUILD == nil then IS_WRATH_BUILD = (select(4, GetBuildInfo()) >= 30000) end
-
-local Refresh = function() end
-local EDGEGAP, ROWHEIGHT, ROWGAP, GAP = 16, 20, 2, 4
-local NUMADDONS = GetNumAddOns()
-local GOLD_TEXT = {1.0, 0.82, 0}
-local STATUS_COLORS = {
-	DISABLED = {157/256, 157/256, 157/256},
-	DEP_DISABLED = {157/256, 157/256, 157/256},
-	NOT_DEMAND_LOADED = {1, 0.5, 0},
-	DEP_NOT_DEMAND_LOADED = {1, 0.5, 0},
-	LOAD_ON_DEMAND = {30/256, 1, 0},
-	DISABLED_AT_RELOAD = {163/256, 53/256, 238/256},
-	DEP_MISSING = {1, 0.5, 0},
-	DEP_INCOMPATIBLE = {1, 0, 0},
-	INCOMPATIBLE = {1, 0, 0},
-}
-local L = {
-	DISABLED_AT_RELOAD = "Disabled on ReloadUI",
-	LOAD_ON_DEMAND = "LoD",
-}
-
-
-local enabledstates = setmetatable({}, {
-	__index = function(t, i)
-		local name, _, _, enabled = GetAddOnInfo(i)
-		if name ~= i then return t[name] end
-
-		t[i] = not not enabled -- Looks silly, but ensures we store a boolean
-		return enabled
-	end
-})
-
-
--- We have to hook these, GetAddOnInfo doesn't report back the new enabled state
-local orig1, orig2, orig3, orig4 = EnableAddOn, DisableAddOn, EnableAllAddOns, DisableAllAddOns
-local function posthook(...) Refresh(); return ... end
-EnableAddOn = function(addon, ...)
-	enabledstates[GetAddOnInfo(addon)] = true
-	return posthook(orig1(addon, ...))
-end
-DisableAddOn = function(addon, ...)
-	enabledstates[GetAddOnInfo(addon)] = false
-	return posthook(orig2(addon, ...))
-end
-EnableAllAddOns = function(...)
-	for i=1,NUMADDONS do enabledstates[GetAddOnInfo(i)] = true end
-	return posthook(orig3(...))
-end
-DisableAllAddOns = function(...)
-	for i=1,NUMADDONS do enabledstates[GetAddOnInfo(i)] = false end
-	return posthook(orig4(...))
-end
-
-
-local frame = CreateFrame("Frame", nil, UIParent)
-frame.name = "Ampere"
-frame:Hide()
-frame:SetScript("OnShow", function(frame)
-	local function MakeButton(parent)
-		local butt = CreateFrame("Button", nil, parent or frame)
-		butt:SetWidth(80) butt:SetHeight(22)
-
-		butt:SetHighlightFontObject(GameFontHighlightSmall)
-		if IS_WRATH_BUILD then butt:SetNormalFontObject(GameFontNormalSmall) else butt:SetTextFontObject(GameFontNormalSmall) end
-
-		butt:SetNormalTexture("Interface\\Buttons\\UI-Panel-Button-Up")
-		butt:SetPushedTexture("Interface\\Buttons\\UI-Panel-Button-Down")
-		butt:SetHighlightTexture("Interface\\Buttons\\UI-Panel-Button-Highlight")
-		butt:SetDisabledTexture("Interface\\Buttons\\UI-Panel-Button-Disabled")
-		butt:GetNormalTexture():SetTexCoord(0, 0.625, 0, 0.6875)
-		butt:GetPushedTexture():SetTexCoord(0, 0.625, 0, 0.6875)
-		butt:GetHighlightTexture():SetTexCoord(0, 0.625, 0, 0.6875)
-		butt:GetDisabledTexture():SetTexCoord(0, 0.625, 0, 0.6875)
-		butt:GetHighlightTexture():SetBlendMode("ADD")
-
-		return butt
-	end
-
-
-	local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-	title:SetPoint("TOPLEFT", 16, -16)
-	title:SetText("Addon Management Panel")
-
-
-	local subtitle = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
---~ 	subtitle:SetHeight(32)
-	subtitle:SetHeight(35)
-	subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
-	subtitle:SetPoint("RIGHT", frame, -32, 0)
-	subtitle:SetNonSpaceWrap(true)
-	subtitle:SetJustifyH("LEFT")
-	subtitle:SetJustifyV("TOP")
---~ 	subtitle:SetMaxLines(3)
-	subtitle:SetText("This panel can be used to toggle addons, load Load-on-Demand addons, or reload the UI.  You must reload UI to unload an addon.  Settings are saved on a per-char basis.")
-
-	local rows, anchor = {}
-	local function OnEnter(self)
-		GameTooltip:SetOwner(self, "ANCHOR_TOPRIGHT")
-		GameTooltip:AddLine()
-	end
-	local function OnLeave() GameTooltip:Hide() end
-	local function OnClick(self)
-		local addon = self:GetParent().addon
-		local enabled = enabledstates[addon]
-		PlaySound(enabled and "igMainMenuOptionCheckBoxOff" or "igMainMenuOptionCheckBoxOn")
-		if enabled then DisableAddOn(addon) else EnableAddOn(addon) end
-		Refresh()
-	end
-	local function LoadOnClick(self)
-		local addon = self:GetParent().addon
-		if not select(4,GetAddOnInfo(addon)) then
-			EnableAddOn(addon)
-			LoadAddOn(addon)
-			DisableAddOn(addon)
-		else LoadAddOn(addon) end
-	end
-	for i=1,math.floor((305-22)/(ROWHEIGHT + ROWGAP)) do
-		local row = CreateFrame("Button", nil, frame)
-		if not anchor then row:SetPoint("TOP", subtitle, "BOTTOM", 0, -16)
-		else row:SetPoint("TOP", anchor, "BOTTOM", 0, -ROWGAP) end
-		row:SetPoint("LEFT", EDGEGAP, 0)
-		row:SetPoint("RIGHT", -EDGEGAP, 0)
-		row:SetHeight(ROWHEIGHT)
-		anchor = row
-		rows[i] = row
-
-
-		local check = CreateFrame("CheckButton", nil, row)
-		check:SetWidth(ROWHEIGHT+4)
-		check:SetHeight(ROWHEIGHT+4)
-		check:SetPoint("LEFT")
-		check:SetNormalTexture("Interface\\Buttons\\UI-CheckBox-Up")
-		check:SetPushedTexture("Interface\\Buttons\\UI-CheckBox-Down")
-		check:SetHighlightTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
-		check:SetDisabledCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check-Disabled")
-		check:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
-		check:SetScript("OnClick", OnClick)
-		row.check = check
-
-
-		local title = row:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
-		title:SetPoint("LEFT", check, "RIGHT", 4, 0)
-		row.title = title
-
-
-		local loadbutton = MakeButton(row)
-		loadbutton:SetPoint("RIGHT")
-		loadbutton:SetText("Load")
-		loadbutton:SetScript("OnClick", LoadOnClick)
-		row.loadbutton = loadbutton
-
-
-		local reason = row:CreateFontString(nil, "BACKGROUND", "GameFontHighlightSmall")
-		reason:SetPoint("RIGHT", loadbutton, "LEFT", -4, 0)
-		reason:SetPoint("LEFT", title, "RIGHT")
-		reason:SetJustifyH("RIGHT")
-		row.reason = reason
-	end
-
-
-	local offset = 0
-	Refresh = function()
-		if not frame:IsVisible() then return end
-		for i,row in ipairs(rows) do
-			if (i + offset) <= NUMADDONS then
-				local name, title, notes, enabled, loadable, reason = GetAddOnInfo(i + offset)
-				local loaded = IsAddOnLoaded(i + offset)
-				local lod = IsAddOnLoadOnDemand(i + offset)
-				if lod and not loaded and (not reason or reason == "DISABLED") then
-					reason = "LOAD_ON_DEMAND"
-					row.loadbutton:Show()
-					row.loadbutton:SetWidth(45)
-				else
-					row.loadbutton:Hide()
-					row.loadbutton:SetWidth(1)
-				end
-				if loaded and not enabledstates[name] then reason = "DISABLED_AT_RELOAD" end
-
-				row.check:SetChecked(enabledstates[name])
-				row.title:SetText(title)
-				row.reason:SetText(reason and (TEXT(_G["ADDON_" .. reason] or L[reason])))
-				row.title:SetTextColor(unpack(reason and STATUS_COLORS[reason] or GOLD_TEXT))
-				if reason then row.reason:SetTextColor(unpack(STATUS_COLORS[reason])) end
-				row.addon = name
-				row.notes = notes
-				row:Show()
-			else
-				row:Hide()
-			end
-		end
-	end
-	frame:SetScript("OnEvent", Refresh)
-	frame:RegisterEvent("ADDON_LOADED")
-	frame:SetScript("OnShow", Refresh)
-	Refresh()
-
-
-	frame:EnableMouseWheel()
-	frame:SetScript("OnMouseWheel", function(self, val)
-		offset = math.max(math.min(offset - math.floor(val*#rows/2), NUMADDONS-#rows), 0)
-		Refresh()
-	end)
-
-
-	local enableall = MakeButton()
-	enableall:SetPoint("BOTTOMLEFT", 16, 16)
-	enableall:SetText("Enable All")
-	enableall:SetScript("OnClick", EnableAllAddOns)
-
-
-	local disableall = MakeButton()
-	disableall:SetPoint("LEFT", enableall, "RIGHT", 4, 0)
-	disableall:SetText("Disable All")
-	disableall:SetScript("OnClick", DisableAllAddOns)
-
-
-	local reload = MakeButton()
-	reload:SetPoint("BOTTOMRIGHT", -16, 16)
-	reload:SetText("Reload UI")
-	reload:SetScript("OnClick", ReloadUI)
-end)
-
-InterfaceOptions_AddCategory(frame)
-
-
-LibStub("tekKonfig-AboutPanel").new("Ampere", "Ampere")
-
-
-----------------------------------------
---      Quicklaunch registration      --
-----------------------------------------
-
-local dataobj = LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("Ampere", {
-	type = "launcher",
-	icon = "Interface\\Icons\\Spell_Nature_StormReach",
-	OnClick = function() InterfaceOptionsFrame_OpenToFrame(frame) end,
-})
-
-
-----------------------------
---      Reload Slash      --
-----------------------------
-
-SLASH_RELOAD1 = "/rl"
-SlashCmdList.RELOAD = ReloadUI
-]]
