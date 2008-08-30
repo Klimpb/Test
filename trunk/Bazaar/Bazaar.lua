@@ -203,7 +203,7 @@ function Bazaar:AcceptRequest(sender)
 	end
 	
 	-- The safecall failed, or bad data was given
-	if( not data ) then
+	if( not result or not data ) then
 		if( self.db.errors ) then
 			self:Print(string.format(L["Unable to package data for '%s' to send to %s, cancelled sync."], activeSync.addon, sender))
 		end
