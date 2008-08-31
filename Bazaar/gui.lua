@@ -294,7 +294,7 @@ InterfaceOptions_AddCategory(parent)
 -- CONFIGURATION
 local frame = CreateFrame("Frame", nil, UIParent)
 frame.name = "Options"
-frame.parent = parent
+frame.parent = "Bazaar"
 frame.addonname = "Bazaar"
 frame:Hide()
 frame:SetScript("OnShow", function(frame)
@@ -408,8 +408,8 @@ InterfaceOptions_AddCategory(frame)
 -- SYNC CATEGORIES
 local categories = CreateFrame("Frame", nil, UIParent)
 categories.name = "Categories"
-categories.parent = parent
 categories.addonname = "Bazaar"
+categories.parent = parent
 categories.hidden = true
 categories:Hide()
 categories:SetScript("OnShow", function(frame)
