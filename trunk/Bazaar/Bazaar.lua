@@ -173,11 +173,16 @@ function Bazaar:ReceivedData(data, sender)
 		msg = data
 	end
 	
+	-- Don't allow bad messages
+	if( not msg or type(msg) ~= "string" ) then
+		msg = ""
+	end
+	
 	-- Did we manage to unpack it?
 	if( result ) then
-		self.GUI:UpdateStatus("finished", string.format(L["Successfully unpacked configuration data for '%s'.\n%s"], activeSync.name, tostring(msg)))
+		self.GUI:UpdateStatus("finished", string.format(L["Successfully unpacked configuration data for '%s'.\n%s"], activeSync.name, msg))
 	else
-		self.GUI:UpdateStatus("finished", string.format(L["Failed to unpack and save data for '%s'.\n%s"], activeSync.name, tostring(msg)))
+		self.GUI:UpdateStatus("finished", string.format(L["Failed to unpack and save data for '%s'.\n%s"], activeSync.name, msg))
 	end
 	
 	-- Done unpacking and everything
@@ -413,6 +418,10 @@ function Bazaar:CompileErrors(addon, ...)
 end
 
 function Bazaar:RequestDenied(reason, sender)
+	if( not activeSync.from or activeSync.from ~= sender ) then
+		return
+	end
+	
 	-- Nothing going on anymore
 	activeSync.name = nil
 	activeSync.from = nil
@@ -433,6 +442,10 @@ end
 
 -- Our request was accepted, get ready to start syncing
 function Bazaar:RequestAccepted(total, sender)
+	if( not activeSync.from or activeSync.from ~= sender ) then
+		return
+	end
+	
 	self.GUI:UpdateStatus("accepted", string.format(L["Request accepted from %s for '%s'! Waiting for data."], sender, activeSync.name))
 	
 	-- Tad silly but we add an extra 5% so we can add a status for unpacking data in case it's slow
