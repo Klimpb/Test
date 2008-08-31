@@ -58,4 +58,15 @@ BazaarLocals = {
 	["Request Configuration"] = "Request Configuration",
 	["Select All"] = "Select All",
 	["Unselect All"] = "Unselect All",
+	
+	["Configuration for Bazaar, mouse over the check boxes for more information."] = "Configuration for Bazaar, mouse over the check boxes for more information.",
+
+	["Enable guild/raid discovery of configuration"] = "Enable guild/raid discovery of configuration",
+	["Allows people in your guild or raid group to see all the addons you have available for syncing."] = "Allows people in your guild or raid group to see all the addons you have available for syncing.",
+	
+	["Auto reject sync requests while in combat"] = "Auto reject sync requests while in combat",
+	["Requests to sync addons will automatically be denied while you're in combat."] = "Requests to sync addons will automatically be denied while you're in combat.",
+	
+	["Show sync errors"] = "Show sync errors",
+	["Alerts you when someone is requesting configuration data from you and an error is triggered."] = "Alerts you when someone is requesting configuration data from you and an error is triggered.",
 }
