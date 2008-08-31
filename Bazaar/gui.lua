@@ -37,7 +37,7 @@ local function MakeButton(parent)
 	return button
 end
 
-
+-- Addon listing frame
 local parent = CreateFrame("Frame", nil, UIParent)
 parent.name = "Bazaar"
 parent:Hide()
@@ -292,18 +292,118 @@ end)
 InterfaceOptions_AddCategory(parent)
 
 -- CONFIGURATION
---[[
 local frame = CreateFrame("Frame", nil, UIParent)
 frame.name = "Options"
 frame.parent = parent
 frame.addonname = "Bazaar"
 frame:Hide()
 frame:SetScript("OnShow", function(frame)
+	local function OnClick(self)
+		Bazaar.db[self.key] = self:GetChecked() and true or false
+	end
 
+	local function OnEnter(self)
+		if( self.tooltip ) then
+			GameTooltip:SetOwner(self, "ANCHOR_TOPRIGHT")
+			GameTooltip:SetText(self.tooltip, nil, nil, nil, nil, true)
+		end
+	end
+
+	local function OnLeave()
+		GameTooltip:Hide()
+	end
+	
+	local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+	title:SetPoint("TOPLEFT", 16, -16)
+	title:SetText("Bazaar")
+	
+	local subtitle = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	subtitle:SetHeight(32)
+	subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+	subtitle:SetPoint("RIGHT", frame, -32, 0)
+	subtitle:SetNonSpaceWrap(true)
+	subtitle:SetJustifyH("LEFT")
+	subtitle:SetJustifyV("TOP")
+	subtitle:SetText(L["Configuration for Bazaar, mouse over the check boxes for more information."])
+
+	-- Discovery checkbox
+	local check = CreateFrame("CheckButton", nil, frame)
+	check:SetWidth(26)
+	check:SetHeight(26)
+	check:SetPoint("LEFT")
+	check:SetNormalTexture("Interface\\Buttons\\UI-CheckBox-Up")
+	check:SetPushedTexture("Interface\\Buttons\\UI-CheckBox-Down")
+	check:SetHighlightTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
+	check:SetDisabledCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check-Disabled")
+	check:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
+	check:SetScript("OnClick", OnClick)
+	check:SetScript("OnEnter", OnEnter)
+	check:SetScript("OnLeave", OnLeave)
+	check:SetPoint("TOPLEFT", subtitle, "BOTTOMLEFT", -2, -GAP)
+	check.key = "discovery"
+	check.tooltip = L["Allows people in your guild or raid group to see all the addons you have available for syncing."]
+	
+	frame.discoveryCheck = check
+
+	local title = check:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+	title:SetPoint("LEFT", check, "RIGHT", 4, 0)
+	title:SetText(L["Enable guild/raid discovery of configuration"])
+	
+	-- In combat checkbox
+	local check = CreateFrame("CheckButton", nil, frame)
+	check:SetWidth(26)
+	check:SetHeight(26)
+	check:SetPoint("LEFT")
+	check:SetNormalTexture("Interface\\Buttons\\UI-CheckBox-Up")
+	check:SetPushedTexture("Interface\\Buttons\\UI-CheckBox-Down")
+	check:SetHighlightTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
+	check:SetDisabledCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check-Disabled")
+	check:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
+	check:SetScript("OnClick", OnClick)
+	check:SetScript("OnEnter", OnEnter)
+	check:SetScript("OnLeave", OnLeave)
+	check:SetPoint("TOPLEFT", frame.discoveryCheck, "BOTTOMLEFT", 0, -GAP)
+	check.key = "inCombat"
+	check.tooltip = L["Requests to sync addons will automatically be denied while you're in combat."]
+	
+	frame.combatCheck = check
+
+	local title = check:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+	title:SetPoint("LEFT", check, "RIGHT", 4, 0)
+	title:SetText(L["Auto reject sync requests while in combat"])
+
+	-- Errors checkbox
+	local check = CreateFrame("CheckButton", nil, frame)
+	check:SetWidth(26)
+	check:SetHeight(26)
+	check:SetPoint("LEFT")
+	check:SetNormalTexture("Interface\\Buttons\\UI-CheckBox-Up")
+	check:SetPushedTexture("Interface\\Buttons\\UI-CheckBox-Down")
+	check:SetHighlightTexture("Interface\\Buttons\\UI-CheckBox-Highlight")
+	check:SetDisabledCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check-Disabled")
+	check:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
+	check:SetScript("OnClick", OnClick)
+	check:SetScript("OnEnter", OnEnter)
+	check:SetScript("OnLeave", OnLeave)
+	check:SetPoint("TOPLEFT", frame.combatCheck, "BOTTOMLEFT", 0, -GAP)
+	check.key = "errors"
+	check.tooltip = L["Alerts you when someone is requesting configuration data from you and an error is triggered."]
+	
+	frame.errorCheck = check
+
+	local title = check:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+	title:SetPoint("LEFT", check, "RIGHT", 4, 0)
+	title:SetText(L["Show sync errors"])
+	
+	frame:SetScript("OnShow", nil)
+	
+	-- Set default state obviously
+	frame.combatCheck:SetChecked(Bazaar.db.inCombat)
+	frame.errorCheck:SetChecked(Bazaar.db.errors)
+	frame.discoveryCheck:SetChecked(Bazaar.db.discovery)
 end)
 
 InterfaceOptions_AddCategory(frame)
-]]
 
 -- SYNC CATEGORIES
 local categories = CreateFrame("Frame", nil, UIParent)
@@ -531,8 +631,8 @@ progress:SetScript("OnShow", function(frame)
 	-- Status text!
 	local status = bar:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
 	status:SetHeight(32)
-	status:SetPoint("BOTTOMLEFT", frame, 4, 90)
-	status:SetPoint("BOTTOMRIGHT", frame, -4, 90)
+	status:SetPoint("BOTTOMLEFT", frame, 4, 120)
+	status:SetPoint("BOTTOMRIGHT", frame, -4, 120)
 	status:SetNonSpaceWrap(false)
 	status:SetJustifyH("LEFT")
 	status:SetJustifyV("TOP")

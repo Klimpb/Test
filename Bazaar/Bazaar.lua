@@ -2,6 +2,7 @@ Bazaar = {}
 
 local L = BazaarLocals
 
+local IS_DEBUG = false
 local FIRST_MULTIPART, NEXT_MULTIPART, LAST_MULTIPART = "BAZRD\001", "BAZRD\002", "BAZRD\003"
 local Comm, Serailizer, playerName
 
@@ -35,6 +36,10 @@ function Bazaar:OnInitialize()
 		end
 	end)
 	
+	-- NOTE TO SELF: Remove this later
+	if( playerName == "Mayen" or playerName == "Amarand" ) then
+		IS_DEBUG = true
+	end
 	
 	-- So the GUI can access data
 	self.registeredAddons = registeredAddons
@@ -63,9 +68,9 @@ function Bazaar:CompileCategories(...)
 end
 
 function Bazaar:OnCommReceived(prefix, msg, type, sender)
-	--if( sender == playerName ) then
-	--	return
-	--end
+	if( sender == playerName and not IS_DEBUG ) then
+		return
+	end
 	
 	local dataType, data = string.match(msg, "([^:]+)%:(.+)")
 	if( not dataType and not data ) then
@@ -170,9 +175,9 @@ function Bazaar:ReceivedData(data, sender)
 	
 	-- Did we manage to unpack it?
 	if( result ) then
-		self.GUI:UpdateStatus("finished", string.format(L["Successfully unpacked configuration data for '%s'.\n%s"], activeSync.name, msg or ""))
+		self.GUI:UpdateStatus("finished", string.format(L["Successfully unpacked configuration data for '%s'.\n%s"], activeSync.name, tostring(msg)))
 	else
-		self.GUI:UpdateStatus("finished", string.format(L["Failed to unpack and save data for '%s'.\n%s"], activeSync.name, msg or ""))
+		self.GUI:UpdateStatus("finished", string.format(L["Failed to unpack and save data for '%s'.\n%s"], activeSync.name, tostring(msg)))
 	end
 	
 	-- Done unpacking and everything
