@@ -41,6 +41,9 @@ function SimpleBB:OnInitialize()
 					showStack = true,
 					font = "Friz Quadrata TT",
 					fontSize = 12,
+					passive = false,
+					time = "hhmmss",
+					position = { x = 600, y = 600 },
 				},
 				debuffs = {
 					color = {r = 0.30, g = 0.50, b = 1.0},
@@ -57,9 +60,11 @@ function SimpleBB:OnInitialize()
 					showStack = true,
 					anchorTo = "buffs",
 					anchorSpacing = 10,
-					
 					font = "Friz Quadrata TT",
 					fontSize = 12,
+					passive = false,
+					time = "hhmmss",
+					position = { x = 600, y = 600 },
 				},
 			},
 		},
@@ -135,7 +140,7 @@ end
 -- Configuration changed, update bars
 function SimpleBB:Reload()
 	if( not self.db.profile.showTrack ) then
-		self.activeTrack.name = nil
+		self.activeTrack.enabled = nil
 	end
 	
 	if( not self.db.profile.showTemp ) then
@@ -159,13 +164,22 @@ end
 local function OnShow(self)
 	local config = SimpleBB.db.profile.groups[self.name]
 	if( config.anchorTo and config.anchorTo ~= self.name and SimpleBB.groups[config.anchorTo] ) then
-		local spacing = -config.anchorSpacing
-		if( SimpleBB.db.profile.groups[config.anchorTo].growUp ) then
-			spacing = config.anchorSpacing
+		if( SimpleBB.groups[config.anchorTo]:IsVisible() ) then
+			local spacing = -config.anchorSpacing
+			if( SimpleBB.db.profile.groups[config.anchorTo].growUp ) then
+				spacing = config.anchorSpacing
+			end
+
+			self:SetPoint("TOPLEFT", SimpleBB.groups[config.anchorTo].container, "BOTTOMLEFT", 0, spacing)
+			self:SetMovable(false)
+		else
+			local scale = self:GetEffectiveScale()
+			local position = SimpleBB.db.profile.groups[config.anchorTo].position
+			self:ClearAllPoints()
+			self:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", position.x / scale, position.y / scale)
+			self:SetMovable(true)
 		end
 		
-		self:SetPoint("TOPLEFT", SimpleBB.groups[config.anchorTo].container, "BOTTOMLEFT", 0, spacing)
-		self:SetMovable(false)
 	elseif( config.position ) then
 		local scale = self:GetEffectiveScale()
 		self:ClearAllPoints()
@@ -175,6 +189,22 @@ local function OnShow(self)
 		self:ClearAllPoints()
 		self:SetPoint("CENTER", UIParent, "CENTER")
 		self:SetMovable(true)
+	end
+
+	-- Check if something is anchored to us, if it is then we need to reposition them
+	for name, data in pairs(SimpleBB.db.profile.groups) do
+		if( data.anchorTo == self.name ) then
+			OnShow(SimpleBB.groups[name])
+		end
+	end
+end
+
+-- Check if something is anchored to us, if it is then we need to reposition them
+local function OnHide(self)
+	for name, data in pairs(SimpleBB.db.profile.groups) do
+		if( data.anchorTo == self.name ) then
+			OnShow(SimpleBB.groups[name])
+		end
 	end
 end
 
@@ -186,8 +216,10 @@ function SimpleBB:CreateGroup(name)
 	-- Set defaults
 	local frame = CreateFrame("Frame", nil, UIParent)
 	frame:SetMovable(true)
-	frame:SetScript("OnShow", OnShow)
 	frame:Hide()
+	
+	frame:SetScript("OnHide", OnHide)
+	frame:SetScript("OnShow", OnShow)
 	frame.name = name
 	
 	-- This is wrapped around all the bars so we can have things "linked" together
@@ -206,10 +238,10 @@ local function updateBar(id, row, display, config)
 	
 	row.bg:SetStatusBarTexture(texture)
 	
-	if( not config.colorByType ) then
-		row:SetStatusBarColor(config.color.r, config.color.g, config.color.b, 0.80)
-		row.bg:SetStatusBarColor(config.color.r, config.color.g, config.color.b, 0.30)
-	end
+	--if( not config.colorByType ) then
+	--	row:SetStatusBarColor(config.color.r, config.color.g, config.color.b, 0.80)
+	--	row.bg:SetStatusBarColor(config.color.r, config.color.g, config.color.b, 0.30)
+	--end
 	
 	row.icon:SetPoint("TOPLEFT", row, "TOP" .. config.iconPosition, display.iconPad, 0)
 	row.icon:SetHeight(config.height)
@@ -264,6 +296,8 @@ function SimpleBB:ReloadBars()
 		for id, row in pairs(display.rows) do
 			updateBar(id, row, display, config)
 		end
+		
+		self:UpdateDisplay(name)
 	end
 end
 
@@ -310,8 +344,10 @@ end
 
 local function OnEnter(self)
 	GameTooltip:SetOwner(self, "ANCHOR_BOTTOMLEFT")
-	if( self.type == "buffs" or self.type == "debuffs" ) then
+	if( self.type == "buffs" ) then
 		GameTooltip:SetUnitBuff("player", self.data.buffIndex)
+	elseif( self.type == "debuffs") then
+		GameTooltip:SetUnitDebuff("player", self.data.buffIndex)
 	elseif( self.type == "tempBuffs" ) then
 		GameTooltip:SetInventoryItem("player", self.data.slotID)
 	elseif( self.type == "tracking" ) then
@@ -371,6 +407,49 @@ function SimpleBB:CreateBar(parent)
 	updateBar(#(parent.rows), frame, parent, self.db.profile.groups[parent.name])
 end
 
+local formatTime = {
+	["hhmmss"] = function(text, timeLeft)
+		local hours, minutes, seconds = 0, 0, 0
+		if( timeLeft >= 3600 ) then
+			hours = floor(timeLeft / 3600)
+			timeLeft = mod(timeLeft, 3600)
+		end
+
+		if( timeLeft >= 60 ) then
+			minutes = floor(timeLeft / 60)
+			timeLeft = mod(timeLeft, 60)
+		end
+
+		seconds = timeLeft > 0 and timeLeft or 0
+
+		if( hours > 0 ) then
+			text:SetFormattedText("%d:%02d:%02d", hours, minutes, seconds)
+		else
+			text:SetFormattedText("%02d:%02d", minutes > 0 and minutes or 0, seconds)
+		end
+	end,
+	["blizzard"] = function(text, timeLeft)
+		local hours, minutes, seconds = 0, 0, 0
+		if( timeLeft >= 3600 ) then
+			hours = floor(timeLeft / 3600)
+			timeLeft = mod(timeLeft, 3600)
+		end
+
+		if( timeLeft >= 60 ) then
+			minutes = floor(timeLeft / 60)
+			timeLeft = mod(timeLeft, 60)
+		end
+
+		if( hours > 0 ) then
+			text:SetFormattedText("%dh%dm", hours, minutes)
+		elseif( minutes > 0 ) then
+			text:SetFormattedText("%dm", minutes)
+		else
+			text:SetFormattedText("%02ds", timeLeft > 0 and timeLeft or 0)
+		end
+	end,
+}
+
 -- Update visuals
 local function OnUpdate(self)
 	-- Time left
@@ -381,27 +460,16 @@ local function OnUpdate(self)
 	self:SetValue(self.secondsLeft)
 
 	-- Timer text, need to see if this can be optimized a bit later
-	local hours, minutes, seconds = 0, 0, 0
-	local timeLeft = self.secondsLeft
-	if( timeLeft >= 3600 ) then
-		hours = floor(timeLeft / 3600)
-		timeLeft = mod(timeLeft, 3600)
-	end
-
-	if( timeLeft >= 60 ) then
-		minutes = floor(timeLeft / 60)
-		timeLeft = mod(timeLeft, 60)
-	end
-
-	seconds = timeLeft > 0 and timeLeft or 0
-
-	if( hours > 0 ) then
-		self.timer:SetFormattedText("%d:%02d:%02d", hours, minutes, seconds)
-	else
-		self.timer:SetFormattedText("%02d:%02d", minutes > 0 and minutes or 0, seconds)
-	end
+	--[[
+	local hour = floor(self.secondsLeft / 3600)
+	local minutes = self.secondsLeft - (hour * 3600)
+	minutes = floor(minutes / 60)
+	
+	local seconds = self.secondsLeft - ((hour * 3600) + (minutes * 60))
+	]]
+	
+	formatTime[self.timeOption](self.timer, self.secondsLeft)
 end
-
 
 -- Update a single row
 local buffTypes = {
@@ -436,7 +504,11 @@ local function updateRow(row, config, data)
 		row.iconBorder:SetTexture("Interface\\Buttons\\UI-TempEnchant-Border")
 		row.iconBorder:Show()
 	elseif( data.type == "debuffs" or data.buffIndex == -1 ) then
-		color = DebuffTypeColor[data.buffType] or DebuffTypeColor.none
+		if( config.colorByType ) then
+			color = DebuffTypeColor[data.buffType] or DebuffTypeColor.none
+		else
+			color = config.color
+		end
 
 		row.iconBorder:SetTexture("Interface\\Buttons\\UI-Debuff-Overlays")
 		row.iconBorder:SetTexCoord(0.296875, 0.5703125, 0, 0.515625)
@@ -449,13 +521,16 @@ local function updateRow(row, config, data)
 		row.iconBorder:SetTexCoord(0.296875, 0.5703125, 0, 0.515625)
 		row.iconBorder:SetVertexColor(0.81, 0.81, 0.81)
 		row.iconBorder:Show()
-	else
+	elseif( config.colorByType ) then
 		color = buffTypes.buff
+		row.iconBorder:Hide()
+	else
+		color = config.color
 		row.iconBorder:Hide()
 	end
 	
 	-- Color bar by the debuff type
-	if( color and config.colorByType ) then
+	if( color ) then
 		row:SetStatusBarColor(color.r, color.g, color.b, 0.80)
 		row.bg:SetStatusBarColor(color.r, color.g, color.b, 0.30)
 	end
@@ -465,6 +540,7 @@ local function updateRow(row, config, data)
 	row.enabled = true
 	row.type = data.type
 	row.data = data
+	row.timeOption = config.time
 	
 	-- Don't use an on update if it has no timer
 	if( not data.untilCancelled ) then
@@ -555,7 +631,7 @@ function SimpleBB:UpdateDisplay(displayID)
 	local display = self.groups[displayID]
 	local buffs = self[displayID]
 	local config = self.db.profile.groups[displayID]
-		
+	
 	-- Clear table
 	for i=#(tempRows), 1, -1 do
 		table.remove(tempRows, i)
@@ -563,7 +639,7 @@ function SimpleBB:UpdateDisplay(displayID)
 	
 	-- Create buffs
 	for id, data in pairs(self[displayID]) do
-		if( data.enabled ) then
+		if( data.enabled and ( config.passive and not data.untilCancelled or not config.passive ) ) then
 			data.type = displayID
 			table.insert(tempRows, data)
 		end
@@ -655,13 +731,13 @@ function SimpleBB:GetStartTime(type, name, rank, timeLeft)
 end
 
 -- Update auras
-function SimpleBB:UpdateAuras(type, func)
+function SimpleBB:UpdateAuras(type, filter)
 	for _, data in pairs(self[type]) do data.enabled = nil; data.untilCancelled = nil; end
 		
 	local time = GetTime()
 	local buffID = 1
 	while( true ) do
-		local name, rank, texture, count, debuffType, duration, endTime, isMine, isStealable = func("player", buffID)
+		local name, rank, texture, count, debuffType, duration, endTime, isMine, isStealable = UnitAura("player", buffID, filter)
 		if( not name ) then break end
 		
 		if( not self[type][buffID] ) then
@@ -776,8 +852,8 @@ function SimpleBB:UNIT_AURA(event, unit)
 		return
 	end
 	
-	self:UpdateAuras("buffs", UnitBuff)
-	self:UpdateAuras("debuffs", UnitDebuff)
+	self:UpdateAuras("buffs", "HELPFUL|PASSIVE")
+	self:UpdateAuras("debuffs", "HARMFUL")
 	
 	self:UpdateDisplay("buffs")
 	self:UpdateDisplay("debuffs")
