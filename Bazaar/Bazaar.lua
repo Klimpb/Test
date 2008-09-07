@@ -17,6 +17,8 @@ local lookup = {}
 function Bazaar:OnInitialize()
 	playerName = UnitName("player")
 
+	self.revision = tonumber(string.match("$Revision$", "(%d+)") or 1)
+	
 	-- So we can watch for progress
 	self:RegisterEvent("CHAT_MSG_ADDON")
 
@@ -31,7 +33,7 @@ function Bazaar:OnInitialize()
 	
 	-- We got serialized configuration data
 	Comm.RegisterComm(self, "BAZRD", function(prefix, msg, type, sender)
-		if( prefix == "BAZRD" and activeSync.name and activeSync.from == sender and type == "WHISPER" ) then
+		if( prefix == "BAZRD" and type == "WHISPER" and activeSync.name and activeSync.from == sender ) then
 			Bazaar:ReceivedData(msg, sender)
 		end
 	end)
@@ -47,6 +49,7 @@ function Bazaar:OnInitialize()
 	self.lookup = lookup
 end
 
+-- Move the data into a table without creating multiple ones
 function Bazaar:CompileAddons(...)
 	for k in pairs(tempAddons) do tempAddons[k] = nil end
 	
@@ -120,6 +123,10 @@ function Bazaar:CHAT_MSG_ADDON(prefix, msg, type, sender)
 			
 		-- Sending data, so update total
 		elseif( prefix == NEXT_MULTIPART or prefix == LAST_MULTIPART ) then
+			if( prefix == LAST_MULTIPART ) then
+				self.GUI:UpdateStatus("receiving", L["Finished receiving, unpacking..."])
+			end
+			
 			activeSync.received = activeSync.received + string.len(msg)
 			self.GUI:UpdateProgress(activeSync.received, activeSync.total)
 		end
@@ -453,6 +460,75 @@ function Bazaar:RequestAccepted(total, sender)
 	activeSync.from = sender
 	
 	self:SendCommMessage("START", "WHISPER", sender)
+end
+
+-- EXPORTING DATA
+function Bazaar:ExportData(addon, categories)
+	-- Grab the data from the addon to serialize and send
+	local obj = lookup[addon]
+	local result, data
+	
+	if( obj.sendHandler and type(obj.sendFunc) == "string" ) then
+		result, data = safecall(obj.sendHandler[obj.sendFunc], obj.sendHandler, categories)	
+	elseif( type(obj.sendFunc) == "string" ) then
+		result, data = safecall(getglobal(obj.sendFunc), categories)
+	elseif( type(obj.sendFunc) == "function" ) then
+		result, data = safecall(obj.sendFunc, categories)
+	end
+	
+	-- The safecall failed, or bad data was given
+	if( not result ) then
+		if( type(data) ~= "string" ) then
+			data = ""
+		end
+		self.GUI:TriggerError(string.format(L["Failed to export data for addon '%s'.\n%s"], addon, data))
+		return
+	end
+
+	-- Serialize data so we can add it to the text box
+	-- We save the categories/addon it was grabbed with so we don't have to rely on the user
+	-- memorizing and returning all that data and can just import it in a simple page
+	local export = Serializer:Serialize({addon = addon, categories = categories, data = data, version = self.revision})
+	if( not export ) then
+		self.GUI:TriggerError(string.format(L["Failed to export data for addon '%s'.\n%s"], addon, ""))
+		return
+	end
+	
+	return export
+end
+
+function Bazaar:ImportData(data)
+	local success, import = Serializer:Deserialize(data)
+	if( not success ) then
+		self.GUI:TriggerError(L["Failed to import data."])
+		return
+	elseif( not lookup[import.addon] ) then
+		self.GUI:TriggerError(string.format(L["Failed to import configuration data for '%s', it does not seem to have support for Bazaar."], import.addon))
+		return
+	end
+
+	local obj = lookup[import.addon]
+	local result, msg
+		
+	-- Save it if we successfully serialized
+	if( success ) then
+		if( obj.receiveHandler and type(obj.receiveFunc) == "string" ) then
+			result, msg = safecall(obj.receiveHandler[obj.receiveFunc], obj.receiveHandler, import.data, import.categories)	
+		elseif( type(obj.receiveFunc) == "string" ) then
+			result, msg = safecall(getglobal(obj.receiveFunc), import.data, import.categories)
+		elseif( type(obj.receiveFunc) == "function" ) then
+			result, msg = safecall(obj.receiveFunc, import.data, import.categories)
+		end
+	else
+		msg = data
+	end
+	
+	-- Don't allow bad messages
+	if( not msg or type(msg) ~= "string" ) then
+		msg = ""
+	end
+	
+	self.GUI:UpdateStatus("finished", string.format(L["Finished importing data for '%s'!\n%s"], import.addon, msg))
 end
 
 -- REGISTERING ADDONS

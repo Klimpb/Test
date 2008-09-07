@@ -85,6 +85,7 @@ parent:SetScript("OnShow", function(frame)
 				row.title:SetText(select(2, GetAddOnInfo(data.name)))
 				row.discovered.tooltip = tooltip
 				row.discovered.addon = data.name
+				row.export.addon = data.name
 				row.ping.addon = data.name
 				row:Show()
 			else
@@ -140,7 +141,12 @@ parent:SetScript("OnShow", function(frame)
 			dialog.data = self.addon
 		end
 	end
-
+		
+	-- Show the export page
+	local function PopupExport(self)
+		GUI:ShowExportCategories(self.addon)
+	end
+	
 	local function OnEnter(self)
 		if( self.tooltip ) then
 			GameTooltip:SetOwner(self, "ANCHOR_TOPRIGHT")
@@ -180,19 +186,32 @@ parent:SetScript("OnShow", function(frame)
 		anchor = row
 		rows[i] = row
 
-		local title = row:CreateFontString(nil, "BACKGROUND", "GameFontNormal")
+		local title = row:CreateFontString(nil, "BACKGROUND", "GameFontNormalSmall")
+		title:SetJustifyH("LEFT")
 		title:SetPoint("LEFT")
 		row.title = title
 
 		-- Ping a specific user
 		local ping = MakeButton(row)
 		ping:SetWidth(70)
+		ping:SetHeight(17)
 		ping:SetPoint("RIGHT")
 		ping:SetText(L["Request"])
 		ping:SetScript("OnClick", PopupPing)
 		ping:SetScript("OnEnter", OnEnter)
 		ping:SetScript("OnLeave", OnLeave)
 		row.ping = ping
+
+		-- Export data
+		local export = MakeButton(row)
+		export:SetWidth(55)
+		export:SetHeight(17)
+		export:SetPoint("RIGHT", ping, "LEFT")
+		export:SetText(L["Export"])
+		export:SetScript("OnClick", PopupExport)
+		export:SetScript("OnEnter", OnEnter)
+		export:SetScript("OnLeave", OnLeave)
+		row.export = export
 
 		-- How many users are using this addon
 		local discovered = CreateFrame("Button", nil, row)
@@ -204,7 +223,7 @@ parent:SetScript("OnShow", function(frame)
 		else
 			discovered:SetTextFontObject(GameFontNormalSmall)
 		end
-		discovered:SetPoint("RIGHT", ping, "LEFT", 0, 0)
+		discovered:SetPoint("RIGHT", export, "LEFT", 0, 0)
 		discovered:SetScript("OnClick", PopupDiscovered)
 		discovered:SetScript("OnEnter", OnEnter)
 		discovered:SetScript("OnLeave", OnLeave)
@@ -405,6 +424,199 @@ end)
 
 InterfaceOptions_AddCategory(frame)
 
+-- IMPORT EDIT BOX
+local import = CreateFrame("Frame", nil, UIParent)
+import.name = "Import"
+import.parent = "Bazaar"
+import.addonname = "Bazaar"
+import:Hide()
+import:SetScript("OnShow", function(frame)
+	local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+	title:SetPoint("TOPLEFT", 16, -16)
+	title:SetText("Bazaar")
+	
+	local subtitle = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	subtitle:SetHeight(32)
+	subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+	subtitle:SetPoint("RIGHT", frame, -32, 0)
+	subtitle:SetNonSpaceWrap(true)
+	subtitle:SetJustifyH("LEFT")
+	subtitle:SetJustifyV("TOP")
+	subtitle:SetText(L["Import an addon configuration that was exported from Bazaar."])
+	
+	frame.subtitle = subtitle
+	
+	-- Borrowed (Stolen) from AceGUI-3.0)
+	local backdrop = {
+		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		tile = true, tileSize = 16, edgeSize = 16,
+		insets = { left = 3, right = 3, top = 3, bottom = 3 }
+	}
+
+	local container = CreateFrame("Frame", nil, frame)
+	container:SetPoint("BOTTOMLEFT", frame, 4, 50)
+	container:SetPoint("BOTTOMRIGHT", frame, -4, 50)
+	container:SetHeight(250)
+	container:SetWidth(1)
+	container:SetBackdrop(backdrop)
+	container:SetBackdropColor(0.0, 0.0, 0.0)
+	container:SetBackdropBorderColor(0.4, 0.4, 0.4)
+
+	-- Scroll frame
+	local scroll = CreateFrame("ScrollFrame", "BazaarImportEditScroll", container, "UIPanelScrollFrameTemplate")
+	scroll:SetPoint("TOPLEFT", 5, -6)
+	scroll:SetPoint("BOTTOMRIGHT", -28, 6)
+	scroll:SetScript("OnShow", fixSize)
+
+	local child = CreateFrame("Frame", nil, scroll)
+	scroll:SetScrollChild(child)
+	child:SetHeight(2)
+	child:SetWidth(2)
+
+	-- Create the actual edit box
+	local editBox = CreateFrame("EditBox", nil, child)
+	editBox:SetPoint("TOPLEFT")
+	editBox:SetHeight(50)
+	editBox:SetWidth(50)
+		
+	editBox:SetMultiLine(true)
+	editBox:SetAutoFocus(false)
+	editBox:EnableMouse(true)
+	editBox:SetFontObject(GameFontHighlightSmall)
+	editBox:SetTextInsets(5, 5, 3, 3)
+	
+	frame.editBox = editBox
+	
+	local function fixSize()
+		child:SetHeight(scroll:GetHeight())
+		child:SetWidth(scroll:GetWidth())
+		editBox:SetWidth(scroll:GetWidth())
+	end
+
+	scroll:SetScript("OnMouseUp", function() editBox:SetFocus() end)	
+	editBox:SetScript("OnEscapePressed", editBox.ClearFocus)
+	
+	local selectAll = MakeButton(frame)
+	selectAll:SetPoint("BOTTOMLEFT", 16, 16)
+	selectAll:SetText(L["Select All"])
+	selectAll:SetScript("OnClick", function()
+		editBox:SetFocus()
+		editBox:SetCursorPosition(0)
+		editBox:HighlightText(0)
+	end)
+
+	local import = MakeButton(frame)
+	import:SetWidth(140)
+	import:SetPoint("BOTTOMRIGHT", -16, 16)
+	import:SetText(L["Import"])
+	import:SetScript("OnClick", function()
+		GUI:ImportConfiguration(frame.editBox:GetText())
+	end)
+	
+	frame.import = import
+	
+	fixSize()
+	frame:SetScript("OnShow", nil)
+end)
+
+InterfaceOptions_AddCategory(import)
+
+-- EXPORT EDIT BOX
+local export = CreateFrame("Frame", nil, UIParent)
+export.name = "Export"
+export.parent = parent
+export.addonname = "Bazaar"
+export.hidden = true
+export:Hide()
+export:SetScript("OnShow", function(frame)
+	local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+	title:SetPoint("TOPLEFT", 16, -16)
+	title:SetText("Bazaar")
+	
+	local subtitle = frame:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+	subtitle:SetHeight(32)
+	subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8)
+	subtitle:SetPoint("RIGHT", frame, -32, 0)
+	subtitle:SetNonSpaceWrap(true)
+	subtitle:SetJustifyH("LEFT")
+	subtitle:SetJustifyV("TOP")
+	subtitle:SetText(L["Configuration data text that you can give to other people for the addon '%s', they can then import it and get your configuration."])
+	
+	frame.subtitle = subtitle
+	
+	-- Borrowed (Stolen) from AceGUI-3.0)
+	local backdrop = {
+		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
+		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		tile = true, tileSize = 16, edgeSize = 16,
+		insets = { left = 3, right = 3, top = 3, bottom = 3 }
+	}
+
+	local container = CreateFrame("Frame", nil, frame)
+	container:SetPoint("BOTTOMLEFT", frame, 4, 50)
+	container:SetPoint("BOTTOMRIGHT", frame, -4, 50)
+	container:SetHeight(250)
+	container:SetWidth(1)
+	container:SetBackdrop(backdrop)
+	container:SetBackdropColor(0.0, 0.0, 0.0)
+	container:SetBackdropBorderColor(0.4, 0.4, 0.4)
+
+	-- Scroll frame
+	local scroll = CreateFrame("ScrollFrame", "BazaarExportEditScroll", container, "UIPanelScrollFrameTemplate")
+	scroll:SetPoint("TOPLEFT", 5, -6)
+	scroll:SetPoint("BOTTOMRIGHT", -28, 6)
+	scroll:SetScript("OnShow", fixSize)
+
+	local child = CreateFrame("Frame", nil, scroll)
+	scroll:SetScrollChild(child)
+	child:SetHeight(2)
+	child:SetWidth(2)
+
+	-- Create the actual edit box
+	local editBox = CreateFrame("EditBox", nil, child)
+	editBox:SetPoint("TOPLEFT")
+	editBox:SetHeight(50)
+	editBox:SetWidth(50)
+		
+	editBox:SetMultiLine(true)
+	editBox:SetAutoFocus(false)
+	editBox:EnableMouse(true)
+	editBox:SetFontObject(GameFontHighlightSmall)
+	editBox:SetTextInsets(5, 5, 3, 3)
+	
+	frame.editBox = editBox
+	
+	local function fixSize()
+		child:SetHeight(scroll:GetHeight())
+		child:SetWidth(scroll:GetWidth())
+		editBox:SetWidth(scroll:GetWidth())
+	end
+
+	scroll:SetScript("OnMouseUp", function() editBox:SetFocus() end)	
+	editBox:SetScript("OnEscapePressed", editBox.ClearFocus)
+	
+	local selectAll = MakeButton(frame)
+	selectAll:SetPoint("BOTTOMLEFT", 16, 16)
+	selectAll:SetText(L["Select All"])
+	selectAll:SetScript("OnClick", function()
+		editBox:SetFocus()
+		editBox:SetCursorPosition(0)
+		editBox:HighlightText(0)
+	end)
+	
+	fixSize()
+	
+	frame:SetScript("OnShow", nil)
+	frame:SetScript("OnHide", function(frame)
+		syncInfo.export = nil
+		frame.hidden = true
+		InterfaceAddOnsList_Update()
+	end)
+end)
+
+InterfaceOptions_AddCategory(export)
+
 -- SYNC CATEGORIES
 local categories = CreateFrame("Frame", nil, UIParent)
 categories.name = "Categories"
@@ -438,7 +650,7 @@ categories:SetScript("OnShow", function(frame)
 	
 	-- CLEAN UP LATER
 	local categoryList = {}
-	local function Load()
+	local function LoadSync()
 		for i=#(categoryList), 1, -1 do table.remove(categoryList) end
 		for k in pairs(categories) do categories[k] = nil end
 		
@@ -456,6 +668,20 @@ categories:SetScript("OnShow", function(frame)
 		table.sort(categoryList, sortCategories)
 		
 		frame.subtitle:SetFormattedText(L["Choose the categories of configuration to sync from %s for '%s'."], syncInfo.from, syncInfo.addon)
+	end
+	
+	local function LoadExport()
+		for i=#(categoryList), 1, -1 do table.remove(categoryList) end
+		for k in pairs(categories) do categories[k] = nil end
+		
+		local cats = Bazaar.lookup[syncInfo.addon].categories
+		for key, name in pairs(cats) do
+			table.insert(categoryList, key)
+			categories[key] = false
+		end
+		
+		table.sort(categoryList, sortCategories)
+		frame.subtitle:SetFormattedText(L["Choose the categories of configuration to export for '%s'."], syncInfo.addon)
 	end
 	
 	local offset = 0
@@ -568,20 +794,35 @@ categories:SetScript("OnShow", function(frame)
 	request:SetText(L["Request Configuration"])
 	request:Disable()
 	request:SetScript("OnClick", function()
-		GUI:SendRequest(categories)
+		for k, v in pairs(categories) do if( v == false ) then categories[k] = nil end end
+		
+		if( syncInfo.export ) then
+			GUI:ExportData(categories)
+		else
+			GUI:SendRequest(categories)
+		end
 	end)
 	
 	frame.request = request
 	
 	frame:SetScript("OnShow", function(frame)
-		Load()
-		Refresh()
+		if( syncInfo.export ) then
+			LoadExport()
+			frame.request:SetText(L["Export Configuration"])
+		else
+			LoadSync()
+			frame.request:SetText(L["Request Configuration"])
+		end
 		
-		frame.subtitle:SetFormattedText(L["Choose the categories of configuration to sync from %s for '%s'."], syncInfo.from, syncInfo.addon)
+		Refresh()
+	end)
+
+	frame:SetScript("OnHide", function(frame)
+		frame.hidden = true
+		InterfaceAddOnsList_Update()
 	end)
 	
-	Load()
-	Refresh()
+	frame:GetScript("OnShow")(frame)
 end)
 
 InterfaceOptions_AddCategory(categories)
@@ -665,8 +906,10 @@ progress:SetScript("OnShow", function(frame)
 	progress:SetScript("OnShow", function()
 		progress.done:Disable()
 		
-		if( not syncInfo.addon and not syncInfo.from ) then
+		if( not syncInfo.addon and not syncInfo.from and not syncInfo.export ) then
 			progress.hidden = true
+			progress:Hide()
+			
 			InterfaceAddOnsList_Update()
 			InterfaceOptionsFrame_OpenToFrame(parent)
 		end
@@ -676,6 +919,8 @@ progress:SetScript("OnShow", function(frame)
 	progress:SetScript("OnHide", function()
 		if( not syncInfo.addon and not syncInfo.from ) then
 			progress.hidden = true
+			progress:Hide()
+			
 			InterfaceAddOnsList_Update()
 		end
 	end)
@@ -702,6 +947,10 @@ end
 
 -- Show categories panel
 function GUI:ShowCategories()
+	if( not categories.hidden ) then
+		return
+	end
+
 	-- Open the categories panel
 	progress.hidden = true
 	categories.hidden = nil
@@ -712,12 +961,27 @@ end
 
 -- Show progress panel
 function GUI:ShowProgress()
+	if( not progress.hidden ) then
+		return
+	end
+	
 	-- Open the progress panel
 	progress.hidden = nil
 	categories.hidden = true
-	
+		
 	InterfaceAddOnsList_Update()
 	InterfaceOptionsFrame_OpenToFrame(progress)
+end
+
+-- Export edit box
+function GUI:ShowExport(addon, text)
+	export.hidden = nil
+	
+	InterfaceAddOnsList_Update()
+	InterfaceOptionsFrame_OpenToFrame(export)
+	
+	export.editBox:SetText(text)
+	export.subtitle:SetFormattedText(L["Configuration data text that you can give to other people for the addon '%s', they can then import it and get your configuration."], addon)
 end
 
 -- Update progress bar
@@ -747,8 +1011,12 @@ function GUI:UpdateStatus(code, text)
 		progress.percent:Hide()
 		
 		if( code == "error" ) then
+			syncInfo.export = nil
 			progress.done:Enable()
 		end
+	elseif( code == "finished" ) then
+		progress.done:Enable()
+		syncInfo.export = nil
 	elseif( code == "requested" ) then
 		self:ShowProgress()
 		self:UpdateProgress(0, 1)
@@ -765,6 +1033,37 @@ function GUI:UpdateStatus(code, text)
 	end
 end
 
+-- Get ready to import!
+function GUI:ImportConfiguration(text)
+	syncInfo.export = true
+	
+	self:UpdateStatus("sent", L["Importing..."])
+	Bazaar:ImportData(text)
+end
+
+-- Start to grab data for exporting
+function GUI:ExportData(categories)
+	local data = Bazaar:ExportData(syncInfo.addon, categories)
+	if( data ) then
+		self:ShowExport(syncInfo.addon, data)
+	end
+
+	syncInfo.export = nil
+	syncInfo.addon = nil
+end
+
+function GUI:ShowExportCategories(addon)
+	syncInfo.addon = addon
+	syncInfo.export = true
+	
+	-- Open the categories panel
+	progress.hidden = true
+	categories.hidden = nil
+	
+	InterfaceAddOnsList_Update()
+	InterfaceOptionsFrame_OpenToFrame(categories)
+end
+
 -- Send a ping for data
 function GUI:SendPing(addon, name)
 	name = string.trim(name)
@@ -775,6 +1074,7 @@ function GUI:SendPing(addon, name)
 	syncInfo.addon = addon
 	syncInfo.from = name
 	syncInfo.pending = nil
+	syncInfo.export = nil
 
 	-- Lock all pings so the user can't fuck with anything
 	self:LockPings()
