@@ -26,6 +26,8 @@ BazaarLocals = {
 	["Request accepted from %s for '%s'! Waiting for data."] = "Request accepted from %s for '%s'! Waiting for data.",
 	["Receiving data..."] = "Receiving data...",
 	
+	["Finished receiving, unpacking..."] = "Finished receiving, unpacking...",
+	
 	-- Sync errors
 	["Unable to package data for '%s' to send to %s, cancelled sync."] = "Unable to package data for '%s' to send to %s, cancelled sync.",
 	["User %s attempted to request configuration for the addon '%s', denied it due to being in combat."] = "User %s attempted to request configuration for the addon '%s', denied it due to being in combat.",
@@ -36,6 +38,8 @@ BazaarLocals = {
 	["It appears that %s is no longer online."] = "It appears that %s is no longer online.",
 	
 	-- GUI
+	["Import"] = "Import",
+	["Export"] = "Export",
 	["Ping"] = "Ping",
 	["Request"] = "Request",
 	["Enter the player name of who you want to get data for '%s' from."] = "Enter the player name of who you want to get data for '%s' from.",
@@ -48,6 +52,9 @@ BazaarLocals = {
 	["%s%d|r |cffffffffuser|r"] = "%s%d|r |cffffffffuser|r",
 	["No users"] = "No users",
 	
+	["Failed to import data."] = "Failed to import data.",
+	
+	["Choose the categories of configuration to export for '%s'."] = "Choose the categories of configuration to export for '%s'.",
 	["Choose the categories of configuration to sync from %s for '%s'."] = "Choose the categories of configuration to sync from %s for '%s'.",
 	["Sent addon configuration sync request to %s."] = "Sent addon configuration sync request to %s.",
 	
@@ -55,6 +62,7 @@ BazaarLocals = {
 	
 	["Finished"] = "Finished",
 	
+	["Export Configuration"] = "Export Configuration",
 	["Request Configuration"] = "Request Configuration",
 	["Select All"] = "Select All",
 	["Unselect All"] = "Unselect All",
@@ -69,4 +77,15 @@ BazaarLocals = {
 	
 	["Show sync errors"] = "Show sync errors",
 	["Alerts you when someone is requesting configuration data from you and an error is triggered."] = "Alerts you when someone is requesting configuration data from you and an error is triggered.",
+	
+	["Failed to export data for addon '%s'.\n%s"] = "Failed to export data for addon '%s'.\n%s",
+	
+	["Import an addon configuration that was exported from Bazaar."] = "Import an addon configuration that was exported from Bazaar.",
+	["This is the text that you can give to other people, so that they can import it into Bazaar."] = "This is the text that you can give to other people, so that they can import it into Bazaar.",
+	
+	["Configuration data text that you can give to other people for the addon '%s', they can then import it and get your configuration."] = "Configuration data text that you can give to other people for the addon '%s', they can then import it and get your configuration.",
+	
+	["Failed to import configuration data for '%s', it does not seem to have support for Bazaar."] = "Failed to import configuration data for '%s', it does not seem to have support for Bazaar.",
+	["Finished importing data for '%s'!\n%s"] = "Finished importing data for '%s'!\n%s",
+	["Importing..."] = "Importing...",
 }
