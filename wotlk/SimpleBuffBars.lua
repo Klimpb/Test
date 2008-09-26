@@ -42,6 +42,7 @@ function SimpleBB:OnInitialize()
 				fontSize = 12,
 				passive = false,
 				time = "hhmmss",
+				stackFirst = false,
 				position = { x = 600, y = 600 },
 			},
 			groups = {},
@@ -338,7 +339,7 @@ local function OnClick(self, mouseButton)
 	
 	if( self.type == "buffs" or self.type == "debuffs" ) then
 		CancelUnitBuff("player", self.data.buffIndex, self.data.filter)
-	elseif( self.type == "tempBuffs" ) then
+	elseif( self.type == "tempEnchants" ) then
 		CancelItemTempEnchantment(self.data.slotID - 15)
 	elseif( self.type == "tracking" ) then
 		ToggleDropDownMenu(1, nil, MiniMapTrackingDropDown, self, 0, -5)
@@ -351,7 +352,7 @@ local function OnEnter(self)
 		GameTooltip:SetUnitBuff("player", self.data.buffIndex)
 	elseif( self.type == "debuffs") then
 		GameTooltip:SetUnitDebuff("player", self.data.buffIndex)
-	elseif( self.type == "tempBuffs" ) then
+	elseif( self.type == "tempEnchants" ) then
 		GameTooltip:SetInventoryItem("player", self.data.slotID)
 	elseif( self.type == "tracking" ) then
 		GameTooltip:SetTracking()
@@ -485,11 +486,19 @@ local tempRows = {}
 local function updateRow(row, config, data)
 	-- Set name/rank
 	if( data.rank and data.stack and data.stack > 1 and config.showRank and config.showStack ) then
-		row.text:SetFormattedText("%s %s (%s)", data.name, data.rank, data.stack)
+		if( not config.stackFirst ) then
+			row.text:SetFormattedText("%s %s (%s)", data.name, data.rank, data.stack)
+		else
+			row.text:SetFormattedText("[%s] %s %s", data.stack, data.name, data.rank)
+		end
 	elseif( data.rank and config.showRank ) then
 		row.text:SetFormattedText("%s %s", data.name, data.rank)
 	elseif( data.stack and data.stack > 1 and config.showStack ) then
-		row.text:SetFormattedText("%s (%s)", data.name, data.stack)
+		if( not config.stackFirst ) then
+			row.text:SetFormattedText("%s (%s)", data.name, data.stack)
+		else
+			row.text:SetFormattedText("[%s] %s", data.stack, data.name)
+		end
 	else
 		row.text:SetText(data.name)
 	end
@@ -616,11 +625,11 @@ local sorting = {
 			return false
 		end
 		
-		if( a.type == "tempBuffs" and b.type == "tempBuffs" ) then
+		if( a.type == "tempEnchants" and b.type == "tempEnchants" ) then
 			return a.slotID < b.slotID
-		elseif( a.type == "tempBuffs" ) then
+		elseif( a.type == "tempEnchants" ) then
 			return true
-		elseif( b.type == "tempBuffs" ) then
+		elseif( b.type == "tempEnchants" ) then
 			return false
 		end
 		
