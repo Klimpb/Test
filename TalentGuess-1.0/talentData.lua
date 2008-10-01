@@ -1,3 +1,4 @@
+if( IS_WRATH_BUILD == nil ) then IS_WRATH_BUILD = (select(4, GetBuildInfo()) >= 30000) end
 if( IS_WRATH_BUILD ) then return end
 
 local major = "TalentGuessData-1.0"
