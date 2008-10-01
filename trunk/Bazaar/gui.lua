@@ -2,10 +2,6 @@ local GUI = {}
 local L = BazaarLocals
 local syncInfo = {}
 
-if( IS_WRATH_BUILD == nil ) then
-	IS_WRATH_BUILD = (select(4, GetBuildInfo()) >= 30000)
-end
-
 -- MAIN SYNCING INFO PANEL THING
 local EDGEGAP, ROWHEIGHT, ROWGAP, GAP = 16, 20, 2, 4
 local RefreshAddons = function() end
