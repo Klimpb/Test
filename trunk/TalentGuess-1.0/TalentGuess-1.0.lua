@@ -3,8 +3,6 @@ local minor = tonumber(string.match("$Revision: 703$", "(%d+)") or 1)
 
 assert(LibStub, string.format("%s requires LibStub.", major))
 
-if( IS_WRATH_BUILD == nil ) then IS_WRATH_BUILD = (select(4, GetBuildInfo()) >= 30000) end
-
 local Talents = LibStub:NewLibrary(major, minor)
 if( not Talents ) then return end
 
@@ -261,7 +259,6 @@ local function COMBAT_LOG_EVENT_UNFILTERED(timestamp, eventType, sourceGUID, sou
 		if( not castOnly[spellID] and bit.band(destFlags, ENEMY_AFFILIATION) == ENEMY_AFFILIATION and select(4, ...) == "BUFF" ) then
 			addSpell(spellID, destGUID, destName)
 		end
-	
 
 	-- Everything else shares the same sourceFlags check, and we use eventsRegistered to make sure it's one we want, soo small optimization
 	elseif( bit.band(sourceFlags, ENEMY_AFFILIATION) == ENEMY_AFFILIATION ) then
