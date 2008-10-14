@@ -1,0 +1,7 @@
+## Interface: 20300
+## Title: Damn Inner Fire
+## Notes: Reminds when Inner Fire is down
+## Author: Mayen
+## SavedVariables: DamnInnerFireDB
+
+DamnInnerFire.lua
