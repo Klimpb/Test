@@ -51,11 +51,15 @@ function Bloomy:OnEnable()
 	self:RegisterEvent("RAID_ROSTER_UPDATE")
 	self:RegisterEvent("PLAYER_REGEN_ENABLED")
 	
+	-- Wait until PEW to load it to make sure we have all the data on people
+	self:RegisterEvent("PLAYER_ENTERING_WORLD", function()
+		Bloomy:UnregisterEvent("PLAYER_ENTERING_WORLD")
+		Bloomy:ScanMacros()
+		Bloomy:UpdateMacros()
+	end)
+	
 	-- Store the macro info initially
 	self:RegisterEvent("ADDON_LOADED")
-
-	self:ScanMacros()
-	self:UpdateMacros()
 end
 
 function Bloomy:RAID_ROSTER_UPDATE()
@@ -128,12 +132,12 @@ function Bloomy:UNIT_AURA(event, unit)
 		for k in pairs(unitBuffs[playerName]) do unitBuffs[playerName][k] = nil end
 		
 		for i=1, 40 do
-			local name, rank, _, stack, duration, timeLeft = UnitBuff(unit, i)
+			local name, rank, texture, stack, buffType, duration, timeLeft, isMine = UnitBuff(unit, i)
 			if( not name ) then break end
 			
 			-- It's one of ours, and we're actively tracking it
-			if( timeLeft and activeSpells[name] and activeSpells[name][playerName] ) then
-				unitBuffs[playerName][name] = GetTime() + timeLeft
+			if( isMine and timeLeft and activeSpells[name] and activeSpells[name][playerName] ) then
+				unitBuffs[playerName][name] = timeLeft
 			end
 		end
 	end
@@ -440,6 +444,7 @@ local function sortMacros(a, b)
 end
 
 local temp = {}
+local alreadyAdded = {}
 function Bloomy:UpdateFrame()
 	if( not self.frame ) then
 		return
@@ -448,16 +453,19 @@ function Bloomy:UpdateFrame()
 	-- Hide everything
 	for _, row in pairs(self.frame.rows) do
 		row.unit = nil
+		row.target = nil
 		row.timeLeft:Hide()
 		row.name:Hide()
 	end
 	
 	-- Sort table thing
 	for i=#(temp), 1, -1 do table.remove(temp, i) end
+	for k in pairs(alreadyAdded) do alreadyAdded[k] = nil end
 	
 	for _, macro in pairs(bloomyMacros) do
-		if( macro.enabled and macro.target ) then
+		if( macro.enabled and macro.target and not alreadyAdded[macro.target] ) then
 			table.insert(temp, macro.id)
+			alreadyAdded[macro.target] = true
 		end
 	end
 	

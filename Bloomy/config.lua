@@ -134,16 +134,6 @@ local function loadOptions()
 	options.args.profile.order = 2
 end
 
---[[
-function test()
-	SlashCmdList["BLOOMY"]("add 1 Mayen")
-	SlashCmdList["BLOOMY"]("add 2 Akelda")
-	SlashCmdList["BLOOMY"]("add 1 Akelda")
-	SlashCmdList["BLOOMY"]("remove 1 Mayen")
-	SlashCmdList["BLOOMY"]("remove 2 Akelda")
-end
-]]
-
 -- Slash commands
 SLASH_BLOOMY1 = "/bloomy"
 SlashCmdList["BLOOMY"] = function(msg)

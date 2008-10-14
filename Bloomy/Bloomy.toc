@@ -3,7 +3,7 @@
 ## Author: Mayen
 ## Notes: Helps make rolling Lifebloom easier
 ## SavedVariables: BloomyDB
-## OptionalDeps: LibStub, Ace3, TestCode
+## OptionalDeps: LibStub, Ace3
 
 libs\LibStub-1.0\LibStub-1.0.xml
 libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
