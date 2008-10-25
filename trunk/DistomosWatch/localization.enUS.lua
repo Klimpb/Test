@@ -23,8 +23,8 @@ DistWatchLocals = {
 	["Raid instances"] = "Raid instances",
 	["Party instances"] = "Party instances",
 	
-	["Show owner names"] = "Show owner names",
-	["Shows who owns the Prayer of Mending as long as it's not yourself.\nThis feature is not perfect, and isn't 100% accurate."] = "Shows who owns the Prayer of Mending as long as it's not yourself.\nThis feature is not perfect, and isn't 100% accurate.",
+	["Show other mendings"] = "Show other mendings",
+	["Show Prayer of Mendings from other Priests."] = "Show Prayer of Mendings from other Priests.",
 	
 	["Enable Distomos Watch inside"] = "Enable Distomos Watch inside",
 	["Allows you to choose which scenarios this mod should be enabled in."] = "Allows you to choose which scenarios this mod should be enabled in.",
@@ -34,10 +34,8 @@ DistWatchLocals = {
 	["My mend color"] = "My mend color",
 	["Bar color for Prayer of Mending that we casted."] = "Bar color for Prayer of Mending that we casted.",
 	
-	["Color"] = "Color",
-	
 	["Others mend color"] = "Others mend color",
-	["Bar color for Prayer of Mending that someone in the raid casted."] = "Bar color for Prayer of Mending that someone in the raid casted.",
+	["Bar color for Prayer of Mending that someone else casted."] = "Bar color for Prayer of Mending that someone else casted.",
 	
 	["Fade time"] = "Fade time",
 	

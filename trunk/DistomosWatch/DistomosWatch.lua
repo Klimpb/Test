@@ -7,20 +7,8 @@ DistWatch = LibStub("AceAddon-3.0"):NewAddon("DistWatch", "AceEvent-3.0")
 local L = DistWatchLocals
 local GTBLib, GTBGroup, instanceType
 
-local playerGUID
-local unitMap = {}
-local unitTable = {}
-
--- Spell info
-local POM_SPELLID = {[41635] = true, [48110] = true, [48111] = true, [48112] = true, [33076] = true, [48113] = true, [33110] = true}
 local SPELL_NAME = GetSpellInfo(41635)
-local SPELL_DURATION = 30
-local BOUNCE_TIMEOUT = 1.5
-
--- Tracking who "owns" the POM
-local mendOwners = {}
-local ownerTimeout = {}
-local originalOwner = {}
+local selfOwned = {}
 
 function DistWatch:OnInitialize()
 	self.defaults = {
@@ -60,179 +48,69 @@ function DistWatch:OnInitialize()
 	SML = LibStub:GetLibrary("LibSharedMedia-3.0")
 	SML.RegisterCallback(self, "LibSharedMedia_Registered", "TextureRegistered")
 	
+	-- Setup bar group
 	self:Reload()
-
-	playerGUID = UnitGUID("player")
 
 	-- Monitor for zone change
 	self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-	self:RegisterEvent("PLAYER_ENTERING_WORLD")
+	self:RegisterEvent("PLAYER_ENTERING_WORLD", function()
+		DistWatch:UnregisterEvent("PLAYER_ENTERING_WORLD")
+		DistWatch:ZONE_CHANGED_NEW_AREA()
+	end)
+end
 
-	-- Setup our unit table so we don't have to do that many concats
-	for i=1, MAX_RAID_MEMBERS do
-		table.insert(unitTable, string.format("raid%d", i))
+function DistWatch:UNIT_AURA(event, unit)
+	if( not UnitIsFriend("player", unit) or not UnitIsPlayer(unit) ) then
+		return
 	end
 	
-	for i=1, MAX_PARTY_MEMBERS do
-		table.insert(unitTable, string.format("party%d", i))
+	local buffID = 1
+	while( true ) do
+		local name, rank, texture, count, debuffType, duration, endTime, isMine, isStealable = UnitBuff(unit, buffID)
+		if( not name ) then break end
+		if( name == SPELL_NAME ) then
+			local guid = UnitGUID(unit)
+			selfOwned[guid] = isMine
+			
+			self:StartTimer(guid, UnitName(unit), count, duration, endTime, isMine)
+			break
+		end
+		
+		buffID = buffID + 1
 	end
 end
 
-function DistWatch:StartTimer(destGUID, destName, spellID)
-	-- Check who owns the POM
-	local type = "color"
-	--[[
-	if( mendOwners[destGUID] == playerGUID ) then
-		type = "ourColor"
-	end
-	]]
-
-	-- Show owner of the PoM if it isn't us
-	local text
-	if( self.db.profile.showOthers and mendOwners[destGUID] and mendOwners[destGUID] ~= playerGUID and unitMap[mendOwners[destGUID]] ) then
-		local name = UnitName(unitMap[mendOwners[destGUID]])
-		if( name ) then
-			text = string.format("%s - %s (%s)", destName, name, self:GetStack(unitMap[destGUID]))
-		else
-			text = string.format("%s (%d)", destName, self:GetStack(unitMap[destGUID]))
-		end
-	else
-		text = string.format("%s (%d)", destName, self:GetStack(unitMap[destGUID]))
+function DistWatch:StartTimer(destGUID, destName, stack, duration, endTime, isMine)
+	-- Only show our own PoMs
+	if( not isMine and not self.db.profile.showOthers ) then
+		return
 	end
 
-	GTBGroup:RegisterBar(string.format("dw%s", destGUID), text, SPELL_DURATION, nil, nil, self.db.profile[type].r, self.db.profile[type].g, self.db.profile[type].b)
+	local type = isMine and "ourColor" or "color"
+	GTBGroup:RegisterBar(string.format("dw%s", destGUID), string.format("%s (%d)", destName, stack), endTime - GetTime(), duration, nil, self.db.profile[type].r, self.db.profile[type].g, self.db.profile[type].b)
 end
 
 -- Check for POM
 local COMBATLOG_OBJECT_TYPE_PLAYER = COMBATLOG_OBJECT_TYPE_PLAYER
---local test = {}
-local eventRegistered = {["SPELL_CAST_SUCCESS"] = true, ["SPELL_HEAL"] = true, ["SPELL_AURA_APPLIED"] = true, ["SPELL_AURA_REMOVED"] = true, ["UNIT_DIED"] = true}
+local eventRegistered = {["SPELL_HEAL"] = true, ["SPELL_AURA_APPLIED"] = true, ["SPELL_AURA_REMOVED"] = true, ["UNIT_DIED"] = true}
 function DistWatch:COMBAT_LOG_EVENT_UNFILTERED(event, timestamp, eventType, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, spellID, spellName, spellSchool, auraType)
 	if( not eventRegistered[eventType] and bit.band(destFlags, COMBATLOG_OBJECT_TYPE_PLAYER) == COMBATLOG_OBJECT_TYPE_PLAYER ) then
 		return
 	end
 	
-	-- New POM casted, associate that the one on destGUID is by sourceGUID
-	if( eventType == "SPELL_CAST_SUCCESS" and POM_SPELLID[spellID] ) then
-		table.insert(originalOwner, sourceGUID)
-		table.insert(ownerTimeout, GetTime() + BOUNCE_TIMEOUT)
-
-		--test[sourceGUID] = sourceName
-		mendOwners[destGUID] = sourceGUID
-		self:StartTimer(destGUID, destName, spellID)
-		--ChatFrame1:AddMessage(string.format("[%s] casted on [%s]", sourceName, destName))
-		
-	-- POM Triggered, get ready for a bounce
-	elseif( eventType == "SPELL_HEAL" and POM_SPELLID[spellID] ) then
-		local type = "color"
-		--[[
-		if( mendOwners[destGUID] == playerGUID ) then
-			type = "ourColor"
-		end
-		]]
+	-- Bounced
+	if( eventType == "SPELL_HEAL" and spellName == SPELL_NAME ) then
+		local type = selfOwned[destGUID] and "ourColor" or "color"
 		GTBGroup:RegisterBar(string.format("dw%s", destGUID), string.format("%s - %s", destName, auraType), 0, nil, nil, self.db.profile[type].r, self.db.profile[type].g, self.db.profile[type].b)
-		
-		-- Trying to use a table to solve multiple POMs bouncing at once.
-		-- For example, Priest A and Priest B both cast a PoM on a different person, some sort of raid wide
-		-- AE damage happens like Naj'entus, Priest A's heals first then Priest B's, but this is before the new one
-		-- is applied, so in THEORY we know A's bounce will be applied before B's.
-		if( mendOwners[destGUID] ) then
-			table.insert(originalOwner, mendOwners[destGUID])
-			table.insert(ownerTimeout, GetTime() + BOUNCE_TIMEOUT)
-			--ChatFrame1:AddMessage(string.format("POM on [%s] bounced, owned by [%s]", destName, test[mendOwners[destGUID] or ""] or ""))
-			mendOwners[destGUID] = nil
-		end
-	
-	-- POM Gained 
-	elseif( eventType == "SPELL_AURA_APPLIED" and auraType == "BUFF" and unitMap[destGUID] and POM_SPELLID[spellID] ) then
-		--- Find the last known bounce, that hasn't timed out yet
-		local timeout, original
-		while( true ) do
-			timeout = table.remove(ownerTimeout, 1)
-			original = table.remove(originalOwner, 1)
-			--ChatFrame1:AddMessage(string.format("[%s] [%s] [%s]", timeout or "", original or "", GetTime()))
-			if( not timeout or not original or GetTime() <= timeout ) then break end
-		end
-		
-		--if( timeout ) then
-		--	ChatFrame1:AddMessage(string.format("[%s] [%s] [%s]", timeout, GetTime(), GetTime() - (timeout - BOUNCE_TIMEOUT)))
-		--end
-		
-		--[[
-		if( timeout ) then
-			ChatFrame1:AddMessage(string.format("[%s] [%s] [%s] [%s]", timeout, GetTime(), timeout - GetTime(), original or "", test[original or ""] or ""))
-		else
-			ChatFrame1:AddMessage(string.format("[%s] gained unknown pom", destName))
-		end
-		]]
-		
-		if( timeout and original ) then
-			mendOwners[destGUID] = original
-		end
-
-		self:StartTimer(destGUID, destName, spellID)
 	
 	-- POM Faded
-	elseif( eventType == "SPELL_AURA_REMOVED" and auraType == "BUFF" and unitMap[destGUID] and POM_SPELLID[spellID] ) then
+	elseif( eventType == "SPELL_AURA_REMOVED" and auraType == "BUFF" and spellName == SPELL_NAME ) then
 		GTBGroup:UnregisterBar(string.format("dw%s", destGUID))
 		
 	-- Unit died
 	elseif( eventType == "UNIT_DIED" ) then
-		mendOwners[destGUID] = nil
-		
-		for i=#(originalOwner), 1, -1 do
-			if( originalOwner[i] == destGUID ) then
-				table.remove(originalOwner, i)
-				table.remove(ownerTimeout, i)
-			end
-		end
-		
 		GTBGroup:UnregisterBar(string.format("dw%s", destGUID))
 	end
-end
-
--- Get stack size
-function DistWatch:GetStack(unit)
-	if( not unit ) then return 5 end
-	
-	local i = 1
-	while( true ) do
-		local name, rank, _, stack, duration, timeLeft = UnitBuff(unit, i)
-		if( not name ) then break end
-		i = i + 1
-		
-		if( name == SPELL_NAME ) then
-			return stack
-		end
-	end
-	
-	return 5
-end
-
--- Update party/raid list
-function DistWatch:UPDATE_ROSTER()
-	if( not playerGUID ) then
-		return
-	end
-	
-	for k in pairs(unitMap) do unitMap[k] = nil end
-	
-	unitMap[playerGUID] = "player"
-	for _, unit in pairs(unitTable) do
-		local guid = UnitGUID(unit)
-		if( guid ) then
-			unitMap[UnitGUID(unit)] = unit
-		end
-	end
-end
-
-
-function DistWatch:PLAYER_ENTERING_WORLD()
-	playerGUID = UnitGUID("player")
-
-	self:UPDATE_ROSTER()
-	self:ZONE_CHANGED_NEW_AREA()
-	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 end
 
 -- Check if we should enable it
@@ -244,9 +122,7 @@ function DistWatch:ZONE_CHANGED_NEW_AREA()
 
 		if( self.db.profile.inside[type] ) then
 			self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-			self:RegisterEvent("PARTY_MEMBERS_CHANGED", "UPDATE_ROSTER")
-			self:RegisterEvent("RAID_ROSTER_UPDATE", "UPDATE_ROSTER")
-			self:UPDATE_ROSTER()
+			self:RegisterEvent("UNIT_AURA")
 		else
 			self:UnregisterAllEvents()
 			self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
@@ -311,8 +187,8 @@ function DistWatch:Reload()
 end
 
 function DistWatch:Test()
-	GTBGroup:RegisterBar("dw1", string.format("%s - Distomos (4)", UnitName("player")), SPELL_DURATION, nil, nil, self.db.profile.color.r, self.db.profile.color.g, self.db.profile.color.b)
-	GTBGroup:RegisterBar("dw2", string.format("%s (5)", UnitName("player")), SPELL_DURATION, nil, nil, self.db.profile.color.r, self.db.profile.color.g, self.db.profile.color.b)
+	GTBGroup:RegisterBar("dw1", string.format("%s - Distomos (4)", UnitName("player")), 15, nil, nil, self.db.profile.color.r, self.db.profile.color.g, self.db.profile.color.b)
+	GTBGroup:RegisterBar("dw2", string.format("%s (5)", UnitName("player")), 15, nil, nil, self.db.profile.ourColor.r, self.db.profile.ourColor.g, self.db.profile.ourColor.b)
 end
 
 function DistWatch:Clear()

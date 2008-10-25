@@ -126,8 +126,8 @@ local function loadOptions()
 					showOthers = {
 						order = 0,
 						type = "toggle",
-						name = L["Show owner names"],
-						desc = L["Shows who owns the Prayer of Mending as long as it's not yourself.\nThis feature is not perfect, and isn't 100% accurate."],
+						name = L["Show other mendings"],
+						desc = L["Show Prayer of Mendings from other Priests."],
 					},
 					growUp = {
 						order = 1,
@@ -211,26 +211,18 @@ local function loadOptions()
  					color = {
 						order = 1,
 						type = "color",
-						--name = L["Others mend color"],
-						name = L["Color"],
-						--desc = L["Bar color for Prayer of Mending that someone in the raid casted."],
+						name = L["Others mend color"],
+						desc = L["Bar color for Prayer of Mending that someone else casted."],
 						set = setColor,
 						get = getColor,
 					},
- 					--[[
  					ourColor = {
-						order = 1,
+						order = 2,
 						type = "color",
 						name = L["My mend color"],
 						desc = L["Bar color for Prayer of Mending that we casted."],
 						set = setColor,
 						get = getColor,
-					},
-					]]
-					sep = {
-						order = 4,
-						name = "",
-						type = "description",
 					},
 					width = {
 						order = 3,
@@ -240,7 +232,7 @@ local function loadOptions()
 						set = setNumber,
 					},
 					texture = {
-						order = 5,
+						order = 4,
 						type = "select",
 						name = L["Texture"],
 						dialogControl = "LSM30_Statusbar",
