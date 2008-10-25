@@ -1,4 +1,4 @@
-## Interface: 20400
+## Interface: 30000
 ## Title: Distomos Watch (PoM Watch)
 ## Notes: Prayer of Mending tracker for Priests
 ## Author: Mayen
