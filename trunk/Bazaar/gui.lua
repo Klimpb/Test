@@ -13,12 +13,7 @@ local function MakeButton(parent)
 
 	button:SetHighlightFontObject(GameFontHighlightSmall)
 	button:SetDisabledFontObject(GameFontDisableSmall)
-
-	if( IS_WRATH_BUILD ) then
-		button:SetNormalFontObject(GameFontNormalSmall)
-	else
-		button:SetTextFontObject(GameFontNormalSmall)
-	end
+	button:SetNormalFontObject(GameFontNormalSmall)
 
 	button:SetNormalTexture("Interface\\Buttons\\UI-Panel-Button-Up")
 	button:SetPushedTexture("Interface\\Buttons\\UI-Panel-Button-Down")
@@ -214,11 +209,7 @@ parent:SetScript("OnShow", function(frame)
 		discovered:SetWidth(80)
 		discovered:SetHeight(22)
 		discovered:SetDisabledFontObject(GameFontDisableSmall)
-		if( IS_WRATH_BUILD ) then
-			discovered:SetNormalFontObject(GameFontNormalSmall)
-		else
-			discovered:SetTextFontObject(GameFontNormalSmall)
-		end
+		discovered:SetNormalFontObject(GameFontNormalSmall)
 		discovered:SetPoint("RIGHT", export, "LEFT", 0, 0)
 		discovered:SetScript("OnClick", PopupDiscovered)
 		discovered:SetScript("OnEnter", OnEnter)
@@ -893,7 +884,7 @@ progress:SetScript("OnShow", function(frame)
 	done:SetScript("OnClick", function()
 		progress.hidden = true
 		InterfaceAddOnsList_Update()
-		InterfaceOptionsFrame_OpenToFrame(parent)
+		InterfaceOptionsFrame_OpenToCategory(parent)
 	end)
 	
 	progress.done = done
@@ -907,7 +898,7 @@ progress:SetScript("OnShow", function(frame)
 			progress:Hide()
 			
 			InterfaceAddOnsList_Update()
-			InterfaceOptionsFrame_OpenToFrame(parent)
+			InterfaceOptionsFrame_OpenToCategory(parent)
 		end
 	end)
 	
@@ -927,7 +918,7 @@ InterfaceOptions_AddCategory(progress)
 -- Open the configuration panel
 SLASH_BAZAAR1 = "/bazaar"
 SlashCmdList["BAZAAR"] = function()
-	InterfaceOptionsFrame_OpenToFrame(parent)
+	InterfaceOptionsFrame_OpenToCategory(parent)
 end
 
 -- INNERARDS!
@@ -952,7 +943,7 @@ function GUI:ShowCategories()
 	categories.hidden = nil
 	
 	InterfaceAddOnsList_Update()
-	InterfaceOptionsFrame_OpenToFrame(categories)
+	InterfaceOptionsFrame_OpenToCategory(categories)
 end
 
 -- Show progress panel
@@ -966,7 +957,7 @@ function GUI:ShowProgress()
 	categories.hidden = true
 		
 	InterfaceAddOnsList_Update()
-	InterfaceOptionsFrame_OpenToFrame(progress)
+	InterfaceOptionsFrame_OpenToCategory(progress)
 end
 
 -- Export edit box
@@ -974,7 +965,7 @@ function GUI:ShowExport(addon, text)
 	export.hidden = nil
 	
 	InterfaceAddOnsList_Update()
-	InterfaceOptionsFrame_OpenToFrame(export)
+	InterfaceOptionsFrame_OpenToCategory(export)
 	
 	export.editBox:SetText(text)
 	export.subtitle:SetFormattedText(L["Configuration data text that you can give to other people for the addon '%s', they can then import it and get your configuration."], addon)
@@ -1057,7 +1048,7 @@ function GUI:ShowExportCategories(addon)
 	categories.hidden = nil
 	
 	InterfaceAddOnsList_Update()
-	InterfaceOptionsFrame_OpenToFrame(categories)
+	InterfaceOptionsFrame_OpenToCategory(categories)
 end
 
 -- Send a ping for data
