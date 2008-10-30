@@ -1,4 +1,4 @@
-## Interface: 24000
+## Interface: 30000
 ## Title: Bazaar
 ## Notes: Addon configuration sharing
 ## Author: Mayen

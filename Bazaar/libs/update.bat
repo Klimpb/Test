@@ -1,4 +1,4 @@
-svn export http://dev.wowace.com/wowace/trunk/Ace3/AceSerializer-3.0 --force
-svn export http://dev.wowace.com/wowace/trunk/Ace3/AceComm-3.0 --force
-svn export http://dev.wowace.com/wowace/trunk/Ace3/CallbackHandler-1.0 --force
+svn export svn://svn.wowace.com/wow/ace3/mainline/trunk/AceSerializer-3.0 --force
+svn export svn://svn.wowace.com/wow/ace3/mainline/trunk/AceComm-3.0 --force
+svn export svn://svn.wowace.com/wow/ace3/mainline/trunk/CallbackHandler-1.0 --force
 @PAUSE
