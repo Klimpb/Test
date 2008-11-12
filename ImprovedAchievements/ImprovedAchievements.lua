@@ -51,47 +51,49 @@ function IA:Initialize()
 				achievementInfo.total = 0
 				achievementInfo.completed = 0
 				
-				local parentName, _, _, _, _, _, parentDescription = select(2, GetAchievementInfo(meta.id))
+				local parentName, _, completed, _, _, _, parentDescription = select(2, GetAchievementInfo(meta.id))
 				
-				-- Information of the Explore achievement
-				for i=1, GetAchievementNumCriteria(meta.id) do
-					local criteriaString, criteriaType, completed, quantity, reqQuantity, charName, flags, assetID, quantityString = GetAchievementCriteriaInfo(meta.id, i)
-					-- This is a meta criteria, so it'll contain the parent achievement info
-					if( criteriaType == CRITERIA_TYPE_ACHIEVEMENT and assetID ) then
-						-- Now we have the actual achievement info of the parent, like Explore Duskwood, etc, etc
-						completed = select(4, GetAchievementInfo(assetID))
+				-- If this meta achievement wasn't completed, scan through it and find its child progress
+				if( not completed ) then
+					-- Information of the Explore achievement
+					for i=1, GetAchievementNumCriteria(meta.id) do
+						local criteriaString, criteriaType, completed, quantity, reqQuantity, charName, flags, assetID, quantityString = GetAchievementCriteriaInfo(meta.id, i)
+						-- This is a meta criteria, so it'll contain the parent achievement info
+						if( criteriaType == CRITERIA_TYPE_ACHIEVEMENT and assetID ) then
+							-- Now we have the actual achievement info of the parent, like Explore Duskwood, etc, etc
+							completed = select(4, GetAchievementInfo(assetID))
 
-						-- Update totals
-						achievementInfo.total = achievementInfo.total + 1
-						if( completed ) then
-							achievementInfo.completed = achievementInfo.completed + 1
-						end
-					
-					-- Progress bar
-					elseif( bit.band(flags, ACHIEVEMENT_CRITERIA_PROGRESS_BAR) == ACHIEVEMENT_CRITERIA_PROGRESS_BAR ) then
-						achievementInfo.total = achievementInfo.total + reqQuantity
-						achievementInfo.completed = achievementInfo.completed + quantity
-					
-					-- Text achievement
-					else
-						-- Update totals
-						achievementInfo.total = achievementInfo.total + 1
-						if( completed ) then
-							achievementInfo.completed = achievementInfo.completed + 1
+							-- Update totals
+							achievementInfo.total = achievementInfo.total + 1
+							if( completed ) then
+								achievementInfo.completed = achievementInfo.completed + 1
+							end
+
+						-- Progress bar
+						elseif( bit.band(flags, ACHIEVEMENT_CRITERIA_PROGRESS_BAR) == ACHIEVEMENT_CRITERIA_PROGRESS_BAR ) then
+							achievementInfo.total = achievementInfo.total + reqQuantity
+							achievementInfo.completed = achievementInfo.completed + quantity
+
+						-- Text achievement
+						else
+							-- Update totals
+							achievementInfo.total = achievementInfo.total + 1
+							if( completed ) then
+								achievementInfo.completed = achievementInfo.completed + 1
+							end
 						end
 					end
 				end
 				
-				-- No date, it's not compelted
-				if( not meta.date ) then
-					local completed = ""
-					if( achievementInfo.total > 0 ) then
-						completed = string.format(" (%s / %s)", achievementInfo.completed, achievementInfo.total)
-					end
-					
-					meta.tooltipTitle = string.format("|cffffd100%s%s|r", parentName, completed)
-					meta.tooltip = parentDescription
+				-- If it was completed, show the date, otherwise show the progress
+				local completed = ""
+				if( not meta.date and achievementInfo.total > 0 ) then
+					completed = string.format(" (%s / %s)", achievementInfo.completed, achievementInfo.total)
 				end
+				
+				meta.tooltipTitle = string.format("|cffffd100%s%s%s|r", (meta.date and ("[" .. meta.date .. "] ") or ""), parentName, completed)
+				meta.tooltip = parentDescription
+				meta.date = nil
 			end
 		end
 	end
