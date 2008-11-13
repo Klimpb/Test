@@ -19,8 +19,13 @@ function IA:Initialize()
 		-- Our custom one that shows the description and such as well
 		elseif( self.tooltip ) then
 			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-			GameTooltip:AddLine(self.tooltipTitle)
-			GameTooltip:AddLine(self.tooltip, 1, 1, 1, true)
+			if( self.tooltipTitle and self.tooltipRightTitle ) then
+				GameTooltip:AddDoubleLine(self.tooltipTitle, self.tooltipRightTitle, nil, nil, nil, 0.90, 0.90, 0.90)
+			else
+				GameTooltip:AddLine(self.tooltipTitle)
+			end
+			
+			GameTooltip:AddLine(self.tooltip, 1.0, 1.0, 1.0, true)
 			GameTooltip:Show()
 		end
 	end
@@ -53,7 +58,7 @@ function IA:Initialize()
 				
 				local parentName, _, completed, _, _, _, parentDescription = select(2, GetAchievementInfo(meta.id))
 				
-				-- If this meta achievement wasn't completed, scan through it and find its child progress
+				-- If this meta achievement wasn't completed, scan through it and find the progress of the child
 				if( not completed ) then
 					-- Information of the Explore achievement
 					for i=1, GetAchievementNumCriteria(meta.id) do
@@ -86,12 +91,13 @@ function IA:Initialize()
 				end
 				
 				-- If it was completed, show the date, otherwise show the progress
-				local completed = ""
+				local completed
 				if( not meta.date and achievementInfo.total > 0 ) then
-					completed = string.format(" (%s / %s)", achievementInfo.completed, achievementInfo.total)
+					completed = string.format("%s / %s", achievementInfo.completed, achievementInfo.total)
 				end
 				
-				meta.tooltipTitle = string.format("|cffffd100%s%s%s|r", (meta.date and ("[" .. meta.date .. "] ") or ""), parentName, completed)
+				meta.tooltipRightTitle = completed or meta.date
+				meta.tooltipTitle = string.format("|cffffd100%s|r", parentName, completed)
 				meta.tooltip = parentDescription
 				meta.date = nil
 			end
