@@ -1,0 +1,7 @@
+## Interface: 30000
+## Title: Damn Mounts
+## Notes: Fixes mount issues with Northrend and Dalaran
+## Author: Mayen
+## SavedVariables: DamnMountsDB
+
+DamnMounts.lua
