@@ -1,11 +1,21 @@
-DM = {}
+local DM = {}
 
 local loadedSetups = {}
-local lastRan = ""
 local companions = {"critter", "mount"}
 local badZones = {["Dalaran"] = true, ["Wintergrasp"] = true}
 local subExceptions = {["Krasus' Landing"] = true}
-local swapQueued
+local swapQueued, lastRan
+
+local L = {
+	["Saved flight setup."] = "Saved flight setup.",
+	["Saved city setup."] = "Saved city setup.",
+	["Now change to your flight setup and type /dm fly."] = "Now change to your flight setup and type /dm fly.",
+	["Now change to your city setup and type /dm city."] = "Now change to your city setup and type /dm city.",
+	["Compare ran, your flight and city setups should now swap based on zone. Enjoy."] = "Compare ran, your flight and city setups should now swap based on zone. Enjoy.",
+	["Damn Mounts slash commands"] = "Damn Mounts slash commands",
+	["/dm fly - Save your mount setup for zones you can fly in."] = "/dm fly - Save your mount setup for zones you can fly in.",
+	["/dm city - Save your mount setup for zones you can ride in (Dalaran/Wintergrasp)."] = "/dm city - Save your mount setup for zones you can ride in (Dalaran/Wintergrasp).",
+}
 
 function DM:Print(msg)
 	DEFAULT_CHAT_FRAME:AddMessage(string.format("|cff33ff99Damn Mounts|r: %s", msg))
@@ -27,6 +37,7 @@ function DM:UncompressText(text)
 	return string.trim(text)
 end
 
+-- Companions don't work with GetActionInfo, so we have to use this to identify them
 function DM:GetCompanionInfo(id)
 	if( not self.tooltip ) then
 		self.tooltip = CreateFrame("GameTooltip", "DamnMountsTooltip", UIParent, "GameTooltipTemplate")
@@ -45,7 +56,7 @@ function DM:GetCompanionInfo(id)
 			local id, name, spellID, icon, isActive = GetCompanionInfo(type, i)
 			self.tooltip:SetHyperlink(string.format("spell:%d", spellID))
 			
-			if( text == ABSTooltipTextLeft1:GetText() ) then
+			if( text == DamnMountsTooltip:GetText() ) then
 				return type, i, text
 			end
 		end
@@ -78,31 +89,37 @@ function DM:SaveSetup()
 	return setup
 end
 
+-- Save our flying mount macro
 function DM:SaveFlying()
 	local setup = self:SaveSetup()
 	loadedSetups.flying = setup
 	lastRan = "flying"
-	self:Print("Saved flying setup.")
+	
+	self:Print(L["Saved flight setup."])
 
 	if( loadedSetups.city ) then
 		self:CompareAndSave()
-		return
+	else
+		self:Print(L["Now change to your city setup and type /dm city."])
 	end
 end
 
+-- Save our ground mount macro
 function DM:SaveCity()
 	local setup = self:SaveSetup()
 	loadedSetups.city = setup
 	lastRan = "city"
 	
-	self:Print("Saved city setup.")
+	self:Print(L["Saved city setup."])
 
 	if( loadedSetups.flying ) then
 		self:CompareAndSave()
-		return
+	else
+		self:Print(L["Now change to your flight setup and type /dm fly."])
 	end
 end
 
+-- Compares the two saved setups
 function DM:CompareAndSave()
 	if( not loadedSetups.city or not loadedSetups.flying ) then
 		return
@@ -130,9 +147,11 @@ function DM:CompareAndSave()
 	-- Reset now
 	loadedSetups = {}
 	
-	self:Print("Ran compare, good to go.")
+	self:Print(L["Compare ran, your flight and city setups should now swap based on zone. Enjoy."])
+	self:CheckStatus()
 end
 
+-- Actually move the action
 function DM:PlaceAction(list)
 	for actionID, data in pairs(list) do
 		local type, id, name = string.split(":", data)
@@ -155,6 +174,7 @@ function DM:PlaceAction(list)
 	end
 end
 
+-- Swap it based on where we are
 function DM:SwapSetup()
 	if( DamnMountsDB.canFly ) then
 		self:PlaceAction(DamnMountsDB.flying)
@@ -163,7 +183,9 @@ function DM:SwapSetup()
 	end
 end
 
+-- Check if we need to swap
 function DM:CheckStatus()
+	-- Make sure we can't fly in our current zone/sub zone.
 	local canFly = IsFlyableArea()
 	if( badZones[GetRealZoneText()] and not subExceptions[GetSubZoneText()] ) then
 		canFly = false
@@ -184,28 +206,71 @@ end
 -- Check if we need to swap anything
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("ZONE_CHANGED")
+frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-frame:SetScript("OnEvent", function(self, event)
-	if( event ==  "PLAYER_REGEN_ENABLED" ) then
+frame:SetScript("OnEvent", function(self, event, addon)
+	-- Keep track of macro changes, this way we know if the mount macros saved were changed, and we need to update them
+	-- really I should hook EditMacro, which I might do next.
+	if( event == "ADDON_LOADED" and addon == "Blizzard_MacroUI" ) then
+		local orig_MacroFrame_SaveMacro = MacroFrame_SaveMacro
+		MacroFrame_SaveMacro = function(...)
+			if( not MacroFrame.textChanged or not MacroFrame.selectedMacro ) then
+				orig_MacroFrame_SaveMacro(...)
+				return
+			end
+			
+			-- Save the original text
+			local originalText = DM:CompressText(select(3, GetMacroInfo(MacroFrame.selectedMacro)))
+
+			-- Now call it so it modifies the macro with the new text
+			orig_MacroFrame_SaveMacro(...)
+			
+			-- Annd now search for the macro to see if we had this one added
+			for profileType, list in pairs(DamnMountsDB) do
+				if( type(list) == "table" ) then
+					for actionID, data in pairs(list) do
+						local type, id, text = string.split(":", data)
+						if( type == "macro" ) then
+							if( text == originalText ) then
+								-- Get the new text
+								text = DM:CompressText(MacroFrameText:GetText())
+								DamnMountsDB[profileType][actionID] = string.format("%s:%s:%s", type, id, text)
+							end
+						end
+					end
+				end	
+			end
+		end
+	
+	-- If we have a swap queued, do it now
+	elseif( event ==  "PLAYER_REGEN_ENABLED" ) then
 		if( swapQueued ) then
 			DM:SwapSetup()
 			swapQueued = nil
 		end
-		return
-	end
 	
-	DM:CheckStatus()
+	-- Check if we need to swap on login
+	elseif( event == "PLAYER_ENTERING_WORLD" ) then
+		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
+		DM:CheckStatus()
+	-- Check if we need to swap
+	elseif( event == "ZONE_CHANGED" ) then
+		DM:CheckStatus()
+	end
 end)
 
 -- Slash commands
-SLASH_DM1 = "/dm"
-SlashCmdList["DM"] = function(msg)
+SLASH_DAMNMOUNTS1 = "/dm"
+SLASH_DAMNMOUNTS2 = "/damnmounts"
+SlashCmdList["DAMNMOUNTS"] = function(msg)
 	if( msg == "city" ) then
 		DM:SaveCity()
-	elseif( msg == "flying" ) then
+	elseif( msg == "fly" ) then
 		DM:SaveFlying()
-	elseif( msg == "compare" ) then
-		DM:CompareAndSave()
+	else
+		DEFAULT_CHAT_FRAME:AddMessage(L["Damn Mounts slash commands"])
+		DEFAULT_CHAT_FRAME:AddMessage(L["/dm fly - Save your mount setup for zones you can fly in."])
+		DEFAULT_CHAT_FRAME:AddMessage(L["/dm city - Save your mount setup for zones you can ride in (Dalaran/Wintergrasp)."])
 	end
 end
