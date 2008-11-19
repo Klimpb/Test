@@ -3,7 +3,7 @@ local DM = {}
 local loadedSetups = {}
 local companions = {"critter", "mount"}
 local badZones = {["Dalaran"] = true, ["Wintergrasp"] = true}
-local subExceptions = {["Krasus' Landing"] = true}
+local subExceptions = {["Krasus' Landing"] = true, ["Purple Parlor"] = true, ["Underbelly"] = true}
 local swapQueued, lastRan
 
 local L = {
@@ -164,12 +164,14 @@ function DM:PlaceAction(list)
 					PickupMacro(i)
 					PlaceAction(actionID)
 					ClearCursor()
+					return
 				end
 			end
-		elseif( type == "mount" or type == "critter" ) then
+		elseif( type == "mount" ) then
 			PickupCompanion(type, id)
 			PlaceAction(actionID)
 			ClearCursor()
+			return
 		end
 	end
 end
@@ -250,12 +252,8 @@ frame:SetScript("OnEvent", function(self, event, addon)
 			swapQueued = nil
 		end
 	
-	-- Check if we need to swap on login
-	elseif( event == "PLAYER_ENTERING_WORLD" ) then
-		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
-		DM:CheckStatus()
 	-- Check if we need to swap
-	elseif( event == "ZONE_CHANGED" ) then
+	elseif( event == "ZONE_CHANGED" or event == "PLAYER_ENTERING_WORLD" ) then
 		DM:CheckStatus()
 	end
 end)
