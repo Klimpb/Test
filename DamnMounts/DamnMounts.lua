@@ -126,7 +126,6 @@ function DM:CompareAndSave()
 	end
 	
 	-- Reset our saved info
-	DamnMountsDB = DamnMountsDB or {flying = {}, city = {}}
 	for id, data in pairs(DamnMountsDB.flying) do
 		DamnMountsDB.flying[id] = nil
 	end
@@ -208,6 +207,7 @@ end
 -- Check if we need to swap anything
 local frame = CreateFrame("Frame")
 frame:RegisterEvent("ZONE_CHANGED")
+frame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 frame:RegisterEvent("ADDON_LOADED")
 frame:RegisterEvent("PLAYER_ENTERING_WORLD")
 frame:RegisterEvent("PLAYER_REGEN_ENABLED")
@@ -245,6 +245,9 @@ frame:SetScript("OnEvent", function(self, event, addon)
 			end
 		end
 	
+	elseif( event == "ADDON_LOADED" and addon == "DamnMounts" ) then
+		DamnMountsDB = DamnMountsDB or {flying = {}, city = {}}
+		
 	-- If we have a swap queued, do it now
 	elseif( event ==  "PLAYER_REGEN_ENABLED" ) then
 		if( swapQueued ) then
@@ -253,7 +256,7 @@ frame:SetScript("OnEvent", function(self, event, addon)
 		end
 	
 	-- Check if we need to swap
-	elseif( event == "ZONE_CHANGED" or event == "PLAYER_ENTERING_WORLD" ) then
+	elseif( event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" or event == "PLAYER_ENTERING_WORLD" ) then
 		DM:CheckStatus()
 	end
 end)
