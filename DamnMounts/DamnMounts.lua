@@ -46,7 +46,7 @@ function DM:GetCompanionInfo(id)
 	
 	self.tooltip:SetAction(id)
 	
-	local text = DamnMountsTooltip:GetText()
+	local text = DamnMountsTooltipTextLeft1:GetText()
 	if( not text ) then
 		return
 	end
@@ -56,7 +56,7 @@ function DM:GetCompanionInfo(id)
 			local id, name, spellID, icon, isActive = GetCompanionInfo(type, i)
 			self.tooltip:SetHyperlink(string.format("spell:%d", spellID))
 			
-			if( text == DamnMountsTooltip:GetText() ) then
+			if( text == DamnMountsTooltipTextLeft1:GetText() ) then
 				return type, i, text
 			end
 		end
