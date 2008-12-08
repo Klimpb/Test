@@ -1,4 +1,4 @@
-DM = {}
+local DM = {}
 
 local loadedSetups = {}
 local badZones = {["Dalaran"] = true, ["Wintergrasp"] = true}
