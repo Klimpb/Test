@@ -1,7 +1,6 @@
-local DM = {}
+DM = {}
 
 local loadedSetups = {}
-local companions = {"critter", "mount"}
 local badZones = {["Dalaran"] = true, ["Wintergrasp"] = true}
 local subExceptions = {["Krasus' Landing"] = true, ["Purple Parlor"] = true, ["Underbelly"] = true}
 local swapQueued, lastRan
@@ -51,14 +50,13 @@ function DM:GetCompanionInfo(id)
 		return
 	end
 	
-	for _, type in pairs(companions) do
-		for i=1, GetNumCompanions(type) do
-			local id, name, spellID, icon, isActive = GetCompanionInfo(type, i)
-			self.tooltip:SetHyperlink(string.format("spell:%d", spellID))
-			
-			if( text == DamnMountsTooltipTextLeft1:GetText() ) then
-				return type, i, text
-			end
+	for i=1, GetNumCompanions("mount") do
+		local id, name, spellID, icon, isActive = GetCompanionInfo("mount", i)
+		self.tooltip:ClearLines()
+		self.tooltip:SetHyperlink(string.format("spell:%d", spellID))
+	
+		if( text == DamnMountsTooltipTextLeft1:GetText() ) then
+			return "mount", i, text
 		end
 	end
 end
