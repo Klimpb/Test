@@ -1,0 +1,7 @@
+## Interface: 30000
+## Title: Damn Pet CP
+## Notes: Shows pet combo points
+## Author: Mayen
+## SavedVariables: DamnPetCPDB
+
+DamnPetCP.lua
