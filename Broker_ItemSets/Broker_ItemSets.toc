@@ -1,0 +1,10 @@
+## Interface: 30000
+## Title: Broker Item Sets
+## Notes: Shows Item Sets information inside LibDataBroker
+## RequiredDeps: ItemSets
+
+LibDataBroker-1.1\LibDataBroker-1.1.lua
+
+localization.enUS.lua
+
+Broker_ItemSets.lua
