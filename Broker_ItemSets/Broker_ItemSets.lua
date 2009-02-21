@@ -4,7 +4,7 @@ local frame, LDBObj
 
 function BIS:OnInitialize()
 	-- Create LDB object
-	LDBObj = LibStub("LibDataBroker-1.1"):NewDataObject("ItemSets", {type = "data source", OnEnter = BIS.OnEnter, OnLeave = BIS.OnLeave, icon = "Interface\\Icons\\INV_Sword_126", text = ""})
+	LDBObj = LibStub("LibDataBroker-1.1"):NewDataObject("ItemSets", {type = "data source", OnClick = BIS.OnClick, OnEnter = BIS.OnEnter, OnLeave = BIS.OnLeave, icon = "Interface\\Icons\\INV_Sword_126", text = ""})
 
 	-- Update set information
 	self:RegisterEvent("PLAYER_ENTERING_WORLD", function()
@@ -61,6 +61,16 @@ local function childOnLeave(self)
 	end
 end
 
+local function sortSets(a, b)
+	return a.name < b.name
+end
+
+function BIS.OnClick(frame, mouse)
+	if( mouse == "RightButton" ) then
+		ItemSets.modules.Config:Open()
+	end
+end
+
 function BIS.OnEnter(frame)
 	if( not tooltip ) then
 		tooltip = CreateFrame("Frame", nil, frame)
@@ -79,11 +89,17 @@ function BIS.OnEnter(frame)
 	
 	tooltip:SetPoint("TOPLEFT", frame, "BOTTOMLEFT")
 	tooltip:Show()
-	
+
+	for _, row in pairs(tooltip.rows) do
+		row:Hide()
+	end	
+
 	-- Load up buttons for clicks
 	local usedRows = 0
+	local height = 4
 	for name, items in pairs(ItemSets.db.profile.sets) do
 		usedRows = usedRows + 1
+		height = height + 23
 		
 		local row = tooltip.rows[usedRows]
 		if( not row ) then
@@ -116,12 +132,6 @@ function BIS.OnEnter(frame)
 			row.pull:SetScript("OnEnter", childOnEnter)
 			row.pull:SetScript("OnLeave", childOnLeave)
 
-			if( usedRows > 1 ) then
-				row:SetPoint("TOPLEFT", tooltip.rows[usedRows - 1], "BOTTOMLEFT", 0, -8)
-			else
-				row:SetPoint("TOPLEFT", tooltip, "TOPLEFT", 8, -6)
-			end
-			
 			tooltip.rows[usedRows] = row
 		end
 		
@@ -130,7 +140,28 @@ function BIS.OnEnter(frame)
 		row:Show()
 	end
 	
-	tooltip:SetHeight(4 + (usedRows * 25))
+	-- Nothing to show
+	if( usedRows == 0 ) then
+		tooltip:Hide()
+		return
+	end
+	
+	-- Sort by alphabetical order
+	table.sort(tooltip.rows, sortSets)
+	
+	-- Reposition based on new order
+	for id, row in pairs(tooltip.rows) do
+		if( id > 1 ) then
+			row:ClearAllPoints()
+			row:SetPoint("TOPLEFT", tooltip.rows[id - 1], "BOTTOMLEFT", 0, -8)
+		else
+			row:ClearAllPoints()
+			row:SetPoint("TOPLEFT", tooltip, "TOPLEFT", 8, -6)
+		end
+
+	end
+	
+	tooltip:SetHeight(height)
 end
 
 function BIS.OnLeave(frame)
