@@ -3,7 +3,7 @@
 ## Notes: PvP timer and cool down tracking mod
 ## Author: Mayen
 ## Version: $Revision: 1131 $
-## SavedVariables: AfflictedDB
+## SavedVariables: Afflicted3DB
 ## OptionalDeps: LibStub
 
 libs\LibStub-1.0\LibStub-1.0.xml
@@ -21,7 +21,7 @@ libs\GTB-1.0\GTB-1.0.xml
 localization.enUS.lua
 
 spells.lua
-## Afflicted.lua
+Afflicted3.lua
 ## config.lua
-## bars.lua
-## icons.lua
+bars.lua
+icons.lua

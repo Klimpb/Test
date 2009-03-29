@@ -1,354 +1,320 @@
 --[[ 
-	Afflicted, Mayen/Selari/Dayliss from Illidan (US) PvP
+	Afflicted 3, Mayen/Selari/Dayliss from Illidan (US) PvP
 ]]
 
 Afflicted = LibStub("AceAddon-3.0"):NewAddon("Afflicted", "AceEvent-3.0")
 
 local L = AfflictedLocals
-
-local instanceType, currentBracket
-
-local objectsSummoned = {}
+local instanceType
+local summonedTotems = {}
 
 function Afflicted:OnInitialize()
-	if( not self.modules.Config ) then
-		return
-	end
-		
-	self.SML = LibStub:GetLibrary("LibSharedMedia-3.0")
+	self.defaults = {
+		profile = {
+			targetOnly = false,
+			
+			barWidth = 180,
+			barNameOnly = false,
+			barName = "BantoBar",
+
+			fontSize = 12,
+			fontName = "Friz Quadrata TT",
+			
+			announceColor = { r = 1.0, g = 1.0, b = 1.0 },
+			announceDest = "1",
+			inside = {["none"] = true},
+			anchors = {},
+			spells = {},
+
+			revision = 0,
+			spellRevision = 0,
+		},
+	}
+	
+	local anchor = {
+		enabled = true,
+		announce = false,
+		growUp = false,
+		scale = 1.0,
+		maxRows = 20,
+		fadeTime = 0.5,
+		icon = "LEFT",
+		redirect = "",
+		display = "bar",
+		startMessage = "USED *spell (*target)",
+		endMessage = "FADED *spell (*target)",
+	}
+	
+	-- Load default anchors
+	self.defaults.profile.anchors.interrupts = CopyTable(anchor)
+	self.defaults.profile.anchors.interrupts.text = "Interrupts"
+	self.defaults.profile.anchors.cooldowns = CopyTable(anchor)
+	self.defaults.profile.anchors.cooldowns.text = "Cooldowns"
+	self.defaults.profile.anchors.spells = CopyTable(anchor)
+	self.defaults.profile.anchors.spells.text = "Spells"
+	self.defaults.profile.anchors.buffs = CopyTable(anchor)
+	self.defaults.profile.anchors.buffs.text = "Buffs"
+	self.defaults.profile.anchors.defenses = CopyTable(anchor)
+	self.defaults.profile.anchors.defenses = "Defensive"
+	self.defaults.profile.anchors.damage = CopyTable(anchor)
+	self.defaults.profile.anchors.damage = "Damage"
+	
+	-- Initialize DB
+	self.db = LibStub:GetLibrary("AceDB-3.0"):New("Afflicted3DB", self.defaults)
+	self.db.RegisterCallback(self, "OnProfileChanged", "Reload")
+	self.db.RegisterCallback(self, "OnProfileCopied", "Reload")
+	self.db.RegisterCallback(self, "OnProfileReset", "Reload")
+	self.db.RegisterCallback(self, "OnDatabaseShutdown", "OnDatabaseShutdown")
+
 	self.revision = tonumber(string.match("$Revision: 1131 $", "(%d+)") or 1)
-	self.modules.Config:SetupDB()
 	
-	-- Something went wrong, pretty much debug code
-	if( not self.modules.Icons or not self.modules.Bars ) then
-		self:UnregisterAllEvents()
-		return
-	end
-	
-	-- Setup our visual style
-	self.icon = self.modules.Icons:LoadVisual()
-	self.bar = self.modules.Bars:LoadVisual()
+	-- Load SML
+	self.SML = LibStub:GetLibrary("LibSharedMedia-3.0")
+
+	-- Load spell defaults in if the DB has changed
+	if( self.db.profile.spellRevision <= AfflictedSpells.revision ) then
+		self.db.profile.spellRevision = AfflictedSpells.revision
 		
-	-- Monitor for zone change
-	self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-	self:RegisterEvent("PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA")
-
-	-- Quick check
-	self:ZONE_CHANGED_NEW_AREA()
-
-	-- Middle of screen alert frame
-	self.alertFrame = CreateFrame("MessageFrame", nil, UIParent)
-	self.alertFrame:SetInsertMode("TOP")
-	self.alertFrame:SetFrameStrata("HIGH")
-	self.alertFrame:SetWidth(UIParent:GetWidth())
-	self.alertFrame:SetHeight(60)
-	self.alertFrame:SetFadeDuration(0.5)
-	self.alertFrame:SetTimeVisible(2)
-	self.alertFrame:SetFont((GameFontNormal:GetFont()), 20, "OUTLINE")
-	self.alertFrame:SetPoint("CENTER", 0, 60)
-end
-
-function Afflicted:Enable()
-	self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
-end
-
-function Afflicted:Disable()
-	self:UnregisterAllEvents()
-	
-	self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-	self:RegisterEvent("PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA")
-end
-
-function Afflicted:Reload()
-	self:Disable()
-	if( self.db.profile.inside[select(2, IsInInstance())] ) then
-		self:Enable()
+		local spells = AfflictedSpells:GetData()
+		for spellID, data in pairs(spells) do
+			-- Do not add a spell if it doesn't exist
+			if( GetSpellInfo(spellID) ) then
+				self.db.profile.spells[spellID] = data
+			end
+		end
 	end
 
-	self.icon:ReloadVisual()
-	self.bar:ReloadVisual()
+	-- So we know what spellIDs need to be updated when logging out
+	self.writeQueue = {}
+	
+	-- Setup our spell cache
+	self.spells = setmetatable({}, {
+		__index = function(tbl, index)
+			-- No data found, don't try and cache this value again
+			if( not Afflicted.db.profile.spells[index] ) then
+				tbl[index] = false
+				return false
+			elseif( type(Afflicted.db.profile.spells[index]) == "number" ) then
+				tbl[index] = Afflicted.db.profile.spells[index]
+				return tbl[index]
+			end
+			
+			tbl[index] = {}
+
+			-- Load the data into the DB
+			for key, value in string.gmatch(Afflicted.db.profile.spells[index], "([a-zA-Z]+):([a-zA-Z0-9]+)") do
+				-- Convert to number if needed
+				if( key == "duration" or key == "cooldown" ) then
+					value = tonumber(value)
+				end
+
+				tbl[index][key] = value
+			end
+
+			-- Load the reset spellID data
+			if( tbl[index].resets ) then
+				local text = tbl[index].resets
+
+				tbl[index].resets = {}
+				for spellID in string.gmatch(text, "([0-9]+),") do
+					tbl[index].resets[tonumber(spellID)] = true
+				end
+			end
+			
+			return tbl[index]
+		end
+	})
+
+	-- Load display libraries
+	self.bars = self.modules.Bars:LoadVisual()
+	self.icons = self.modules.Icons:LoadVisual()
+
+	self:RegisterEvent("PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA")
+	self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 end
 
-local COMBATLOG_OBJECT_AFFILIATION_MINE = COMBATLOG_OBJECT_AFFILIATION_MINE
-local COMBATLOG_OBJECT_AFFILIATION_PARTY = COMBATLOG_OBJECT_AFFILIATION_PARTY
-local COMBATLOG_OBJECT_AFFILIATION_RAID = COMBATLOG_OBJECT_AFFILIATION_RAID
-local COMBATLOG_OBJECT_REACTION_HOSTILE	= COMBATLOG_OBJECT_REACTION_HOSTILE
-local GROUP_AFFILIATION = bit.bor(COMBATLOG_OBJECT_AFFILIATION_PARTY, COMBATLOG_OBJECT_AFFILIATION_RAID, COMBATLOG_OBJECT_AFFILIATION_MINE)
+-- Quick function to get the linked spells easily and such
+function Afflicted:GetSpell(spellID, spellName)
+	if( self.spells[spellName] ) then
+		return self.spells[spellName]
+	elseif( not self.spells[spellID] ) then
+		return nil
+	elseif( tonumber(self.spells[spellID]) ) then
+		return self.spells[self.spells[spellID]]
+	end
+	
+	return self.spells[spellID]
+end
 
-local eventRegistered = {["SPELL_INTERRUPT"] = true, ["SPELL_CAST_SUCCESS"] = true, ["SPELL_AURA_APPLIED"] = true, ["SPELL_AURA_REMOVED"] = true, ["SPELL_SUMMON"] = true, ["SPELL_CREATE"] = true, ["SPELL_DISPEL_FAILED"] = true, ["SPELL_PERIODIC_DISPEL_FAILED"] = true, ["SPELL_DISPEL"] = true, ["SPELL_AURA_STOLEN"] = true, ["PARTY_KILL"] = true, ["UNIT_DIED"] = true}
+local COMBATLOG_OBJECT_REACTION_HOSTILE	= COMBATLOG_OBJECT_REACTION_HOSTILE
+local eventRegistered = {["SPELL_CAST_SUCCESS"] = true, ["SPELL_AURA_REMOVED"] = true, ["SPELL_SUMMON"] = true, ["SPELL_CREATE"] = true, ["PARTY_KILL"] = true, ["UNIT_DIED"] = true}
+
 function Afflicted:COMBAT_LOG_EVENT_UNFILTERED(event, timestamp, eventType, sourceGUID, sourceName, sourceFlags, destGUID, destName, destFlags, ...)
 	if( not eventRegistered[eventType] ) then
 		return
 	end
-	
-	local isDestEnemy = (bit.band(destFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) == COMBATLOG_OBJECT_REACTION_HOSTILE)
-	local isSourceEnemy = (bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) == COMBATLOG_OBJECT_REACTION_HOSTILE)
-		
-	-- Enemy gained a debuff
-	if( eventType == "SPELL_AURA_APPLIED" and isDestEnemy ) then
+				
+	-- Enemy buff faded
+	if( eventType == "SPELL_AURA_REMOVED" and bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) == COMBATLOG_OBJECT_REACTION_HOSTILE ) then
 		local spellID, spellName, spellSchool, auraType = ...
-		self:ProcessAbility(string.format("%s%sENEMY", eventType, auraType), spellID, spellName, spellSchool, destGUID, destName, destGUID, destName)
-		
-	-- Buff or debuff faded from an enemy
-	elseif( eventType == "SPELL_AURA_REMOVED" and isDestEnemy ) then
-		local spellID, spellName, spellSchool, auraType = ...
-		self:ProcessEnd(string.format("%s%sENEMY", eventType, auraType), spellID, spellName, destGUID, destName)
+		if( auraType == "BUFF" ) then
+			self:AbilityEarlyFade(sourceGUID, sourceName, self:GetSpell(spellID, spellName), spellID, spellName, spellSchool)
+		end
 
 	-- Spell casted succesfully
-	elseif( eventType == "SPELL_CAST_SUCCESS" and isSourceEnemy ) then
+	elseif( eventType == "SPELL_CAST_SUCCESS" and bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) == COMBATLOG_OBJECT_REACTION_HOSTILE ) then
 		local spellID, spellName, spellSchool, auraType = ...
-		if( self.resetSpells[spellID] ) then
-			self:ProcessReset(spellID, spellName, sourceGUID, sourceName)
+		local spell = self:GetSpell(spellID, spellName)
+		if( spell and spell.resets ) then
+			self:ResetCooldowns(spell.resets)
 		end
-
-		self:ProcessAbility(eventType, spellID, spellName, spellSchool, sourceGUID, sourceName, destGUID, destName)
+		
+		self:AbilityTriggered(sourceGUID, sourceName, spell, spellID, spellName, spellSchool)
 		
 	-- Check for something being summoned (Pets, totems)
-	elseif( eventType == "SPELL_SUMMON" and isSourceEnemy ) then
+	elseif( eventType == "SPELL_SUMMON" and bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) == COMBATLOG_OBJECT_REACTION_HOSTILE ) then
 		local spellID, spellName, spellSchool = ...
-		
+	
 		-- Fixes an issue with totems not being removed when they get redropped
-		local id = sourceGUID .. spellID
-		if( objectsSummoned[id] ) then
-			self.icon:UnitDied(objectsSummoned[id])
-			self.bar:UnitDied(objectsSummoned[id])
+		local id = sourceGUID .. (AfflictedSpells:GetTotemClass(spellName) or spellName)
+		local spell = self:GetSpell(spellID, spellName)
+		if( spell and spell.type == "totem" ) then
+			-- We already had a totem of this timer up, remove the previous one first
+			if( summonedTotems[id] ) then
+				self[self.db.profile.anchors[spell.anchor].display]:RemoveTimerByID(self.anchor, summonedTotems[id])
+			end
+			
+			self:AbilityTriggered(sourceGUID, sourceName, spell, spellID, spellName, spellSchool)
 		end
-		
-		objectsSummoned[id] = destGUID
 
-		self:ProcessAbility(eventType, spellID, spellName, spellSchool, sourceGUID, sourceName, destGUID, destName)
+		-- Set this as the active totem of that type down
+		summonedTotems[id] = sourceGUID .. spellID
 		
 	-- Check for something being created (Traps, ect)
-	elseif( eventType == "SPELL_CREATE" and isSourceEnemy ) then
+	elseif( eventType == "SPELL_CREATE" and bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) == COMBATLOG_OBJECT_REACTION_HOSTILE ) then
 		local spellID, spellName, spellSchool = ...
-		self:ProcessAbility(eventType, spellID, spellName, spellSchool, sourceGUID, sourceName, destGUID, destName)
-	
-	-- We got interrupted, or we interrupted someone else
-	elseif( eventType == "SPELL_INTERRUPT" and self.db.profile.interruptEnabled and isDestEnemy and bit.band(sourceFlags, COMBATLOG_OBJECT_AFFILIATION_MINE) == COMBATLOG_OBJECT_AFFILIATION_MINE ) then
-		local spellID, spellName, spellSchool, extraSpellID, extraSpellName, extraSpellSchool = ...
 		
-		-- Local output, use a shorttened version, because we already know who we interrupted (Or, hope we do)
-		if( self.db.profile.interruptDest == "ct" or tonumber(self.db.profile.interruptDest) ) then
-			self:SendMessage(string.format(L["Interrupted %s"], extraSpellName), self.db.profile.interruptDest, self.db.profile.interruptColor, extraSpellID)
-		else
-			self:SendMessage(string.format(L["Interrupted %s's %s"], self:StripServer(destName), extraSpellName), self.db.profile.interruptDest, self.db.profile.interruptColor, extraSpellID)
+		local spell = self:GetSpell(spellID, spellName)
+		if( spell and spell.type == "trap" ) then
+			self:AbilityTriggered(sourceGUID, sourceName, spell, spellID, spellName, spellSchool)
 		end
 		
-		
-	-- We tried to dispel a buff, and failed
-	elseif( ( eventType == "SPELL_DISPEL_FAILED" or eventType == "SPELL_PERIODIC_DISPEL_FAILED" ) and self.db.profile.dispelEnabled ) then
-		local spellID, spellName, spellSchool, extraSpellID, extraSpellName, extraSpellSchool, auraType = ...
-		
-		if( not isDestEnemy or ( isDestEnemy and self.db.profile.dispelHostile ) ) then
-			if( bit.band(sourceFlags, COMBATLOG_OBJECT_AFFILIATION_MINE) == COMBATLOG_OBJECT_AFFILIATION_MINE ) then
-				self:SendMessage(string.format(L["FAILED %s's %s"], self:StripServer(destName), extraSpellName), self.db.profile.dispelDest, self.db.profile.dispelColor, extraSpellID)
-			end
-		end
-			
-	-- Managed to dispel or steal a buff
-	elseif( ( eventType == "SPELL_DISPEL" or eventType == "SPELL_AURA_STOLEN" ) and self.db.profile.dispelEnabled ) then
-		local spellID, spellName, spellSchool, extraSpellID, extraSpellName, extraSpellSchool, auraType = ...
-		
-		if( not isDestEnemy or ( isDestEnemy and self.db.profile.dispelHostile ) ) then
-			if( bit.band(sourceFlags, COMBATLOG_OBJECT_AFFILIATION_MINE) == COMBATLOG_OBJECT_AFFILIATION_MINE ) then
-				self:SendMessage(string.format(L["Removed %s's %s"], self:StripServer(destName), extraSpellName), self.db.profile.dispelDest, self.db.profile.dispelColor, extraSpellID)
-			end
-		end
-	
 	-- Check if we should clear timers
-	elseif( eventType == "PARTY_KILL" and isDestEnemy ) then
-		self.icon:UnitDied(destGUID)
-		self.bar:UnitDied(destGUID)
-
-	-- Don't use UNIT_DIED inside arenas due to accuracy issues, outside of arenas we don't care too much
-	elseif( instanceType ~= "arena" and eventType == "UNIT_DIED" and isDestEnemy ) then
-		self.icon:UnitDied(destGUID)
-		self.bar:UnitDied(destGUID)
+	elseif( ( eventType == "PARTY_KILL" or ( instancetype ~= "arena" and eventType == "UNIT_DIED" ) ) and bit.band(destFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) == COMBATLOG_OBJECT_REACTION_HOSTILE ) then
+		self.display.bars:UnitDied(destGUID)
+		self.display.icons:UnitDied(destGUID)
 	end
 end
 
--- See if we should enable Afflicted in this zone
+-- Reset spells
+function Afflicted:ResetCooldowns(spells)
+	for spellID in pairs(spells) do
+		local anchor = self.db.profile.anchors[spellData.cdAnchor]
+		if( anchor.enabled ) then
+			self[anchor.display]:RemoveTimerByID(spellData.cdAnchor, sourceGUID .. spellID .. "CD")
+		end
+	end
+end
+
+-- Timer started
+function Afflicted:AbilityTriggered(sourceGUID, sourceName, spellData, spellID, spellName, spellSchool)
+	-- No data found, it's disabled, or it's not in our interest cause it's not focus/target
+	if( not spellData or spellData.disabled or ( self.db.profile.targetOnly and UnitGUID("target") ~= sourceGUID and UnitGUID("focus") ~= sourceGUID ) ) then
+		return
+	end
+	
+	-- Set spell icon
+	if( not spellData.icon or spellData.icon == "" or spellData.dontSave ) then
+		spellData.icon = select(3, GetSpellInfo(spellID))
+	end
+	
+	local anchor = self.db.profile.anchors[spellData.anchor]
+	
+	-- Start timer
+	self[anchor.display]:CreateTimer(sourceGUID, sourceName, spellData, spellID, spellName, spellSchool)
+	
+	-- Announce timer used
+	self:Announce(spellData, anchor, "startMessage", spellName, sourceName)
+end
+
+-- Spell faded early, so announce that
+function Afflicted:AbilityEarlyFade(sourceGUID, sourceName, spellData, spellID, spellName, spellSchool)
+	if( spellData and not spellData.disabled and spellData.type == "buff" ) then
+		local removed = self[self.db.profile.anchors[spellData.anchor].display]:RemoveTimerByID(spellData.anchor, sourceGUID .. spellID)
+		if( removed ) then
+			self:Announce(spellData, self.db.profile.anchors[spellData.anchor], "endMessage", spellName, sourceName)
+		end
+	end
+end
+
+-- Timer faded naturally
+function Afflicted:AbilityEnded(sourceGUID, sourceName, spellData, spellID, spellName, spellSchool, isCooldown)
+	if( spellData ) then
+		if( not isCooldown and not spellData.disabled ) then
+			self:Announce(spellData, self.db.profile.anchors[spellData.anchor], "endMessage", spellName, sourceName)
+		elseif( isCooldown and not spellData.cdDisabled ) then
+			self:Announce(spellData, self.db.profile.anchors[spellData.cdAnchor], "endMessage", spellName, sourceName)
+		end
+	end
+end
+
+-- Announce something
+function Afflicted:Announce(spellData, anchor, key, spellName, sourceName)
+	local msg
+	if( spellData.custom ) then
+		msg = spellData[key]
+	elseif( anchor.enabled and anchor.announce ) then
+		msg = anchor[key]
+	end
+	
+	if( not msg or msg == "" ) then
+		return
+	end
+	
+	msg = string.gsub(msg, "*spell", spellName)
+	msg = string.gsub(msg, "*target", self:StripServer(sourceName))
+
+	self:SendMessage(msg, anchor.announceDest, anchor.announceColor)
+end
+
+-- Database is getting ready to be written, we need to convert any changed data back into text
+function Afflicted:OnDatabaseShutdown()
+	for spellID in pairs(self.writeQueue) do
+		-- We got data we can write
+		if( type(self.spells[spellID]) == "table" ) then
+			local data = ""
+			for key, value in pairs(self.spells[spellID]) do
+				data = data .. key .. ":" .. value .. ";"
+			end
+
+			self.db.profile.spells[spellID] = data
+		-- No spell data found, reset saved
+		elseif( not self.spells[spellID] ) then
+			self.db.profile.spells[spellID] = nil
+		end
+		
+		self.writeQueue[spellID] = nil
+	end
+end
+
+-- Enabling Afflicted based on zone type
 function Afflicted:ZONE_CHANGED_NEW_AREA()
 	local type = select(2, IsInInstance())
 
 	if( type ~= instanceType ) then
-		-- Clear anchors because we changed zones
-		for name, data in pairs(self.db.profile.anchors) do
-			self[data.displayType]:ClearTimers(name)
-		end
-		
-		-- Check if it's supposed to be enabled in this zone
 		if( self.db.profile.inside[type] ) then
-			if( type == "arena" ) then
-				for i=1, MAX_BATTLEFIELD_QUEUES do
-					local status, _, _, _, _, teamSize = GetBattlefieldStatus(i)
-					if( status == "active" and teamSize > 0 ) then
-						currentBracket = teamSize
-					end
-				end
-			end
-			
-			self:Enable()
+			self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 		else
-			currentBracket = nil
-			self:Disable()
+			self:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 		end
 	end
-		
+	
 	instanceType = type
 end
 
-local function getSpellData(spellID, spellName)
-	local data = Afflicted.db.profile.spells[spellID] or Afflicted.db.profile.spells[spellName]
-	if( type(data) == "number" ) then
-		data = Afflicted.db.profile.spells[data]
-	end
-	
-	return data
+function Afflicted:Reload()
+
 end
-
--- This lets me modify the duration of spells without having to mess with the variable, mostly for WoTLK
-function Afflicted:GetSpellDuration(sourceGUID, spellName, spellID, seconds)
-	return seconds
-end
-
--- New ability found
-function Afflicted:ProcessAbility(eventType, spellID, spellName, spellSchool, sourceGUID, sourceName, destGUID, destName)
-	local spellData = getSpellData(spellID, spellName)
-	if( not spellData or spellData.disabled or not spellData[eventType] or not self.db.profile.anchors[spellData.showIn] or ( currentBracket and self.db.profile.disabledSpells[currentBracket][spellID] ) ) then
-		return
-	end
-		
-	-- Check if it matches our target/focus only
-	if( self.db.profile.showTarget and UnitGUID("target") ~= sourceGUID and UnitGUID("focus") ~= sourceGUID ) then
-		return
-	end
-	
-	local anchor = self.db.profile.anchors[spellData.showIn]
-	
-	-- No icon listed, use our own
-	local icon = select(3, GetSpellInfo(spellID))
-	if( spellData.dontSave or not spellData.icon or spellData.icon == "" ) then
-		spellData.icon = icon
-	end
-		
-	-- Trigger a timer if we can
-	self[anchor.displayType]:CreateTimer(spellData, eventType, spellID, spellName, sourceGUID, sourceName, destGUID)
-
-	-- Don't announce it since the anchors supposed to be disabled
-	if( not anchor.enabled ) then
-		return
-	end
-	
-	-- Work out if we should use a custom message, or a default one
-	local msg
-	if( spellData.enableCustom ) then
-		msg = spellData.triggeredMessage
-	elseif( anchor.announce ) then
-		msg = anchor.usedMessage
-	end	
-
-	if( not msg or msg == "" ) then
-		return
-	end
-
-	msg = string.gsub(msg, "*spell", spellName)
-	msg = string.gsub(msg, "*target", self:StripServer(sourceName))
-
-	self:SendMessage(msg, anchor.announceDest, anchor.announceColor, spellID)
-end
-
-
--- Resets the spells that are listed under this, for things like Cold Snap or Prep
-function Afflicted:ProcessReset(spellID, spellName, sourceGUID, sourceName)
-	for _, resetID in pairs(self.resetSpells[spellID]) do
-		local spellData = self.db.profile.spells[resetID]
-		if( spellData and not spellData.disabled ) then
-			local name = GetSpellInfo(resetID)
-			
-			local anchor = self.db.profile.anchors[spellData.showIn]
-			if( anchor and anchor.enabled ) then
-				self[anchor.displayType]:RemoveCooldownTimer(resetID, sourceGUID, spellData.cdInside)
-			end
-		end
-	end
-end
-
--- An ability was ended early via the combat log
-function Afflicted:ProcessEnd(eventType, spellID, spellName, sourceGUID, sourceName)
-	local spellData = getSpellData(spellID, spellName)
-	if( not spellData or spellData.disabled or not spellData.doFade ) then
-		return
-	end
-	
-	local anchor = self.db.profile.anchors[spellData.showIn]
-	if( not anchor or not anchor.enabled ) then
-		return
-	end
-
-	local removed = self[anchor.displayType]:RemoveTimer(spellData.showIn, spellID, sourceGUID)
-	if( removed ) then
-		self:AnnounceEnd(spellData, anchor, spellID, spellName, sourceName)
-	end
-end
-
--- Ability ended due due to the timer running out, and it was removed from the bar
-function Afflicted:AbilityEnded(eventType, spellID, spellName, sourceGUID, sourceName)
-	if( eventType == "TEST" ) then
-		return
-	end
-
-	local spellData = getSpellData(spellID, spellName)
-	if( not spellData or spellData.disabled ) then
-		return
-	end
-	
-	local anchor = self.db.profile.anchors[spellData.showIn]
-	if( not anchor or not anchor.enabled ) then
-		return
-	end
-	
-	self:AnnounceEnd(spellData, anchor, spellID, spellName, sourceName)
-end
-
-function Afflicted:CooldownEnded(eventType, spellID, spellName, sourceGUID, sourceName)
-	if( eventType == "TEST" ) then
-		return
-	end
-	
-	local spellData = getSpellData(spellID, spellName)
-	if( not spellData or not spellData.cdEnabled ) then
-		return
-	end
-	
-	local anchor = self.db.profile.anchors[spellData.cdInside]
-	if( not anchor or not anchor.enabled ) then
-		return
-	end
-	
-	self:AnnounceEnd(spellData, anchor, spellID, spellName, sourceName)
-end
-
--- Alert that the timers over
-function Afflicted:AnnounceEnd(spellData, anchor, spellID, spellName, sourceName)
-	-- Work out if we should use a custom message, or a default one
-	local msg
-	if( spellData.enableCustom ) then
-		msg = spellData.fadedMessage
-	elseif( anchor.announce ) then
-		msg = anchor.fadeMessage
-	end
-
-	if( not msg or msg == "" ) then
-		return
-	end
-
-	msg = string.gsub(msg, "*spell", spellName)
-	msg = string.gsub(msg, "*target", self:StripServer(sourceName))
-
-	self:SendMessage(msg, anchor.announceDest, anchor.announceColor, spellID)
-end
-
 
 -- Strips server name
 function Afflicted:StripServer(text)
@@ -360,28 +326,13 @@ function Afflicted:StripServer(text)
 	return name
 end
 
--- See if we should wrap an icon stuff around this
-function Afflicted:WrapIcon(msg, dest, spellID)
-	if( not self.db.profile.showIcons or not spellID ) then
-		return msg
-	end
-	
-	-- Make sure we have a valid icon
-	local icon = select(3, GetSpellInfo(spellID))
-	if( not icon ) then
-		return msg
-	end
-
-	return string.format("|T%s:0:0|t %s", icon, msg)
-end
-
-function Afflicted:SendMessage(msg, dest, color, spellID)
+local chatFrames = {}
+function Afflicted:SendMessage(msg, dest, color)
+	-- We're not showing anything
 	if( dest == "none" ) then
 		return
-	end
-			
-	-- We're ungrouped, so redirect it to RWFrame
-	if( dest == "rw" and GetNumRaidMembers() == 0 and GetNumPartyMembers() == 0 ) then
+	-- We're undergrouped, so redirect it to our fake alert frame
+	elseif( dest == "rw" and GetNumRaidMembers() == 0 and GetNumPartyMembers() == 0 ) then
 		dest = "rwframe"
 	-- We're grouped, in a raid and not leader or assist
 	elseif( dest == "rw" and not IsRaidLeader() and not IsRaidOfficer() and GetNumRaidMembers() > 0 ) then
@@ -393,20 +344,36 @@ function Afflicted:SendMessage(msg, dest, color, spellID)
 		
 	-- Chat frame
 	if( tonumber(dest) ) then
-		local frame = getglobal("ChatFrame" .. dest) or DEFAULT_CHAT_FRAME
-		frame:AddMessage("|cff33ff99Afflicted|r|cffffffff:|r " .. self:WrapIcon(msg, dest, spellID), color.r, color.g, color.b)
+		if( not chatFrames[dest] ) then
+			chatFrames[dest] = getglobal("ChatFrame" .. dest)
+		end
+		
+		local frame = chatFrames[dest] or DEFAULT_CHAT_FRAME
+		frame:AddMessage("|cff33ff99Afflicted|r|cffffffff:|r " .. msg, color.r, color.g, color.b)
 	-- Raid warning announcement to raid/party
 	elseif( dest == "rw" ) then
 		SendChatMessage(msg, "RAID_WARNING")
 	-- Raid warning frame, will not send it out to the party
 	elseif( dest == "rwframe" ) then
-		self.alertFrame:AddMessage(self:WrapIcon(msg, dest, spellID), color.r, color.g, color.b)
+		if( not self.alertFrame ) then
+			self.alertFrame = CreateFrame("MessageFrame", nil, UIParent)
+			self.alertFrame:SetInsertMode("TOP")
+			self.alertFrame:SetFrameStrata("HIGH")
+			self.alertFrame:SetWidth(UIParent:GetWidth())
+			self.alertFrame:SetHeight(60)
+			self.alertFrame:SetFadeDuration(0.5)
+			self.alertFrame:SetTimeVisible(2)
+			self.alertFrame:SetFont((GameFontNormal:GetFont()), 20, "OUTLINE")
+			self.alertFrame:SetPoint("CENTER", 0, 60)
+		end
+		
+		self.alertFrame:AddMessage(msg, color.r, color.g, color.b)
 	-- Party chat
 	elseif( dest == "party" ) then
 		SendChatMessage(msg, "PARTY")
 	-- Combat text
 	elseif( dest == "ct" ) then
-		self:CombatText(self:WrapIcon(msg, dest, spellID), color)
+		self:CombatText(msg, color)
 	end
 end
 
@@ -417,9 +384,6 @@ function Afflicted:CombatText(text, color, spellID)
 	-- MSBT
 	elseif( IsAddOnLoaded("MikScrollingBattleText") ) then
 		MikSBT.DisplayMessage(text, MikSBT.DISPLAYTYPE_NOTIFICATION, false, color.r * 255, color.g * 255, color.b * 255)		
-	-- Parrot
-	elseif( IsAddOnLoaded("Parrot") ) then
-		Parrot:ShowMessage(text, nil, nil, color.r, color.g, color.b)
 	-- Blizzard Combat Text
 	elseif( IsAddOnLoaded("Blizzard_CombatText") ) then
 		-- Haven't cached the movement function yet
@@ -432,5 +396,5 @@ function Afflicted:CombatText(text, color, spellID)
 end
 
 function Afflicted:Print(msg)
-	DEFAULT_CHAT_FRAME:AddMessage("|cff33ff99Afflicted2|r: " .. msg)
+	DEFAULT_CHAT_FRAME:AddMessage("|cff33ff99Afflicted3|r: " .. msg)
 end

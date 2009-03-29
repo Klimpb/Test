@@ -1,0 +1,209 @@
+if( not Afflicted ) then return end
+
+local Bars = Afflicted:NewModule("Bars", "AceEvent-3.0")
+local methods = {"CreateDisplay", "ClearTimers", "CreateTimer", "RemoveTimerByID", "ReloadVisual", "UnitDied"}
+local SML, GTBLib
+local barData = {}
+local nameToType = {}
+local groups = {}
+
+-- PUBLIC METHODS
+function Bars:CreateDisplay(type)
+	local anchorData = Afflicted.db.profile.anchors[type]
+	local group = GTBLib:RegisterGroup(string.format("Afflicted (%s)", anchorData.text), SML:Fetch(SML.MediaType.STATUSBAR, Afflicted.db.profile.barName))
+	group:RegisterOnFade(Bars, "OnFade")
+	group:RegisterOnMove(Bars, "OnMove")
+	group:SetScale(anchorData.scale)
+	group:SetWidth(Afflicted.db.profile.barWidth)
+	group:SetAnchorVisible(Afflicted.db.profile.showAnchors)
+	group:SetDisplayGroup(anchorData.redirect ~= "" and anchorData.redirect or nil)
+	group:SetBarGrowth(anchorData.growUp and "UP" or "DOWN")
+	group:SetMaxBars(anchorData.maxRows)
+	group:SetFont(SML:Fetch(SML.MediaType.FONT, Afflicted.db.profile.fontName), Afflicted.db.profile.fontSize)
+	group:SetFadeTime(anchorData.fadeTime)
+	group:SetIconPosition(anchorData.icon or "LEFT")
+	group:SetGroupID(type)
+
+	if( anchorData.position ) then
+		group:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", anchorData.position.x, anchorData.position.y)
+	end
+	
+	return group
+end
+
+function Bars:OnMove(parent, x, y)
+	print("Parent moved", tostring(parent.groupID), tostring(parent.name))
+	
+	if( not Afflicted.db.profile.anchors[parent.groupID].position ) then
+		Afflicted.db.profile.anchors[parent.groupID].position = {}
+	end
+
+	Afflicted.db.profile.anchors[parent.groupID].position.x = x
+	Afflicted.db.profile.anchors[parent.groupID].position.y = y
+end
+
+function Bars:MediaRegistered(event, mediaType, key)
+	if( mediaType == SML.MediaType.STATUSBAR and Afflicted.db.profile.barName == key ) then
+		for id, group in pairs(Bars.groups) do
+			group:SetTexture(SML:Fetch(SML.MediaType.STATUSBAR, Afflicted.db.profile.barName))
+		end
+	elseif( mediaType == SML.MediaType.FONT and Afflicted.db.profile.fontName == key ) then
+		for id, group in pairs(Bars.groups) do
+			group:SetFont(SML:Fetch(SML.MediaType.FONT, Afflicted.db.profile.fontName), Afflicted.db.profile.fontSize)
+		end
+	end
+end
+
+-- Return an object to access our visual style
+function Bars:LoadVisual()
+	if( not GTBLib ) then
+		SML = Afflicted.SML
+		SML.RegisterCallback(Bars, "LibSharedMedia_Registered", "MediaRegistered")
+		
+		GTBLib = LibStub:GetLibrary("GTB-1.0")
+		self.GTB = GTBLib
+	end
+
+	local obj = {}
+	for _, func in pairs(methods) do
+		obj[func] = self[func]
+	end
+	
+	-- Create anchors
+	Bars.groups = {}
+	for name, data in pairs(Afflicted.db.profile.anchors) do
+		if( data.display == "bar" ) then
+			Bars.groups[name] = Bars:CreateDisplay(name)
+		end
+	end
+	
+	return obj
+end
+
+-- Clear all running timers for this anchor type
+function Bars:ClearTimers(type)
+	if( Bars.groups[type] ) then
+		Bars.groups[type]:UnregisterAllBars()
+	end
+end
+
+-- Unit died, removed their timers
+function Bars:UnitDied(guid)
+	for id in pairs(barData) do
+		-- GUID are 18 characters long, we start with the GUID so
+		if( string.sub(id, 0, 18) == guid ) then
+			for _, group in pairs(Bars.groups) do
+				group:UnregisterBar(id)
+			end
+		end
+	end
+end
+
+-- Create a new timer
+function Bars:CreateTimer(sourceGUID, sourceName, spellData, spellID, spellName, spellSchool)
+	local id, data
+	
+	-- Start a regular timer
+	local group = Bars.groups[spellData.anchor]
+	if( group ) then
+		local anchor = Afflicted.db.profile.anchors[spellData.anchor]
+		local text = spellName
+		if( Afflicted.db.profile.barNameOnly and sourceName ~= "" ) then
+			text = Afflicted:StripServer(sourceName)
+		elseif( sourceName ~= "" ) then
+			text = string.format("%s - %s", spellName, Afflicted:StripServer(sourceName))
+		else
+			text = spellName
+		end
+		
+		id = sourceGUID .. spellID
+		data = string.format("%s,%s,%s,%s,%s", sourceGUID, sourceName, spellID, spellName, spellSchool)
+		barData[id] = data
+
+		group:RegisterBar(id, text,spellData.duration, nil, spellData.icon)
+		group:SetRepeatingTimer(id, spellData.repeating or false)
+	end
+	
+	-- Start a cooldown timer
+	if( spellData.cdEnabled and spellData.cooldown > 0 ) then
+		local group = Bars.groups[spellData.cdAnchor]
+		if( not group ) then
+			return
+		end
+	
+		id = (id or sourceGUID .. spellID) .. "CD"
+		barData[id] = (data or string.format("%s,%s,%s,%s,%s", sourceGUID, sourceName, spellID, spellName, spellSchool)) .. ",cd"
+		
+		-- If it's shown in the cooldowns timer, it's implied to be a CD, if it's not, mark it as one.
+		local cd = ""
+		if( spellData.cdAnchor ~= "cooldowns" or Afflicted.db.profile.anchors[spellData.cdAnchor].redirect ~= "" ) then
+			cd = "[CD] "
+		end
+		
+		local text
+		if( Afflicted.db.profile.barNameOnly and sourceName ~= "" ) then
+			text = string.format("%s%s", cd, Afflicted:StripServer(sourceName))
+		elseif( sourceName ~= "" ) then
+			text = string.format("%s%s - %s", cd, spellName, Afflicted:StripServer(sourceName))
+		else
+			text = string.format("%s%s", cd, spellName)
+		end
+
+		group:RegisterBar(id, text, spellData.cooldown, nil, spellData.icon)
+	end
+end
+
+-- Bar timer ran out
+function Bars:OnFade(barID)
+	local sourceGUID, sourceName, spellID, spellName, spellSchool, timerType = string.split(",", barData[barID])
+	barData[barID] = nil
+	
+	spellID = tonumber(spellID)
+	spellSchool = tonumber(spellSchool)
+	
+	self:AbilityEnded(sourceGUID, sourceName, Afflicted:GetSpell(spellID, spellName), spellID, spellName, spellSchool, timerType == "CD")
+end
+
+-- Remove a timer by the ID, totems basically
+function Bars:RemoveTimerByID(anchor, id)
+	if( Bars.groups[anchor] ) then
+		return Bars.groups[anchor]:UnregisterBar(id)
+	end
+	
+	return nil
+end
+
+-- Reload visual data
+function Bars:ReloadVisual()
+	for name, data in pairs(Afflicted.db.profile.anchors) do
+		-- Had a bad anchor that was either enabled recently, or it used to be an icon anchor
+		if( not Bars.groups[name] and data.display == "bar" and ( data.enabled or data.redirect ~= "" ) ) then
+			Bars.groups[name] = savedGroups[name] or Bars:CreateDisplay(name)
+			savedGroups[name] = nil
+		
+		-- Had a bar anchor that was either disabled recently, or it's not a bar anchor anymore
+		elseif( Bars.groups[name] and ( data.display ~= "bar" or ( not data.enabled and data.redirect == "" ) ) ) then
+			savedGroups[name] = Bars.groups[name]
+			
+			Bars.groups[name]:SetAnchorVisible(false)
+			Bars.groups[name]:UnregisterAllBars()
+			Bars.groups[name] = nil
+		end
+	end
+
+	-- Update!
+	for _, group in pairs(Bars.groups) do
+		local data = Afflicted.db.profile.anchors[nameToType[group.name]]
+		group:SetScale(data.scale)
+		group:SetDisplayGroup(data.redirect ~= "" and data.redirect or nil)
+		group:SetBarGrowth(data.growUp and "UP" or "DOWN")
+		group:SetAnchorVisible(Afflicted.db.profile.showAnchors)
+		group:SetWidth(Afflicted.db.profile.barWidth)
+		group:SetFont(SML:Fetch(SML.MediaType.FONT, Afflicted.db.profile.fontName), Afflicted.db.profile.fontSize)
+		group:SetTexture(SML:Fetch(SML.MediaType.STATUSBAR, Afflicted.db.profile.barName))
+		group:SetMaxBars(data.maxRows)
+		group:SetFadeTime(data.fadeTime)
+		group:SetIconPosition(data.icon)
+		group:SetGroupID(type)
+	end
+end
