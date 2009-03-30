@@ -68,8 +68,10 @@ local function OnUpdate(self, elapsed)
 			return
 		end
 		
-		Afflicted:AbilityEnded(self.sourceGUID, self.sourceName, Afflicted:GetSpell(self.spellID, self.spellName), self.spellID, self.spellName, self.spellSchool, self.isCooldown)
+		-- Tell Afflicted it ended
+		Afflicted:AbilityEnded(self.sourceGUID, self.sourceName, Afflicted:GetSpell(self.spellID, self.spellName), self.spellID, self.spellName, self.isCooldown)
 
+		-- Timer over, release and reposition
 		local group = Icons.groups[self.type]
 		for id, row in pairs(group.active) do
 			if( row.id == self.id ) then
@@ -78,10 +80,10 @@ local function OnUpdate(self, elapsed)
 				break
 			end
 		end
-			
 		return
 	end
 	
+	-- Otherwise, update!
 	if( self.timeLeft > 60 ) then
 		self.text:SetFormattedText("%dm", self.timeLeft / 60)
 	elseif( self.timeLeft > 10 ) then
@@ -98,7 +100,6 @@ local function createIcon()
 	frame:SetHeight(ICON_SIZE)
 	frame:SetClampedToScreen(true)
 	frame:SetScript("OnUpdate", OnUpdate)
-	frame:Hide()
 	
 	frame.icon = frame:CreateTexture(nil, "BACKGROUND")
 	frame.icon:SetWidth(ICON_SIZE)
@@ -270,11 +271,16 @@ function Icons:UnitDied(guid)
 end
 
 -- Create a new timer
-local function createTimer(id, anchor, seconds, sourceGUID, sourceName, spellID, spellName, spellSchool, icon, isCooldown)
+function Icons:CreateTimer(sourceGUID, sourceName, anchor, repeating, isCooldown, duration, spellID, spellName, spellIcon)
 	local group = Icons.groups[anchor]
 	if( not group ) then
 		return
 	end	
+
+	local id = sourceGUID .. spellID
+	if( isCooldown ) then
+		id = id .. "CD"
+	end
 			
 	-- Grabby
 	local frame = getIcon(group)
@@ -290,27 +296,17 @@ local function createTimer(id, anchor, seconds, sourceGUID, sourceName, spellID,
 	frame.sourceGUID = sourceGUID
 	frame.sourceName = sourceName
 
-	frame.startSeconds = seconds
-	frame.timeLeft = seconds
+	frame.startSeconds = duration
+	frame.timeLeft = duration
 	frame.lastUpdate = GetTime()
-	frame.endTime = frame.lastUpdate + seconds
+	frame.endTime = frame.lastUpdate + duration
 
 	frame.type = group.type
-	frame.icon:SetTexture(icon)
-	frame:SetParent(group)
+	frame.icon:SetTexture(spellIcon)
+	frame:SetScale(Afflicted.db.profile.anchors[anchor].scale)
 	
 	-- Reposition
 	repositionTimers(group)
-end
-
-function Icons:CreateTimer(sourceGUID, sourceName, spellData, spellID, spellName, spellSchool)
-	local id = sourceGUID .. spellID
-		
-	createTimer(id, spellData.anchor, spellData.duration, sourceGUID, sourceName, spellID, spellName, spellSchool, spellData.icon, false)
-	
-	if( not spellData.cdDisabled and spellData.cooldown > 0 ) then
-		createTimer(id .. "CD", spellData.cdAnchor, spellData.cooldown, sourceGUID, sourceName, spellID, spellName, spellSchool, spellData.icon, true)
-	end
 end
 
 -- Remove a specific anchors timer by ID
@@ -342,12 +338,12 @@ end
 function Icons:ReloadVisual()
 	for name, data in pairs(Afflicted.db.profile.anchors) do
 		-- Had a bad anchor that was either enabled recently, or it used to be a bar anchor
-		if( data.enabled and data.display == "icon" and not Icons.groups[name] ) then
+		if( data.enabled and data.display == "icons" and not Icons.groups[name] ) then
 			Icons.groups[name] = savedGroups[name] or Icons:CreateDisplay(name)
 			savedGroups[name] = nil
 		
 		-- Had a bar anchor that was either disabled recently, or it's not an icon anchor anymore
-		elseif( ( not data.enabled or data.display ~= "icon" ) and Icons.groups[name] ) then
+		elseif( ( not data.enabled or data.display ~= "icons" ) and Icons.groups[name] ) then
 			savedGroups[name] = Icons.groups[name]
 			
 			Icons:ClearTimers(name)
@@ -363,6 +359,10 @@ function Icons:ReloadVisual()
 		
 		-- Update group scale
 		group:SetScale(data.scale)
+		
+		for _, icon in pairs(group.active) do
+			icon:SetScale(data.scale)
+		end
 
 		-- Annnd make sure it's shown or hidden
 		if( Afflicted.db.profile.showAnchors ) then

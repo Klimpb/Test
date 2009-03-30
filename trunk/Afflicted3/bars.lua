@@ -32,8 +32,6 @@ function Bars:CreateDisplay(type)
 end
 
 function Bars:OnMove(parent, x, y)
-	print("Parent moved", tostring(parent.groupID), tostring(parent.name))
-	
 	if( not Afflicted.db.profile.anchors[parent.groupID].position ) then
 		Afflicted.db.profile.anchors[parent.groupID].position = {}
 	end
@@ -100,68 +98,42 @@ function Bars:UnitDied(guid)
 end
 
 -- Create a new timer
-function Bars:CreateTimer(sourceGUID, sourceName, spellData, spellID, spellName, spellSchool)
-	local id, data
+function Bars:CreateTimer(sourceGUID, sourceName, anchor, repeating, isCooldown, duration, spellID, spellName, spellIcon)
+	local group = Bars.groups[anchor]
+	if( not group ) then
+		return
+	end	
 	
-	-- Start a regular timer
-	local group = Bars.groups[spellData.anchor]
-	if( group ) then
-		local anchor = Afflicted.db.profile.anchors[spellData.anchor]
-		local text = spellName
-		if( Afflicted.db.profile.barNameOnly and sourceName ~= "" ) then
-			text = Afflicted:StripServer(sourceName)
-		elseif( sourceName ~= "" ) then
-			text = string.format("%s - %s", spellName, Afflicted:StripServer(sourceName))
-		else
-			text = spellName
-		end
-		
-		id = sourceGUID .. spellID
-		data = string.format("%s,%s,%s,%s,%s", sourceGUID, sourceName, spellID, spellName, spellSchool)
-		barData[id] = data
+	id = sourceGUID .. spellID .. (isCooldown and "CD" or "")
+	barData[id] = string.format("%s,%s,%s,%s", sourceGUID, sourceName, spellID, spellName) .. (isCooldown and ",CD" or "")
 
-		group:RegisterBar(id, text,spellData.duration, nil, spellData.icon)
-		group:SetRepeatingTimer(id, spellData.repeating or false)
+	-- It's a cooldown, but it's not shown in the cooldown anchor so prefix [CD] to it
+	local cd = ""
+	if( isCooldown and ( anchor ~= "cooldowns" or Afflicted.db.profile.anchors[anchor].redirect ~= "" ) ) then
+		cd = "[CD] "
 	end
-	
-	-- Start a cooldown timer
-	if( spellData.cdEnabled and spellData.cooldown > 0 ) then
-		local group = Bars.groups[spellData.cdAnchor]
-		if( not group ) then
-			return
-		end
-	
-		id = (id or sourceGUID .. spellID) .. "CD"
-		barData[id] = (data or string.format("%s,%s,%s,%s,%s", sourceGUID, sourceName, spellID, spellName, spellSchool)) .. ",cd"
-		
-		-- If it's shown in the cooldowns timer, it's implied to be a CD, if it's not, mark it as one.
-		local cd = ""
-		if( spellData.cdAnchor ~= "cooldowns" or Afflicted.db.profile.anchors[spellData.cdAnchor].redirect ~= "" ) then
-			cd = "[CD] "
-		end
-		
-		local text
-		if( Afflicted.db.profile.barNameOnly and sourceName ~= "" ) then
-			text = string.format("%s%s", cd, Afflicted:StripServer(sourceName))
-		elseif( sourceName ~= "" ) then
-			text = string.format("%s%s - %s", cd, spellName, Afflicted:StripServer(sourceName))
-		else
-			text = string.format("%s%s", cd, spellName)
-		end
 
-		group:RegisterBar(id, text, spellData.cooldown, nil, spellData.icon)
+	local text
+	if( sourceName == "" ) then
+		text = string.format("%s%s", cd, spellName)
+	elseif( Afflicted.db.profile.barNameOnly ) then
+		text = string.format("%s%s", cd, Afflicted:StripServer(sourceName))
+	else
+		text = string.format("%s%s - %s", cd, spellName, Afflicted:StripServer(sourceName))
 	end
+
+	group:RegisterBar(id, text, duration, nil, spellIcon)
+	group:SetRepeatingTimer(id, repeating or false)
 end
 
 -- Bar timer ran out
 function Bars:OnFade(barID)
-	local sourceGUID, sourceName, spellID, spellName, spellSchool, timerType = string.split(",", barData[barID])
+	local sourceGUID, sourceName, spellID, spellName, timerType = string.split(",", barData[barID])
 	barData[barID] = nil
 	
 	spellID = tonumber(spellID)
-	spellSchool = tonumber(spellSchool)
 	
-	self:AbilityEnded(sourceGUID, sourceName, Afflicted:GetSpell(spellID, spellName), spellID, spellName, spellSchool, timerType == "CD")
+	Afflicted:AbilityEnded(sourceGUID, sourceName, Afflicted:GetSpell(spellID, spellName), spellID, spellName, timerType == "CD")
 end
 
 -- Remove a timer by the ID, totems basically
@@ -193,7 +165,7 @@ function Bars:ReloadVisual()
 
 	-- Update!
 	for _, group in pairs(Bars.groups) do
-		local data = Afflicted.db.profile.anchors[nameToType[group.name]]
+		local data = Afflicted.db.profile.anchors[group.groupID]
 		group:SetScale(data.scale)
 		group:SetDisplayGroup(data.redirect ~= "" and data.redirect or nil)
 		group:SetBarGrowth(data.growUp and "UP" or "DOWN")
@@ -204,6 +176,5 @@ function Bars:ReloadVisual()
 		group:SetMaxBars(data.maxRows)
 		group:SetFadeTime(data.fadeTime)
 		group:SetIconPosition(data.icon)
-		group:SetGroupID(type)
 	end
 end

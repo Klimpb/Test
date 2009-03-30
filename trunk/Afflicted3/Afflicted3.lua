@@ -21,8 +21,6 @@ function Afflicted:OnInitialize()
 			fontSize = 12,
 			fontName = "Friz Quadrata TT",
 			
-			announceColor = { r = 1.0, g = 1.0, b = 1.0 },
-			announceDest = "1",
 			inside = {["none"] = true},
 			anchors = {},
 			spells = {},
@@ -41,9 +39,11 @@ function Afflicted:OnInitialize()
 		fadeTime = 0.5,
 		icon = "LEFT",
 		redirect = "",
-		display = "icons",
+		display = "bars",
 		startMessage = "USED *spell (*target)",
 		endMessage = "FADED *spell (*target)",
+		announceColor = { r = 1.0, g = 1.0, b = 1.0 },
+		announceDest = "1",
 	}
 	
 	-- Load default anchors
@@ -79,7 +79,7 @@ function Afflicted:OnInitialize()
 		local spells = AfflictedSpells:GetData()
 		for spellID, data in pairs(spells) do
 			-- Do not add a spell if it doesn't exist
-			if( GetSpellInfo(spellID) ) then
+			if( GetSpellInfo(spellID) and not self.db.profile.spells[spellID] ) then
 				self.db.profile.spells[spellID] = data
 			end
 		end
@@ -162,7 +162,7 @@ function Afflicted:COMBAT_LOG_EVENT_UNFILTERED(event, timestamp, eventType, sour
 	if( eventType == "SPELL_AURA_REMOVED" and bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) == COMBATLOG_OBJECT_REACTION_HOSTILE ) then
 		local spellID, spellName, spellSchool, auraType = ...
 		if( auraType == "BUFF" ) then
-			self:AbilityEarlyFade(sourceGUID, sourceName, self:GetSpell(spellID, spellName), spellID, spellName, spellSchool)
+			self:AbilityEarlyFade(sourceGUID, sourceName, self:GetSpell(spellID, spellName), spellID)
 		end
 
 	-- Spell casted succesfully
@@ -173,7 +173,7 @@ function Afflicted:COMBAT_LOG_EVENT_UNFILTERED(event, timestamp, eventType, sour
 			self:ResetCooldowns(spell.resets)
 		end
 		
-		self:AbilityTriggered(sourceGUID, sourceName, spell, spellID, spellName, spellSchool)
+		self:AbilityTriggered(sourceGUID, sourceName, spell, spellID)
 		
 	-- Check for something being summoned (Pets, totems)
 	elseif( eventType == "SPELL_SUMMON" and bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) == COMBATLOG_OBJECT_REACTION_HOSTILE ) then
@@ -188,7 +188,7 @@ function Afflicted:COMBAT_LOG_EVENT_UNFILTERED(event, timestamp, eventType, sour
 				self[self.db.profile.anchors[spell.anchor].display]:RemoveTimerByID(self.anchor, summonedTotems[id])
 			end
 			
-			self:AbilityTriggered(sourceGUID, sourceName, spell, spellID, spellName, spellSchool)
+			self:AbilityTriggered(sourceGUID, sourceName, spell, spellID)
 		end
 
 		-- Set this as the active totem of that type down
@@ -200,7 +200,7 @@ function Afflicted:COMBAT_LOG_EVENT_UNFILTERED(event, timestamp, eventType, sour
 		
 		local spell = self:GetSpell(spellID, spellName)
 		if( spell and spell.type == "trap" ) then
-			self:AbilityTriggered(sourceGUID, sourceName, spell, spellID, spellName, spellSchool)
+			self:AbilityTriggered(sourceGUID, sourceName, spell, spellID)
 		end
 		
 	-- Check if we should clear timers
@@ -213,9 +213,11 @@ end
 -- Reset spells
 function Afflicted:ResetCooldowns(spells)
 	for spellID in pairs(spells) do
-		local anchor = self.db.profile.anchors[spellData.cdAnchor]
-		if( anchor.enabled ) then
-			self[anchor.display]:RemoveTimerByID(spellData.cdAnchor, sourceGUID .. spellID .. "CD")
+		if( spellData.cdAnchor ) then
+			local anchor = self.db.profile.anchors[spellData.cdAnchor]
+			if( anchor.enabled ) then
+				self[anchor.display]:RemoveTimerByID(spellData.cdAnchor, sourceGUID .. spellID .. "CD")
+			end
 		end
 	end
 end
@@ -227,28 +229,31 @@ function test()
 end
 
 -- Timer started
-function Afflicted:AbilityTriggered(sourceGUID, sourceName, spellData, spellID, spellName, spellSchool)
+function Afflicted:AbilityTriggered(sourceGUID, sourceName, spellData, spellID)
 	-- No data found, it's disabled, or it's not in our interest cause it's not focus/target
-	if( not spellData or spellData.disabled or ( self.db.profile.targetOnly and UnitGUID("target") ~= sourceGUID and UnitGUID("focus") ~= sourceGUID ) ) then
+	if( not spellData or ( self.db.profile.targetOnly and UnitGUID("target") ~= sourceGUID and UnitGUID("focus") ~= sourceGUID ) ) then
 		return
 	end
-	
+		
 	-- Set spell icon
-	if( not spellData.icon or spellData.icon == "" or spellData.dontSave ) then
-		spellData.icon = select(3, GetSpellInfo(spellID))
+	local spellName, _, spellIcon = GetSpellInfo(spellID)
+	
+	-- Start duration timer (if any)
+	if( not spellData.disabled and spellData.anchor and spellData.duration ) then
+		self:CreateTimer(sourceGUID, sourceName, spellData.anchor, spellData.repeating, false, spellData.duration, spellID, spellName, spellIcon)
+
+		-- Announce timer used
+		self:Announce(spellData, spellData.anchor, "startMessage", spellName, sourceName)
 	end
 	
-	local anchor = self.db.profile.anchors[spellData.anchor or spellData.cdAnchor]
-	
-	-- Start timer
-	self[anchor.display]:CreateTimer(sourceGUID, sourceName, spellData, spellID, spellName, spellSchool)
-	
-	-- Announce timer used
-	self:Announce(spellData, anchor, "startMessage", spellName, sourceName)
+	-- Start CD timer
+	if( not spellData.cdDisabled and spellData.cdAnchor and spellData.cooldown ) then
+		self:CreateTimer(sourceGUID, sourceName, spellData.cdAnchor, false, true, spellData.cooldown, spellID, spellName, spellIcon)
+	end
 end
 
 -- Spell faded early, so announce that
-function Afflicted:AbilityEarlyFade(sourceGUID, sourceName, spellData, spellID, spellName, spellSchool)
+function Afflicted:AbilityEarlyFade(sourceGUID, sourceName, spellData, spellID, spellName)
 	if( spellData and not spellData.disabled and spellData.type == "buff" ) then
 		local removed = self[self.db.profile.anchors[spellData.anchor].display]:RemoveTimerByID(spellData.anchor, sourceGUID .. spellID)
 		if( removed ) then
@@ -258,7 +263,7 @@ function Afflicted:AbilityEarlyFade(sourceGUID, sourceName, spellData, spellID, 
 end
 
 -- Timer faded naturally
-function Afflicted:AbilityEnded(sourceGUID, sourceName, spellData, spellID, spellName, spellSchool, isCooldown)
+function Afflicted:AbilityEnded(sourceGUID, sourceName, spellData, spellID, spellName, isCooldown)
 	if( spellData ) then
 		if( not isCooldown and not spellData.disabled ) then
 			self:Announce(spellData, self.db.profile.anchors[spellData.anchor], "endMessage", spellName, sourceName)
@@ -266,6 +271,16 @@ function Afflicted:AbilityEnded(sourceGUID, sourceName, spellData, spellID, spel
 			self:Announce(spellData, self.db.profile.anchors[spellData.cdAnchor], "endMessage", spellName, sourceName)
 		end
 	end
+end
+
+-- Create a timer and shunt it to the correct display
+function Afflicted:CreateTimer(sourceGUID, sourceName, anchorName, repeating, isCooldown, duration, spellID, spellName, spellIcon)
+	anchor = self.db.profile.anchors[anchorName]
+	if( not anchor ) then
+		return
+	end
+	
+	self[anchor.display]:CreateTimer(sourceGUID, sourceName, anchorName, repeating, isCooldown, duration, spellID, spellName, spellIcon)
 end
 
 -- Announce something
@@ -289,21 +304,18 @@ end
 
 -- Database is getting ready to be written, we need to convert any changed data back into text
 function Afflicted:OnDatabaseShutdown()
-	for spellID in pairs(self.writeQueue) do
+	for id in pairs(self.writeQueue) do
 		-- We got data we can write
-		if( type(self.spells[spellID]) == "table" ) then
+		if( type(self.spells[id]) == "table" ) then
 			local data = ""
-			for key, value in pairs(self.spells[spellID]) do
+			for key, value in pairs(self.spells[id]) do
 				data = data .. key .. ":" .. value .. ";"
 			end
 
-			self.db.profile.spells[spellID] = data
-		-- No spell data found, reset saved
-		elseif( not self.spells[spellID] ) then
-			self.db.profile.spells[spellID] = nil
+			self.db.profile.spells[id] = data
 		end
 		
-		self.writeQueue[spellID] = nil
+		self.writeQueue[id] = nil
 	end
 end
 
@@ -323,7 +335,8 @@ function Afflicted:ZONE_CHANGED_NEW_AREA()
 end
 
 function Afflicted:Reload()
-
+	self.icons:ReloadVisual()
+	self.bars:ReloadVisual()
 end
 
 -- Strips server name

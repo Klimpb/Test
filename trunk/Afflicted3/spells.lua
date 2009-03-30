@@ -1,6 +1,5 @@
 AfflictedSpells = {}
 AfflictedSpells.revision = tonumber(string.match("$Revision$;", "(%d+)") or 1)
-AfflictedSpells.revision = math.random(50000)
 
 function AfflictedSpells:Verify()
 	AfflictedSpells:GetData()
@@ -92,10 +91,6 @@ function AfflictedSpells:GetData()
 		[47481] = "cooldown:30;cdAnchor:spells;class:DEATHKNIGHT;",
 		
 		-- Paladin
-		-- Exorcism
-		[27138] = 48801,
-		[48800] = 48801,
-		[48801] = "cooldown:15;cdAnchor:interrupts;class:PALADIN;",
 		-- Divine Plea
 		[54428] = "type:buff;duration:15;anchor:buffs;cooldown:60;cdAnchor:cooldowns;class:PALADIN;",
 		-- Avenging Wrath

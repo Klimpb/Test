@@ -21,6 +21,6 @@ localization.enUS.lua
 
 spells.lua
 Afflicted3.lua
-## config.lua
+config.lua
 bars.lua
 icons.lua

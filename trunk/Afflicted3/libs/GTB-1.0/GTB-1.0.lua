@@ -1,5 +1,5 @@
 local major = "GTB-1.0"
-local minor = tonumber(string.match("$Revision: 1169 $", "(%d+)") or 1)
+local minor = tonumber(string.match("$Revision: 1172 $", "(%d+)") or 1)
 
 assert(LibStub, string.format("%s requires LibStub.", major))
 
@@ -345,7 +345,8 @@ function GTB.SetGroupID(group, id)
 	argcheck(id, 2, "string")
 	assert(3, group.name and groups[group.name], L["MUST_CALL"], "SetGroupID")
 	
-	group.frame.groupID = id	
+	group.frame.groupID = id
+	group.groupID = id
 end
 
 -- Toggle if the drag anchor should be shown
