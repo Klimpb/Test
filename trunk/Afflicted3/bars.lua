@@ -72,7 +72,7 @@ function Bars:LoadVisual()
 	-- Create anchors
 	Bars.groups = {}
 	for name, data in pairs(Afflicted.db.profile.anchors) do
-		if( data.display == "bar" ) then
+		if( data.display == "bars" ) then
 			Bars.groups[name] = Bars:CreateDisplay(name)
 		end
 	end
@@ -177,12 +177,12 @@ end
 function Bars:ReloadVisual()
 	for name, data in pairs(Afflicted.db.profile.anchors) do
 		-- Had a bad anchor that was either enabled recently, or it used to be an icon anchor
-		if( not Bars.groups[name] and data.display == "bar" and ( data.enabled or data.redirect ~= "" ) ) then
+		if( not Bars.groups[name] and data.display == "bars" and ( data.enabled or data.redirect ~= "" ) ) then
 			Bars.groups[name] = savedGroups[name] or Bars:CreateDisplay(name)
 			savedGroups[name] = nil
 		
 		-- Had a bar anchor that was either disabled recently, or it's not a bar anchor anymore
-		elseif( Bars.groups[name] and ( data.display ~= "bar" or ( not data.enabled and data.redirect == "" ) ) ) then
+		elseif( Bars.groups[name] and ( data.display ~= "bars" or ( not data.enabled and data.redirect == "" ) ) ) then
 			savedGroups[name] = Bars.groups[name]
 			
 			Bars.groups[name]:SetAnchorVisible(false)

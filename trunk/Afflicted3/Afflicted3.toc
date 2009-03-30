@@ -2,9 +2,8 @@
 ## Title: Afflicted3
 ## Notes: PvP timer and cool down tracking mod
 ## Author: Mayen
-## Version: $Revision: 1131 $
 ## SavedVariables: Afflicted3DB
-## OptionalDeps: LibStub
+## OptionalDeps: LibStub, GTB-1.0
 
 libs\LibStub-1.0\LibStub-1.0.xml
 libs\CallbackHandler-1.0\CallbackHandler-1.0.xml

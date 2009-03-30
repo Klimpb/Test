@@ -1,5 +1,5 @@
 AfflictedSpells = {}
-AfflictedSpells.revision = tonumber(string.match("$Revision: 1131 $;", "(%d+)") or 1)
+AfflictedSpells.revision = tonumber(string.match("$Revision$;", "(%d+)") or 1)
 AfflictedSpells.revision = math.random(50000)
 
 function AfflictedSpells:Verify()
