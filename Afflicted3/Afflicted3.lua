@@ -11,6 +11,7 @@ local summonedTotems = {}
 function Afflicted:OnInitialize()
 	self.defaults = {
 		profile = {
+			showAnchors = false,
 			targetOnly = false,
 			
 			barWidth = 180,
@@ -40,7 +41,7 @@ function Afflicted:OnInitialize()
 		fadeTime = 0.5,
 		icon = "LEFT",
 		redirect = "",
-		display = "bar",
+		display = "icons",
 		startMessage = "USED *spell (*target)",
 		endMessage = "FADED *spell (*target)",
 	}
@@ -55,9 +56,9 @@ function Afflicted:OnInitialize()
 	self.defaults.profile.anchors.buffs = CopyTable(anchor)
 	self.defaults.profile.anchors.buffs.text = "Buffs"
 	self.defaults.profile.anchors.defenses = CopyTable(anchor)
-	self.defaults.profile.anchors.defenses = "Defensive"
+	self.defaults.profile.anchors.defenses.text = "Defensive"
 	self.defaults.profile.anchors.damage = CopyTable(anchor)
-	self.defaults.profile.anchors.damage = "Damage"
+	self.defaults.profile.anchors.damage.text = "Damage"
 	
 	-- Initialize DB
 	self.db = LibStub:GetLibrary("AceDB-3.0"):New("Afflicted3DB", self.defaults)
@@ -66,7 +67,7 @@ function Afflicted:OnInitialize()
 	self.db.RegisterCallback(self, "OnProfileReset", "Reload")
 	self.db.RegisterCallback(self, "OnDatabaseShutdown", "OnDatabaseShutdown")
 
-	self.revision = tonumber(string.match("$Revision: 1131 $", "(%d+)") or 1)
+	self.revision = tonumber(string.match("$Revision$", "(%d+)") or 1)
 	
 	-- Load SML
 	self.SML = LibStub:GetLibrary("LibSharedMedia-3.0")
@@ -128,6 +129,9 @@ function Afflicted:OnInitialize()
 	-- Load display libraries
 	self.bars = self.modules.Bars:LoadVisual()
 	self.icons = self.modules.Icons:LoadVisual()
+	
+	-- Annnd update revision
+	self.db.profile.revision = self.revision
 
 	self:RegisterEvent("PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA")
 	self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
@@ -216,6 +220,12 @@ function Afflicted:ResetCooldowns(spells)
 	end
 end
 
+function test()
+	local self = Afflicted
+	self:AbilityTriggered(UnitGUID("player"), UnitName("player"), self:GetSpell(47476, "Strangulate"), 47476, "Strangulate", 0)
+	self:AbilityTriggered(UnitGUID("player"), UnitName("player"), self:GetSpell(18499, "Berserker Rage"), 18499, "Berserker Rage", 0)
+end
+
 -- Timer started
 function Afflicted:AbilityTriggered(sourceGUID, sourceName, spellData, spellID, spellName, spellSchool)
 	-- No data found, it's disabled, or it's not in our interest cause it's not focus/target
@@ -228,7 +238,7 @@ function Afflicted:AbilityTriggered(sourceGUID, sourceName, spellData, spellID, 
 		spellData.icon = select(3, GetSpellInfo(spellID))
 	end
 	
-	local anchor = self.db.profile.anchors[spellData.anchor]
+	local anchor = self.db.profile.anchors[spellData.anchor or spellData.cdAnchor]
 	
 	-- Start timer
 	self[anchor.display]:CreateTimer(sourceGUID, sourceName, spellData, spellID, spellName, spellSchool)
