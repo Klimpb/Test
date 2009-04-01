@@ -73,6 +73,7 @@ function Afflicted:OnInitialize()
 	self.SML = LibStub:GetLibrary("LibSharedMedia-3.0")
 
 	-- Load spell defaults in if the DB has changed
+	self.db.profile.spellRevision = 0
 	if( self.db.profile.spellRevision <= AfflictedSpells.revision ) then
 		self.db.profile.spellRevision = AfflictedSpells.revision
 		
@@ -103,7 +104,7 @@ function Afflicted:OnInitialize()
 			tbl[index] = {}
 
 			-- Load the data into the DB
-			for key, value in string.gmatch(Afflicted.db.profile.spells[index], "([a-zA-Z]+):([a-zA-Z0-9]+)") do
+			for key, value in string.gmatch(Afflicted.db.profile.spells[index], "([^:]+):([^;]+);") do
 				-- Convert to number if needed
 				if( key == "duration" or key == "cooldown" ) then
 					value = tonumber(value)
@@ -237,7 +238,7 @@ function Afflicted:AbilityTriggered(sourceGUID, sourceName, spellData, spellID)
 		
 	-- Set spell icon
 	local spellName, _, spellIcon = GetSpellInfo(spellID)
-	
+		
 	-- Start duration timer (if any)
 	if( not spellData.disabled and spellData.anchor and spellData.duration ) then
 		self:CreateTimer(sourceGUID, sourceName, spellData.anchor, spellData.repeating, false, spellData.duration, spellID, spellName, spellIcon)
@@ -305,14 +306,28 @@ end
 -- Database is getting ready to be written, we need to convert any changed data back into text
 function Afflicted:OnDatabaseShutdown()
 	for id in pairs(self.writeQueue) do
-		-- We got data we can write
+		-- We currently have a table, meaning we can write it out as a string
 		if( type(self.spells[id]) == "table" ) then
 			local data = ""
 			for key, value in pairs(self.spells[id]) do
-				data = data .. key .. ":" .. value .. ";"
+				local text = value
+				if( type(value) == "table" ) then
+					text = ""
+					for key in pairs(value) do
+						text = text .. key .. ","
+					end
+				end
+				
+				data = data .. key .. ":" .. text .. ";"
 			end
 
 			self.db.profile.spells[id] = data
+		-- We have a linked spell setup (spellID -> spellID)
+		elseif( type(self.spells[id]) == "number" ) then
+			self.db.profile.spells[id] = self.spells[id]
+		-- Nothing found, so reset the value
+		else
+			self.db.profile.spells[id] = nil
 		end
 		
 		self.writeQueue[id] = nil
