@@ -9,6 +9,8 @@ local addedAnchorIndex = 0
 local spellIDToNames = {}
 local anchorIDToNames = {}
 local linkedSpells = {}
+local spellFilter = ""
+local moveToAnchor = ""
 
 function Config:OnInitialize()
 	config = LibStub("AceConfig-3.0")
@@ -105,29 +107,7 @@ local function setGlobalOption(info, value)
 	Afflicted.modules.Icons:ReloadVisual()
 end
 
-local function setSpell(info, value)
-	local id = spellIDToNames[info[2]]
-	local key = info[#(info)]
-	
-	-- We changed the class this was associated to, so shift the spell cat option to the new one
-	if( key == "class" and Afflicted.spells[id][key] ~= value ) then
-		options.args.spellcats.args[value] = CopyTable(options.args.spellcats.args[value][Afflicted.spells[id][key]])
-		options.args.spellcats.args[Afflicted.spells[id][key]] = nil
-	end
-	
-	Afflicted.writeQueue[id] = true
-	Afflicted.spells[id][key] = value
-end
-
-local function getSpell(info)
-	local key = info[#(info)]
-	local id = spellIDToNames[info[2]]
-	if( key == "type" and not Afflicted.spells[id][key] ) then
-		return "cast"
-	end
-	
-	return Afflicted.spells[id][key]
-end
+local setSpell, getSpell
 
 -- Advanced feature set/gets
 local function parseLinked(id, ...)
@@ -147,29 +127,6 @@ local function parseLinked(id, ...)
 			table.insert(linkedSpells[id], spellID)
 		end
 	end
-end
-
-local function setLinked(info, value)
-	parseLinked(spellIDToNames[info[2]], string.split(",", value))
-end
-
-local function getLinked(info)
-	local id = spellIDToNames[info[2]]
-	if( not linkedSpells[id] ) then
-		linkedSpells[id] = {}
-		return ""
-	end
-	
-	local txt
-	for _, spellID in pairs(linkedSpells[id]) do
-		if( txt ) then
-			txt = txt .. "," .. spellID
-		else
-			txt = spellID .. ""
-		end
-	end
-	
-	return txt
 end
 
 local function parseReset(id, ...)
@@ -192,38 +149,26 @@ local function parseReset(id, ...)
 	end
 end
 
-local function setReset(info, value)
-	parseReset(spellIDToNames[info[2]], string.split(",", value))	
-end
-
-local function getReset(info)
-	local id = spellIDToNames[info[2]]
-	if( not Afflicted.spells[id].resets ) then
-		return ""
-	end
-	
-	local txt
-	for spellID in pairs(Afflicted.spells[id].resets) do
-		if( txt ) then
-			txt = txt .. "," .. spellID
-		else
-			txt = spellID .. ""
-		end
-	end
-	
-	return txt or ""
-end
-
-local function confirmSpellDelete(info)
-	local id = spellIDToNames[info[2]]
-	options.args.spells.args[info[2]] = nil
-	options.args.spellcats.args.ALL[info[2]] = nil
-	if( Afflicted.spells[id].class ) then
-		options.args.spellcats.args[Afflicted.spells[id].class][info[2]] = nil
+-- Load all the spells into the per class list
+local function buildString(spell, divider)
+	local txt = ""
+	if( spell.disabled or not spell.duration or not spell.anchor ) then
+		txt = L["Duration disabled"]
+	else
+		txt = string.format(L["Duration: %d (%s)"], spell.duration, (Afflicted.db.profile.anchors[spell.anchor] and Afflicted.db.profile.anchors[spell.anchor].text or spell.anchor))
 	end
 
-	Afflicted.spells[id] = false
-	Afflicted.writeQueue[id] = true
+	if( txt ~= "" ) then
+		txt = txt .. divider
+	end
+
+	if( spell.cdDisabled or not spell.cooldown or not spell.cdAnchor ) then
+		txt = txt .. L["Cooldown disabled"]
+	else
+		txt = txt .. string.format(L["Cooldown: %d (%s)"], spell.cooldown, (Afflicted.db.profile.anchors[spell.cdAnchor] and Afflicted.db.profile.anchors[spell.cdAnchor].text or spell.anchor))
+	end
+
+	return txt
 end
 
 -- Build a list of spells based on a filter (if any)
@@ -233,10 +178,36 @@ local function createSpellConfiguration(index, spell, spellName)
 		classList[classToken] = L[classToken]
 	end
 	
+	if( not setSpell ) then
+		setSpell = function(info, value)
+			local id = spellIDToNames[info[2]]
+			local key = info[#(info)]
+
+			-- We changed the class this was associated to, so shift the spell cat option to the new one
+			if( key == "class" and Afflicted.spells[id][key] ~= value and Afflicted.spells[id][key] and options.args.spellcats.args[Afflicted.spells[id][key]][id] ) then
+				options.args.spellcats.args[value][id] = CopyTable(options.args.spellcats.args[Afflicted.spells[id][key]][id])
+				options.args.spellcats.args[Afflicted.spells[id][key]] = nil
+			end
+
+			Afflicted.writeQueue[id] = true
+			Afflicted.spells[id][key] = value
+		end
+		getSpell = function(info)
+			local key = info[#(info)]
+			local id = spellIDToNames[info[2]]
+			if( key == "type" and not Afflicted.spells[id][key] ) then
+				return "cast"
+			end
+
+			return Afflicted.spells[id][key]
+		end
+	end
+	
 	return {
 		type = "group",
 		order = 1,
 		name = spellName,
+		desc = buildString(spell, "\n"),
 		set = setSpell,
 		get = getSpell,
 		arg = index,
@@ -330,16 +301,53 @@ local function createSpellConfiguration(index, spell, spellName)
 								type = "input",
 								name = L["Spells linked to this one"],
 								desc = L["Spells that are specifically linked to this one by a spell id. This is basically lower ranked spells, and you only need to set this if you're adding by spell id... and even then you don't really have to."],
-								set = setLinked,
-								get = getLinked,
+								set = function(info, value)
+									parseLinked(spellIDToNames[info[2]], string.split(",", value))
+								end,
+								get = function(info)
+									local id = spellIDToNames[info[2]]
+									if( not linkedSpells[id] ) then
+										linkedSpells[id] = {}
+										return ""
+									end
+
+									local txt
+									for _, spellID in pairs(linkedSpells[id]) do
+										if( txt ) then
+											txt = txt .. "," .. spellID
+										else
+											txt = spellID .. ""
+										end
+									end
+
+									return txt
+								end,
 							},
 							reset = {
 								order = 1,
 								type = "input",
 								name = L["Reset when this is used"],
 								desc = L["Spells that should have there cooldown reset when this one is used, think Preparation or Iceblock."],
-								set = setReset,
-								get = getReset,
+								set = function(info, value)
+									parseReset(spellIDToNames[info[2]], string.split(",", value))	
+								end,
+								get = function(info)
+									local id = spellIDToNames[info[2]]
+									if( not Afflicted.spells[id].resets ) then
+										return ""
+									end
+									
+									local txt
+									for spellID in pairs(Afflicted.spells[id].resets) do
+										if( txt ) then
+											txt = txt .. "," .. spellID
+										else
+											txt = spellID .. ""
+										end
+									end
+									
+									return txt or ""
+								end,
 							},
 						},
 					},
@@ -363,7 +371,17 @@ local function createSpellConfiguration(index, spell, spellName)
 						name = L["Delete"],
 						confirm = true,
 						confirmText = L["Are you REALLY sure you want to delete this spell?"],
-						func = confirmSpellDelete,
+						func = function(info)
+							local id = spellIDToNames[info[2]]
+							options.args.spells.args[info[2]] = nil
+							options.args.spellcats.args.ALL[info[2]] = nil
+							if( Afflicted.spells[id].class ) then
+								options.args.spellcats.args[Afflicted.spells[id].class][info[2]] = nil
+							end
+
+							Afflicted.spells[id] = false
+							Afflicted.writeQueue[id] = true
+						end,
 					},
 				},
 			},
@@ -371,107 +389,119 @@ local function createSpellConfiguration(index, spell, spellName)
 	}
 end
 
--- Spell searching
-local spellFilter = ""
-local function isSpellHidden(info)
-	if( not spellFilter or spellFilter == "" ) then
-		return false
-	end
-	
-	return not string.match(string.lower(info.arg), string.lower(spellFilter))
-end
-
--- Create a new spell
-local function createNewSpell(info, value)
-	if( tonumber(value) ) then
-		value = tonumber(value)
-	end
-	
-	-- Add it!
-	Afflicted.db.profile.spells[value] = ""
-	Afflicted.spells[value] = {}
-	Afflicted.writeQueue[value] = true
-	
-	-- And do our quick translation table, thing-a-ma-bob
-	addedSpellIndex = addedSpellIndex + 1
-	spellIDToNames[tostring(addedSpellIndex)] = value
-
-	-- Figure out spell name
-	local spellName = value
-	if( type(spellName) == "number" ) then
-		spellName = GetSpellInfo(spellName)
-	end
-	
-	options.args.spells.args[tostring(addedSpellIndex)] = createSpellConfiguration(addedSpellIndex, spell, spellName)
-end
+-- Anchor DB
+local setAnchor, getAnchor, setAnchorColor, getAnchorColor
 
 -- Create an anchor configuration
-local function createAnchorConfiguration(addedSpellIndex, anchor)
+local function createAnchorConfiguration(index, anchor)
+	if( not setAnchor ) then
+		setAnchor = function(info, value)
+			local id = anchorIDToNames[info[2]]
+			local key = info[#(info)]
+			if( key == "text" ) then
+				options.args.anchors.args[info[2]].name = value
+			end
+			
+			Afflicted.db.profile.anchors[id][key] = value
+		end
+
+		getAnchor = function(info)
+			local id = anchorIDToNames[info[2]]
+			return Afflicted.db.profile.anchors[id][info[#(info)]]
+		end
+
+		setAnchorColor = function(info, r, g, b)
+			setAnchor(info, {r = r, g = g, b = b})
+		end
+
+		getAnchorColor = function(info)
+			local color = getAnchor(info)
+			return color.r, color.g, color.b
+		end
+
+		isBarOptionsHidden = function(info)
+			return Afflicted.db.profile.anchors[anchorIDToNames[info[2]]].display == "icons"
+		end
+	end
+	
 	return {
 		order = 1,
 		type = "group",
-		name = anchor.text
+		name = anchor.text,
 		set = setAnchor,
 		get = getAnchor,
-		arg = addedSpellIndex,
+		arg = index,
 		args = {
 			enabled = {
 				order = 1,
 				type = "toggle",
-				name = L["Enable showing timers in this anchor"],
+				name = L["Enable anchor"],
 				desc = L["Allows timers to be shown under this anchor, if the anchor is disabled you won't see any timers."],
 				width = "full",
+			},
+			text = {
+				order = 2,
+				type = "input",
+				name = L["Anchor name"],
+				validate = function(info, value)
+					value = string.trim(value)
+					if( value == "" ) then
+						return L["No anchor name entered."]
+					end
+
+					for _, data in pairs(Afflicted.db.profile.anchors) do
+						if( string.lower(data.text or "") == string.lower(value) ) then
+							return L["An anchor with that name already exists."]
+						end
+					end
+
+					return true
+				end,
 			},
 			display = {
 				order = 3,
 				type = "group",
 				inline = true,
-				name = L["Timer display"],
+				name = L["Display"],
 				args = {
-					desc = {
-						order = 0,
-						name = L["Per anchor display for how timers should be displayed."],
-						type = "description",
-					},
 					growUp = {
 						order = 1,
 						type = "toggle",
-						name = L["Grow display up"],
+						name = L["Grow up"],
 						desc = L["Instead of adding everything from top to bottom, timers will be shown from bottom to top."],
 						width = "double",
 					},
 					display = {
 						order = 2,
 						type = "select",
-						name = L["Display style"],
-						values = {["bar"] = L["Bars"], ["icon"] = L["Icons"]},
+						name = L["Display type"],
+						values = {["bars"] = L["Bars"], ["icons"] = L["Icons"]},
 					},
 					icon = {
 						order = 3,
 						type = "select",
 						name = L["Icon position"],
 						values = {["LEFT"] = L["Left"], ["RIGHT"] = L["Right"]},
+						hidden = isBarOptionsHidden,
 					},
-					scale = {
+					fadeTime = {
 						order = 4,
 						type = "range",
-						name = L["Display scale"],
-						desc = L["How big the actual timers should be."],
-						min = 0, max = 2, step = 0.01,
-						arg = "anchors." .. id .. ".scale",
+						name = L["Fade time"],
+						desc = L["How many seconds it should take after a bar is finished for it to fade out."],
+						min = 0, max = 2, step = 0.1,
+						hidden = isBarOptionsHidden,
 					},
 					sep = {
 						order = 5,
 						name = "",
 						type = "description",
 					},
-					fadeTime = {
+					scale = {
 						order = 6,
 						type = "range",
-						name = L["Fade time"],
-						desc = L["How many seconds it should take after a bar is finished for it to fade out."],
-						min = 1, max = 2, step = 0.1,
-						arg = "anchors." .. id .. ".fadeTime",
+						name = L["Scale"],
+						min = 0, max = 2, step = 0.01,
 					},
 					maxRows = {
 						order = 7,
@@ -479,13 +509,13 @@ local function createAnchorConfiguration(addedSpellIndex, anchor)
 						name = L["Max timers"],
 						desc = L["Maximum amount of timers that should be ran per an anchor at the same time, if too many are running at the same time then the new ones will simply be hidden until older ones are removed."],
 						min = 1, max = 50, step = 1,
-						arg = "anchors." .. id .. ".maxRows",
 					},
 					redirection = {
 						order = 8,
 						type = "group",
 						inline = true,
 						name = L["Redirection"],
+						hidden = isBarOptionsHidden,
 						args = {
 							desc = {
 								order = 0,
@@ -512,49 +542,111 @@ local function createAnchorConfiguration(addedSpellIndex, anchor)
 						order = 1,
 						type = "toggle",
 						name = L["Enable announcements"],
-						desc = L["Enables showing alerts for when timers are triggered to this anchor."],
+						width = "full",
 					},
 					announceColor = {
 						order = 2,
 						type = "color",
 						name = L["Text color"],
 						desc = L["Alert text color, only applies to local outputs."],
-						set = setColor,
-						get = getColor,
+						set = setAnchorColor,
+						get = getAnchorColor,
+						width = "full",
 					},
 					announceDest = {
 						order = 3,
 						type = "select",
-						name = L["Announce destination"],
-						desc = L["Location to send announcements for this option to."],
+						name = L["Destination"],
 						values = announceDest,
+					},
+					announceText = {
+						order = 6,
+						type = "group",
+						inline = true,
+						name = L["Announce text"],
+						args = {
+							desc = {
+								order = 0,
+								name = L["Announcement text for when timers are triggered in this anchor. You can use *spell for the spell name, and *target for the person who triggered it (if any)."],
+								type = "description",
+							},
+							startMessage = {
+								order = 1,
+								type = "input",
+								name = L["Start message"],
+								desc = L["Message to show when a timer is started in this anchor."],
+								width = "full",
+							},
+							endMessage = {
+								order = 2,
+								type = "input",
+								name = L["Ended message"],
+								desc = L["Message to show when a timer ends inside this anchor."],
+								width = "full",
+							},
+						},
 					},
 				},
 			},
-			announceText = {
+			delete = {
 				order = 6,
 				type = "group",
 				inline = true,
-				name = L["Announce text"],
+				name = L["Delete"],
 				args = {
 					desc = {
-						order = 0,
-						name = L["Announcement text for when timers are triggered in this anchor. You can use *spell for the spell name, and *target for the person who triggered it (if any)."],
+						order = 1,
 						type = "description",
+						name = L["Anchors that were added manually will be deleted, default anchors will be reset to default settings if you delete them. Disable default anchors to stop timers from showing."],
 					},
-					startMessage = {
+					move = {
+						order = 1,
+						type = "select",
+						name = L["Move spells in this anchor to"],
+						desc = L["You have to choose which anchor spells should be moved to when this one is deleted."],
+						values = function(info)
+							local groups = Config:GetAnchors()
+							groups[anchorIDToNames[info[2]]] = nil
+							
+							return groups
+						end,
+						set = function(info, value) moveToAnchor = value end,
+						get = function() return moveToAnchor end,
+					},
+					delete = {
 						order = 2,
-						type = "input",
-						name = L["Triggered message"],
-						desc = L["Custom message to use for when this timer starts, if you leave the message blank and you have custom messages enabled then no message will be given when it's triggered."],
-						width = "full",
-					},
-					endMessage = {
-						order = 3,
-						type = "input",
-						name = L["Ended message"],
-						desc = L["Custom message to use for when this timer ends, if you leave the message blank and you have custom messages enabled then no message will be given when it's ends."],
-						width = "full",
+						type = "execute",
+						name = L["Delete"],
+						confirm = true,
+						confirmText = L["Are you REALLY sure you want to delete this anchor?"],
+						func = function(info)
+							local anchorID = anchorIDToNames[info[2]]
+							options.args.anchors.args[info[2]] = nil
+							Afflicted.db.profile.anchors[anchorID] = nil
+							
+							-- Move all spells that were in this anchor to the new one
+							-- None set, find one quickly.
+							if( not moveToAnchor or moveToAnchor == "" ) then
+								for key in pairs(Afflicted.db.profile.anchors) do moveToAnchor = key break end
+							end
+							
+							-- Now move them all
+							for id in pairs(Afflicted.db.profile.spells) do
+								local spell = Afflicted.spells[id]
+								if( type(spell) == "table" ) then
+									if( spell.anchor and spell.anchor == anchorID ) then
+										spell.anchor = moveToAnchor
+									end
+									if( spell.cdAnchor and spell.cdAnchor == anchorID ) then
+										spell.cdAnchor = moveToAnchor
+									end
+								end
+							end
+							
+							-- Annd refresh
+							Afflicted.modules.Bars:ReloadVisual()
+							Afflicted.modules.Icons:ReloadVisual()
+						end,
 					},
 				},
 			},
@@ -588,7 +680,7 @@ local function loadOptions()
 				name = L["Show timer anchors"],
 				desc = L["Show the anchors that lets you drag timer groups around."],
 			},
-			enabledIn = {
+			inside = {
 				order = 2,
 				type = "multiselect",
 				name = L["Enable inside"],
@@ -597,8 +689,8 @@ local function loadOptions()
 					Afflicted.db.profile[info[#(info)]][value] = state
 					Afflicted:Reload()
 				end,
-				get = function(info)
-					return Afflicted.db.profile[info[#(info)]]
+				get = function(info, value)
+					return Afflicted.db.profile[info[#(info)]][value]
 				end,
 				width = "double",
 				arg = "inside"
@@ -634,7 +726,7 @@ local function loadOptions()
 						order = 3,
 						type = "select",
 						name = L["Display style"],
-						values = {[""] = "----", ["bar"] = L["Bars"], ["icon"] = L["Icons"]},
+						values = {[""] = "----", ["bars"] = L["Bars"], ["icons"] = L["Icons"]},
 						get = getGlobalOption,
 						set = setGlobalOption,
 					},
@@ -722,17 +814,63 @@ local function loadOptions()
 		type = "group",
 		order = 2,
 		name = L["Anchors"],
-		handler = Config
+		handler = Config,
 		args = {
-		
+			newAnchor = {
+				type = "group",
+				order = 0,
+				name = L["New anchor"],
+				inline = true,
+				args = {
+					desc = {
+						order = 1,
+						type = "description",
+						name = L["Add a new anchor to Afflicted that timers can be displayed in."],
+						width = "full",
+					},
+					spell = {
+						order = 2,
+						type = "input",
+						name = L["Anchor name"],
+						validate = function(info, value)
+							value = string.trim(value)
+							if( value == "" ) then
+								return L["No anchor name entered."]
+							end
+							
+							for _, data in pairs(Afflicted.db.profile.anchors) do
+								if( string.lower(data.text or "") == string.lower(value) ) then
+									return L["An anchor with that name already exists."]
+								end
+							end
+							
+							return true
+						end,
+						get = function() return "" end,
+						set = function(info, value)
+							addedAnchorIndex = addedAnchorIndex + 1
+							local anchorID = string.gsub(string.lower(value), " ", "") .. addedAnchorIndex
+							anchorIDToNames[tostring(addedAnchorIndex)] = anchorID
+
+							Afflicted.db.profile.anchors[anchorID] = CopyTable(Afflicted.defaults.profile.anchorDefault)
+							Afflicted.db.profile.anchors[anchorID].text = value
+
+							options.args.anchors.args[tostring(addedAnchorIndex)] = createAnchorConfiguration(addedAnchorIndex, Afflicted.db.profile.anchors[anchorID])
+
+							Afflicted.modules.Bars:ReloadVisual()
+							Afflicted.modules.Icons:ReloadVisual()
+						end,
+						width = "full",
+					},
+				},
+			},
 		},
-	},
+	}
 	
-	addedAnchorIndex = 0
 	for key, data in pairs(Afflicted.db.profile.anchors) do
 		addedAnchorIndex = addedAnchorIndex + 1
 		anchorIDToNames[tostring(addedAnchorIndex)] = key
-		--options.args.anchors[tostring(addedAnchorIndex)] = createAnchorConfiguration(addedAnchorIndex, data)
+		options.args.anchors.args[tostring(addedAnchorIndex)] = createAnchorConfiguration(addedAnchorIndex, data)
 	end
 	
 	-- Create the actual spell list modifier
@@ -769,10 +907,78 @@ local function loadOptions()
 							return true
 						end,
 						get = function() return "" end,
-						set = createNewSpell,
+						set = function(info, value)
+							if( tonumber(value) ) then
+								value = tonumber(value)
+							end
+
+							-- Add it!
+							Afflicted.db.profile.spells[value] = ""
+							Afflicted.spells[value] = {}
+							Afflicted.writeQueue[value] = true
+
+							-- And do our quick translation table, thing-a-ma-bob
+							addedSpellIndex = addedSpellIndex + 1
+							spellIDToNames[tostring(addedSpellIndex)] = value
+
+							-- Figure out spell name
+							local spellName = value
+							if( type(spellName) == "number" ) then
+								spellName = GetSpellInfo(spellName)
+							end
+
+							options.args.spells.args[tostring(addedSpellIndex)] = createSpellConfiguration(addedSpellIndex, Afflicted.spells[value], spellName)
+						end,
 						width = "full",
 					},
 				},
+			},
+		},
+	}
+	
+	-- Spells that should be enabled in arenas
+	options.args.arenas = {
+		type = "group",
+		order = 2,
+		name = L["Arena spells"],
+		handler = Config,
+		set = function(info, value)
+			Afflicted.db.profile.arenas[tonumber(info[2])][info[#(info)]] = not value
+		end,
+		get = function(info)
+			return not Afflicted.db.profile.arenas[tonumber(info[2])][info[#(info)]]
+		end,
+		childGroups = "tab",
+		args = {
+			desc = {
+				order = 0,
+				type = "description",
+				name = L["Spells that should be enabled inside a specific arena bracket."],
+			},
+			search = {
+				order = 1,
+				type = "input",
+				name = L["Search spells"],
+				get = function() return spellFilter end,
+				set = function(info, val) spellFilter = val; end,
+			},
+			["2"] = {
+				order = 1,
+				type = "group",
+				name = L["2 vs 2"],
+				args = {},
+			},
+			["3"] = {
+				order = 1,
+				type = "group",
+				name = L["3 vs 3"],
+				args = {},
+			},
+			["5"] = {
+				order = 1,
+				type = "group",
+				name = L["5 vs 5"],
+				args = {},
 			},
 		},
 	}
@@ -826,28 +1032,6 @@ local function loadOptions()
 		
 		order = order + 1
 	end
-
-	-- Load all the spells into the per class list
-	local function buildString(spell)
-		local txt = ""
-		if( spell.disabled or not spell.duration or not spell.anchor ) then
-			txt = L["Duration disabled"]
-		else
-			txt = string.format(L["Duration: %d (%s)"], spell.duration, (Afflicted.db.profile.anchors[spell.anchor] and Afflicted.db.profile.anchors[spell.anchor].text or spell.anchor))
-		end
-		
-		if( txt ~= "" ) then
-			txt = txt .. " / "
-		end
-		
-		if( spell.cdDisabled or not spell.cooldown or not spell.cdAnchor ) then
-			txt = txt .. L["Cooldown disabled"]
-		else
-			txt = txt .. string.format(L["Cooldown: %d (%s)"], spell.cooldown, (Afflicted.db.profile.anchors[spell.cdAnchor] and Afflicted.db.profile.anchors[spell.cdAnchor].text or spell.anchor))
-		end
-		
-		return txt
-	end
 	
 	-- Open a specific spell
 	local timerFrame
@@ -900,6 +1084,16 @@ local function loadOptions()
 		scrollBar:SetValue(0)
 	end
 	
+	-- Spell search thing
+	local function isSpellHidden(info)
+		if( not spellFilter or spellFilter == "" ) then
+			return false
+		end
+
+		return not string.match(string.lower(info.arg), string.lower(spellFilter))
+	end
+	
+	-- Category spell toggling
 	local totalAdded = {}
 	local function createCatSpell(index, spell, spellName, category)
 		totalAdded[category] = (totalAdded[category] or 0) + 1
@@ -908,13 +1102,26 @@ local function loadOptions()
 			order = index,
 			type = "execute",
 			name = spellName,
-			desc = buildString(spell),
+			desc = buildString(spell, "\n"),
 			arg = spellName,
 			hidden = isSpellHidden,
 			func = openSpell,
 		}
 	end
 	
+	-- Spell enabled in arenas
+	local function createSpellArenaConfiguration(index, spell, spellName)
+		return {
+			type = "toggle",
+			order = 1,
+			name = spellName,
+			desc = buildString(spell, "\n"),
+			hidden = isSpellHidden,
+			arg = spellName,
+		}
+	end
+	
+	-- Load it all up
 	for id in pairs(Afflicted.db.profile.spells) do
 		addedSpellIndex = addedSpellIndex + 1
 		spellIDToNames[tostring(addedSpellIndex)] = id
@@ -933,6 +1140,11 @@ local function loadOptions()
 			
 			-- Add the all tab entry
 			createCatSpell(addedSpellIndex, spell, spellName, "ALL")
+			
+			-- Add the arena listing
+			options.args.arenas.args["2"].args[tostring(addedSpellIndex)] = createSpellArenaConfiguration(addedSpellIndex, spell, spellName)
+			options.args.arenas.args["3"].args[tostring(addedSpellIndex)] = createSpellArenaConfiguration(addedSpellIndex, spell, spellName)
+			options.args.arenas.args["5"].args[tostring(addedSpellIndex)] = createSpellArenaConfiguration(addedSpellIndex, spell, spellName)
 						
 			-- Now add the spell modifier thingy one
 			options.args.spells.args[tostring(addedSpellIndex)] = createSpellConfiguration(addedSpellIndex, spell, spellName)	
