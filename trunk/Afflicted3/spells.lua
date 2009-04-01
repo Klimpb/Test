@@ -4,7 +4,7 @@ AfflictedSpells.revision = tonumber(string.match("$Revision$;", "(%d+)") or 1)
 function AfflictedSpells:Verify()
 	AfflictedSpells:GetData()
 	
-	print("Verifiyng Afflicted database.")
+	print("Verifying Afflicted database.")
 	
 	local found
 	for spellID in pairs(self.spells) do
@@ -171,7 +171,7 @@ function AfflictedSpells:GetData()
 		-- Psychic Horror
 		[64044] = "cooldown:120;cdAnchor:spells;class:PRIEST;",
 		-- Silence
-		[14487] = "cooldown:45;cdAnchor:interrupts;class:PRIEST;",
+		[15487] = "cooldown:45;cdAnchor:interrupts;class:PRIEST;",
 		-- Psychic Scream
 		[10890] = "cooldown:26;cdAnchor:spells;class:PRIEST;",
 		
