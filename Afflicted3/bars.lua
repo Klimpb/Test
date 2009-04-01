@@ -4,8 +4,7 @@ local Bars = Afflicted:NewModule("Bars", "AceEvent-3.0")
 local methods = {"CreateDisplay", "ClearTimers", "CreateTimer", "RemoveTimerByID", "ReloadVisual", "UnitDied"}
 local SML, GTBLib
 local barData = {}
-local nameToType = {}
-local groups = {}
+local savedGroups = {}
 
 -- PUBLIC METHODS
 function Bars:CreateDisplay(type)
@@ -87,9 +86,9 @@ end
 
 -- Unit died, removed their timers
 function Bars:UnitDied(guid)
+	local offset = string.len(guid)
 	for id in pairs(barData) do
-		-- GUID are 18 characters long, we start with the GUID so
-		if( string.sub(id, 0, 18) == guid ) then
+		if( string.sub(id, 0, offset) == guid ) then
 			for _, group in pairs(Bars.groups) do
 				group:UnregisterBar(id)
 			end
@@ -164,17 +163,25 @@ function Bars:ReloadVisual()
 	end
 
 	-- Update!
-	for _, group in pairs(Bars.groups) do
+	for key, group in pairs(Bars.groups) do
 		local data = Afflicted.db.profile.anchors[group.groupID]
-		group:SetScale(data.scale)
-		group:SetDisplayGroup(data.redirect ~= "" and data.redirect or nil)
-		group:SetBarGrowth(data.growUp and "UP" or "DOWN")
-		group:SetAnchorVisible(Afflicted.db.profile.showAnchors)
-		group:SetWidth(Afflicted.db.profile.barWidth)
-		group:SetFont(SML:Fetch(SML.MediaType.FONT, Afflicted.db.profile.fontName), Afflicted.db.profile.fontSize)
-		group:SetTexture(SML:Fetch(SML.MediaType.STATUSBAR, Afflicted.db.profile.barName))
-		group:SetMaxBars(data.maxRows)
-		group:SetFadeTime(data.fadeTime)
-		group:SetIconPosition(data.icon)
+		if( data ) then
+			group:SetScale(data.scale)
+			group:SetDisplayGroup(data.redirect ~= "" and data.redirect or nil)
+			group:SetBarGrowth(data.growUp and "UP" or "DOWN")
+			group:SetAnchorVisible(Afflicted.db.profile.showAnchors)
+			group:SetWidth(Afflicted.db.profile.barWidth)
+			group:SetFont(SML:Fetch(SML.MediaType.FONT, Afflicted.db.profile.fontName), Afflicted.db.profile.fontSize)
+			group:SetTexture(SML:Fetch(SML.MediaType.STATUSBAR, Afflicted.db.profile.barName))
+			group:SetMaxBars(data.maxRows)
+			group:SetFadeTime(data.fadeTime)
+			group:SetIconPosition(data.icon)
+		else
+			savedGroups[key] = nil
+
+			Bars.groups[key]:SetAnchorVisible(false)
+			Bars.groups[key]:UnregisterAllBars()
+			Bars.groups[key] = nil
+		end
 	end
 end

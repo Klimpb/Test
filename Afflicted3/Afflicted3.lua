@@ -5,8 +5,9 @@
 Afflicted = LibStub("AceAddon-3.0"):NewAddon("Afflicted", "AceEvent-3.0")
 
 local L = AfflictedLocals
-local instanceType
+local instanceType, arenaBracket
 local summonedTotems = {}
+local summonedObjects = {}
 
 function Afflicted:OnInitialize()
 	self.defaults = {
@@ -24,29 +25,31 @@ function Afflicted:OnInitialize()
 			inside = {["none"] = true},
 			anchors = {},
 			spells = {},
+			arenas = {[2] = {}, [3] = {}, [5] = {}},
 
 			revision = 0,
 			spellRevision = 0,
+			
+			anchorDefault = {
+				enabled = true,
+				announce = false,
+				growUp = false,
+				scale = 1.0,
+				maxRows = 20,
+				fadeTime = 0.5,
+				icon = "LEFT",
+				redirect = "",
+				display = "bars",
+				startMessage = "USED *spell (*target)",
+				endMessage = "FADED *spell (*target)",
+				announceColor = { r = 1.0, g = 1.0, b = 1.0 },
+				announceDest = "1",
+			},
 		},
 	}
 	
-	local anchor = {
-		enabled = true,
-		announce = false,
-		growUp = false,
-		scale = 1.0,
-		maxRows = 20,
-		fadeTime = 0.5,
-		icon = "LEFT",
-		redirect = "",
-		display = "bars",
-		startMessage = "USED *spell (*target)",
-		endMessage = "FADED *spell (*target)",
-		announceColor = { r = 1.0, g = 1.0, b = 1.0 },
-		announceDest = "1",
-	}
-	
 	-- Load default anchors
+	local anchor = self.defaults.profile.anchorDefault
 	self.defaults.profile.anchors.interrupts = CopyTable(anchor)
 	self.defaults.profile.anchors.interrupts.text = "Interrupts"
 	self.defaults.profile.anchors.cooldowns = CopyTable(anchor)
@@ -73,7 +76,6 @@ function Afflicted:OnInitialize()
 	self.SML = LibStub:GetLibrary("LibSharedMedia-3.0")
 
 	-- Load spell defaults in if the DB has changed
-	self.db.profile.spellRevision = 0
 	if( self.db.profile.spellRevision <= AfflictedSpells.revision ) then
 		self.db.profile.spellRevision = AfflictedSpells.revision
 		
@@ -108,6 +110,10 @@ function Afflicted:OnInitialize()
 				-- Convert to number if needed
 				if( key == "duration" or key == "cooldown" ) then
 					value = tonumber(value)
+				elseif( value == "true" ) then
+					value = true
+				elseif( value == "false" ) then
+					value = false
 				end
 
 				tbl[index][key] = value
@@ -189,6 +195,10 @@ function Afflicted:COMBAT_LOG_EVENT_UNFILTERED(event, timestamp, eventType, sour
 				self[self.db.profile.anchors[spell.anchor].display]:RemoveTimerByID(self.anchor, summonedTotems[id])
 			end
 			
+			-- Set it as summoned so the totem specifically dying removes its timers
+			summonedObjects[destGUID] = sourceGUID .. spellID
+			
+			-- Now trigger
 			self:AbilityTriggered(sourceGUID, sourceName, spell, spellID)
 		end
 
@@ -201,13 +211,34 @@ function Afflicted:COMBAT_LOG_EVENT_UNFILTERED(event, timestamp, eventType, sour
 		
 		local spell = self:GetSpell(spellID, spellName)
 		if( spell and spell.type == "trap" ) then
+			-- Set it as summoned so the totem specifically dying removes its timers
+			summonedObjects[destGUID] = sourceGUID .. spellID
+
 			self:AbilityTriggered(sourceGUID, sourceName, spell, spellID)
 		end
 		
 	-- Check if we should clear timers
 	elseif( ( eventType == "PARTY_KILL" or ( instancetype ~= "arena" and eventType == "UNIT_DIED" ) ) and bit.band(destFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) == COMBATLOG_OBJECT_REACTION_HOSTILE ) then
-		self.display.bars:UnitDied(destGUID)
-		self.display.icons:UnitDied(destGUID)
+		-- If this is a summoned object (trap/totem) that was specifically killed, remove its timer
+		if( summonedObjects[destGUID] ) then
+			self.bars:RemoveTimerByID(summonedObjects[destGUID])
+			self.icons:RemoveTimerByID(summonedObjects[destGUID])
+			return
+		end
+
+		-- If the player has any totems, kill them off with the player
+		local offset = string.len(destGUID)
+		for guid in pairs(summonedTotems) do
+			if( string.sub(guid, 0, offset) == destGUID ) then
+				self.bars:UnitDied(guid)
+				self.icons:UnitDied(guid)
+				
+				summonedTotems[guid] = nil
+			end
+		end
+		
+		self.bars:UnitDied(destGUID)
+		self.icons:UnitDied(destGUID)
 	end
 end
 
@@ -223,12 +254,6 @@ function Afflicted:ResetCooldowns(spells)
 	end
 end
 
-function test()
-	local self = Afflicted
-	self:AbilityTriggered(UnitGUID("player"), UnitName("player"), self:GetSpell(47476, "Strangulate"), 47476, "Strangulate", 0)
-	self:AbilityTriggered(UnitGUID("player"), UnitName("player"), self:GetSpell(18499, "Berserker Rage"), 18499, "Berserker Rage", 0)
-end
-
 -- Timer started
 function Afflicted:AbilityTriggered(sourceGUID, sourceName, spellData, spellID)
 	-- No data found, it's disabled, or it's not in our interest cause it's not focus/target
@@ -236,8 +261,14 @@ function Afflicted:AbilityTriggered(sourceGUID, sourceName, spellData, spellID)
 		return
 	end
 		
-	-- Set spell icon
+	-- Grab spell info
 	local spellName, _, spellIcon = GetSpellInfo(spellID)
+	
+	-- We're in an arena, and we don't want this spell enabled in the bracket
+	if( arenaBracket and self.db.profile.arenas[arenaBracket][spellID or spellName] ) then
+		return
+	end
+	
 		
 	-- Start duration timer (if any)
 	if( not spellData.disabled and spellData.anchor and spellData.duration ) then
@@ -318,7 +349,7 @@ function Afflicted:OnDatabaseShutdown()
 					end
 				end
 				
-				data = data .. key .. ":" .. text .. ";"
+				data = data .. key .. ":" .. tostring(text) .. ";"
 			end
 
 			self.db.profile.spells[id] = data
@@ -339,7 +370,30 @@ function Afflicted:ZONE_CHANGED_NEW_AREA()
 	local type = select(2, IsInInstance())
 
 	if( type ~= instanceType ) then
+		-- Clear anchors because we changed zones
+		for key, data in pairs(self.db.profile.anchors) do
+			self[data.display]:ClearTimers(key)
+		end
+		
+		-- Reset bracket
+		arenaBracket = nil
+		
+		-- Monitor spells?
 		if( self.db.profile.inside[type] ) then
+			-- Find arena bracket
+			if( type == "arena" ) then
+				for i=1, MAX_BATTLEFIELD_QUEUES do
+					local status, _, _, _, _, teamSize = GetBattlefieldStatus(i)
+					if( status == "active" and teamSize > 0 ) then
+						arenaBracket = teamSize
+					end
+				end
+			end
+			
+			-- Reset our summoned stuff since we don't care about anything before inside
+			for k in pairs(summonedObjects) do summonedObjects[k] = nil end
+			for k in pairs(summonedTotems) do summonedTotems[k] = nil end
+
 			self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
 		else
 			self:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
