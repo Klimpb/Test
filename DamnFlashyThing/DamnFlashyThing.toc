@@ -1,7 +1,0 @@
-## Interface: 20300
-## Title: Damn Flashy Thing
-## Notes: Disables the red flash when something is attacked and you're showing the map
-## Version: $Revision: 354 $
-## Author: Mayen
-
-DamnFlashyThing.lua

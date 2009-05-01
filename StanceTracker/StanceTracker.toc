@@ -1,7 +1,0 @@
-## Interface: 30100
-## Title: Stance Tracker
-## Notes: Track stances that Warriors are currently in
-## Author: Mayen
-## SavedVariables: StanceTrackDB
-
-StanceTracker.lua

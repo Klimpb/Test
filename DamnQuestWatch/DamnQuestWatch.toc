@@ -1,6 +1,0 @@
-## Interface: 30100
-## Title: Damn Quest Watch
-## Notes: Auto hides quests from quest watch when they complete
-## Author: Mayen
-
-DamnQuestWatch.lua

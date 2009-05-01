@@ -1,7 +1,0 @@
-## Interface: 20300
-## Title: Spell Announce
-## Version: $Revision: 458 $
-## Notes: Announces when you used a spell
-## Author: Mayen
-
-SpellAnnounce.lua
